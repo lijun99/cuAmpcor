@@ -1,0 +1,5 @@
+10/26 changed normalization factor of freq domain correlation
+1/3 fixed cudaDevice other than 0 problem : cudaSetDevice ahead of everything
+1/5 fixed sinc oversampler bug : the interpolation region is limited, need to set 0 beforehand
+2/12 added parts to treat residue windows when numberWindows/numberWindowsInChunk is not an integer
+    snr estimate commented out 
