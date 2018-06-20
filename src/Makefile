@@ -65,7 +65,7 @@ cuEstimateStats.o: cuEstimateStats.cu
 
 
 pyampcor: $(OBJS)
-	rm -f PyCuAmpcor.cpp && python3 setup_cuAmpcor.py build_ext --inplace
+	rm -f PyCuAmpcor.cpp && python3 setup.py build_ext --inplace
 
 main.o: main.cu
 	$(NVCC) $(NVCCFLAGS) -c -o $@ main.cu
