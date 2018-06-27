@@ -3,7 +3,7 @@ PROJECT = CUAMPCOR
 LDFLAGS =  -lcuda -lcudart -lcufft -lcublas
 CXXFLAGS = -std=c++11 -fpermissive -fPIC -shared
 NVCCFLAGS = -ccbin g++ -m64 \
-	-gencode arch=compute_60,code=sm_60 \
+	-gencode arch=compute_35,code=sm_35 \
     -Xcompiler -fPIC -shared -Wno-deprecated-gpu-targets \
     -ftz=false -prec-div=true -prec-sqrt=true
 
