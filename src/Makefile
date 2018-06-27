@@ -3,7 +3,7 @@ PROJECT = CUAMPCOR
 LDFLAGS =  -lcuda -lcudart -lcufft -lcublas
 CXXFLAGS = -std=c++11 -fpermissive -fPIC -shared
 NVCCFLAGS = -ccbin g++ -m64 \
-	-gencode arch=compute_35,code=sm_35 \
+	-gencode arch=compute_60,code=sm_60 \
     -Xcompiler -fPIC -shared -Wno-deprecated-gpu-targets \
     -ftz=false -prec-div=true -prec-sqrt=true
 
@@ -16,7 +16,7 @@ OBJS =  SlcImage.o cuArrays.o cuArraysCopy.o cuArraysPadding.o cuOverSampler.o \
         cuCorrNormalization.o cuAmpcorParameter.o cuCorrTimeDomain.o cuCorrFrequency.o \
         cuAmpcorChunk.o cuAmpcorController.o cuEstimateStats.o
 
-all: pyampcor ctest
+all: pyampcor
 
 SlcImage.o: SlcImage.cu $(DEPS)
 	$(NVCC) $(NVCCFLAGS) -c -o $@ SlcImage.cu
@@ -67,11 +67,11 @@ cuEstimateStats.o: cuEstimateStats.cu
 pyampcor: $(OBJS)
 	rm -f PyCuAmpcor.cpp && python3 setup.py build_ext --inplace
 
-main.o: main.cu
-	$(NVCC) $(NVCCFLAGS) -c -o $@ main.cu
+#main.o: main.cu
+#	$(NVCC) $(NVCCFLAGS) -c -o $@ main.cu
 
-ctest: main.o $(OBJS)
-	$(NVCC) $(LDFLAGS) -o $@ main.o $(OBJS)
+#ctest: main.o $(OBJS)
+#	$(NVCC) $(LDFLAGS) -o $@ main.o $(OBJS)
 
 clean:
 	rm -rf *.o *so build *~  PyCuAmpcor.cpp ctest *.dat 
