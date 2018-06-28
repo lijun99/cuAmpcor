@@ -33,22 +33,38 @@ void cuAmpcorChunk::run(int idxDown_, int idxAcross_)
         cuCorrTimeDomain(r_masterBatchRaw, r_slaveBatchRaw, r_corrBatchRaw, stream); //time domain cross correlation
     }    
     cuCorrNormalize(r_masterBatchRaw, r_slaveBatchRaw, r_corrBatchRaw, stream);
-    //find the maximum location of none-oversampled correlation
-    cuArraysMaxloc2D(r_corrBatchRaw, offsetInit, stream);
-
-// Estimate SNR (Minyan Zhong)
-
-    //std::cout<< "flag stats 1" <<std::endl; 
-    //cuArraysCopyExtractCorr(r_corrBatchRaw, r_corrBatchZoomIn, i_corrBatchZoomInValid, offsetInit, stream);
-
-    //std::cout<< "flag stats 2" <<std::endl;
-    //cuArraysSumCorr(r_corrBatchZoomIn, i_corrBatchZoomInValid, r_corrBatchSum, i_corrBatchValidCount, stream);
-
-    //std::cout<< "flag stats 3" <<std::endl;
-    //cuEstimateSnr(r_corrBatchSum, i_corrBatchValidCount, r_maxval, r_snrValue, stream);
-
-//
     
+
+    // find the maximum location of none-oversampled correlation
+    // 41 x 41, if halfsearchrange=20
+    //cuArraysMaxloc2D(r_corrBatchRaw, offsetInit, stream);
+    cuArraysMaxloc2D(r_corrBatchRaw, offsetInit, r_maxval, stream);
+
+    offsetInit->outputToFile("offsetInit1", stream);
+
+    // Estimation of statistics
+    // Author: Minyan Zhong
+    // Extraction of correlation surface around the peak 
+    cuArraysCopyExtractCorr(r_corrBatchRaw, r_corrBatchRawZoomIn, i_corrBatchZoomInValid, offsetInit, stream);
+
+    cudaDeviceSynchronize();
+    
+    // debug: output the intermediate results
+    r_maxval->outputToFile("r_maxval",stream);
+    r_corrBatchRaw->outputToFile("r_corrBatchRaw",stream);
+    r_corrBatchRawZoomIn->outputToFile("r_corrBatchRawZoomIn",stream);
+    i_corrBatchZoomInValid->outputToFile("i_corrBatchZoomInValid",stream);
+
+    // Summation of correlation and data point values
+    cuArraysSumCorr(r_corrBatchRawZoomIn, i_corrBatchZoomInValid, r_corrBatchSum, i_corrBatchValidCount, stream);
+
+    // SNR
+    cuEstimateSnr(r_corrBatchSum, i_corrBatchValidCount, r_maxval, r_snrValue, stream);
+
+    // Variance
+
+
+    // Using the approximate estimation to adjust slave image (half search window size becomes only 4 pixels)   
     //offsetInit->debuginfo(stream);
     // determine the starting pixel to extract slave images around the max location
     cuDetermineSlaveExtractOffset(offsetInit, 
@@ -111,9 +127,17 @@ void cuAmpcorChunk::run(int idxDown_, int idxAcross_)
         
     cuArraysCopyInsert(offsetFinal, offsetImage, idxDown_*param->numberWindowDownInChunk, idxAcross_*param->numberWindowAcrossInChunk,stream);
 
-    // Minyan Zhong
-    //cuArraysCopyInsert(corrMaxValue, snrImage, idxDown_*param->numberWindowDownInChunk, idxAcross_*param->numberWindowAcrossInChunk,stream);    
-    //cuArraysCopyInsert(r_snrValue, snrImage, idxDown_*param->numberWindowDownInChunk, idxAcross_*param->numberWindowAcrossInChunk,stream);    
+    // insert the intermediate results into full matrices 
+    cuArraysCopyInsert(r_corrBatchSum, floatImage1, idxDown_*param->numberWindowDownInChunk, idxAcross_*param->numberWindowAcrossInChunk,stream);
+    cuArraysCopyInsert(i_corrBatchValidCount, intImage1, idxDown_*param->numberWindowDownInChunk, idxAcross_*param->numberWindowAcrossInChunk,stream);
+
+    // old way
+    //cuArraysCopyInsert(corrMaxValue, snrImage, idxDown_*param->numberWindowDownInChunk, idxAcross_*param->numberWindowAcrossInChunk,stream);
+    // new way
+    cuArraysCopyInsert(r_snrValue, snrImage, idxDown_*param->numberWindowDownInChunk, idxAcross_*param->numberWindowAcrossInChunk,stream);    
+
+    //cuArraysCopyInsert(r_corrBatchSum, floatImage, idxDown_*param->numberWindowDownInChunk, idxAcross_*param->numberWindowAcrossInChunk,stream);    
+    //cuArraysCopyInsert(i_corrBatchValidCount, intImage, idxDown_*param->numberWindowDownInChunk, idxAcross_*param->numberWindowAcrossInChunk,stream);    
 
 }
 
@@ -168,7 +192,7 @@ void cuAmpcorChunk::loadMasterChunk()
     int height =  param->masterChunkHeight[idxChunk];
     int width = param->masterChunkWidth[idxChunk];
     masterImage->loadToDevice(c_masterChunkRaw->devData, startD, startA, height, width, stream);
-    std::cout << "debug load master: " << startD << " " <<  startA << " " <<  height << " "  << width << "\n";
+    //std::cout << "debug load master: " << startD << " " <<  startA << " " <<  height << " "  << width << "\n";
     //copy the chunk to a batch of images format (nImages, height, width) 
     //use cpu for some simple math  
     getRelativeOffset(ChunkOffsetDown->hostData, param->masterStartPixelDown, param->masterChunkStartPixelDown[idxChunk]);
@@ -212,13 +236,18 @@ void cuAmpcorChunk::loadSlaveChunk()
 }
 
 cuAmpcorChunk::cuAmpcorChunk(cuAmpcorParameter *param_, SlcImage *master_, SlcImage *slave_, 
-    cuArrays<float2> *offsetImage_, cuArrays<float> *snrImage_, cudaStream_t stream_)
+    cuArrays<float2> *offsetImage_, cuArrays<float> *snrImage_, cuArrays<int> *intImage1_, cuArrays<float> *floatImage1_, cudaStream_t stream_)
+
 {
     param = param_;
     masterImage = master_;
     slaveImage = slave_;	
     offsetImage = offsetImage_;
     snrImage = snrImage_;
+
+    intImage1 = intImage1_;
+    floatImage1 = floatImage1_;
+
     stream = stream_;
    
     std::cout << "debug Chunk creator " << param->maxMasterChunkHeight << " " << param->maxMasterChunkWidth << "\n";
@@ -328,7 +357,52 @@ cuAmpcorChunk::cuAmpcorChunk(cuAmpcorParameter *param_, SlcImage *master_, SlcIm
 		
     corrMaxValue = new cuArrays<float> (param->numberWindowDownInChunk, param->numberWindowAcrossInChunk);
     corrMaxValue->allocate();
+
+
+    // new arrays due to snr estimation
+    std::cout<< "corrRawZoomInHeight: " << param->corrRawZoomInHeight << "\n";
+    std::cout<< "corrRawZoomInWidth: " << param->corrRawZoomInWidth << "\n";
+
+    r_corrBatchRawZoomIn = new cuArrays<float> (
+			param->corrRawZoomInHeight, 
+			param->corrRawZoomInWidth, 
+			param->numberWindowDownInChunk, 
+			param->numberWindowAcrossInChunk);
+    r_corrBatchRawZoomIn->allocate();
+
+    i_corrBatchZoomInValid = new cuArrays<int> (
+			param->corrRawZoomInHeight, 
+			param->corrRawZoomInWidth, 
+			param->numberWindowDownInChunk, 
+			param->numberWindowAcrossInChunk);
+    i_corrBatchZoomInValid->allocate();
+
+    
+    r_corrBatchSum = new cuArrays<float> (
+                    param->numberWindowDownInChunk,
+                    param->numberWindowAcrossInChunk);
+    r_corrBatchSum->allocate();
+
+    i_corrBatchValidCount = new cuArrays<int> (
+                        param->numberWindowDownInChunk,
+                        param->numberWindowAcrossInChunk);
+    i_corrBatchValidCount->allocate();
+
+    i_maxloc = new cuArrays<int2> (param->numberWindowDownInChunk, param->numberWindowAcrossInChunk);
+
+    i_maxloc->allocate();
+
+    r_maxval = new cuArrays<float> (param->numberWindowDownInChunk, param->numberWindowAcrossInChunk);
+
+    r_maxval->allocate();
+
+    r_snrValue = new cuArrays<float> (param->numberWindowDownInChunk, param->numberWindowAcrossInChunk);
+
+    r_snrValue->allocate();
+
+    // end of new arrays
 	
+
     if(param->oversamplingMethod) {
         corrSincOverSampler = new cuSincOverSamplerR2R(param->zoomWindowSize, param->oversamplingFactor, stream);
     }

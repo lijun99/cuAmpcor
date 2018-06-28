@@ -50,7 +50,9 @@ public:
     int searchWindowSizeHeightRawZoomIn;
     int searchWindowSizeWidthRawZoomIn;
     
-   
+    int corrRawZoomInHeight;  // window to estimate snr
+    int corrRawZoomInWidth;
+ 
     // chip or window size after oversampling
     int rawDataOversamplingFactor;  /// Raw data overampling factor (from original size to oversampled size)
     int windowSizeHeight;           /// Template window length (oversampled size)

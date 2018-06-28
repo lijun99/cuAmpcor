@@ -20,41 +20,49 @@ void cuAmpcorController::runAmpcor() {
     cuArrays<float2> *offsetImage, *offsetImageRun;
     cuArrays<float> *snrImage, *snrImageRun;
     
+    cuArrays<int> *intImage1;
+    cuArrays<float> *floatImage1;
     
-//    cuArrays<float> *floatImage;
-//    cuArrays<int> *intImage;
-
     masterImage = new SlcImage(param->masterImageName, param->masterImageHeight, param->masterImageWidth, param->mmapSizeInGB);
     slaveImage = new SlcImage(param->slaveImageName, param->slaveImageHeight, param->slaveImageWidth, param->mmapSizeInGB);
     
-    int nWindowsDownRun = param->numberChunkDown*param->numberWindowDownInChunk;
-    int nWindowsAcrossRun = param->numberChunkAcross*param->numberWindowAcrossInChunk;
+    int nWindowsDownRun = param->numberChunkDown * param->numberWindowDownInChunk;
+    int nWindowsAcrossRun = param->numberChunkAcross * param->numberWindowAcrossInChunk;
     
     std::cout << "Debug " << nWindowsDownRun << " " << param->numberWindowDown << "\n";
-    
+
     offsetImageRun = new cuArrays<float2>(nWindowsDownRun, nWindowsAcrossRun);
-    snrImageRun = new cuArrays<float>(nWindowsDownRun, nWindowsAcrossRun);
     offsetImageRun->allocate();
+
+    snrImageRun = new cuArrays<float>(nWindowsDownRun, nWindowsAcrossRun);    
     snrImageRun->allocate();
-    
+
+   
+    // intImage 1 and floatImage 1 are added for debugging issues
+
+    intImage1 = new cuArrays<int>(nWindowsDownRun, nWindowsAcrossRun);
+    intImage1->allocate();
+ 
+    floatImage1 = new cuArrays<float>(nWindowsDownRun, nWindowsAcrossRun);
+    floatImage1->allocate(); 
+   
     offsetImage = new cuArrays<float2>(param->numberWindowDown, param->numberWindowAcross);
-    snrImage = new cuArrays<float>(param->numberWindowDown, param->numberWindowAcross);
     offsetImage->allocate();
+
+    snrImage = new cuArrays<float>(param->numberWindowDown, param->numberWindowAcross);
     snrImage->allocate();
 
-// Minyan Zhong
-//    floatImage = new cuArrays<float>(param->numberWindowDown, param->numberWindowAcross);
-//    intImage = new cuArrays<int>(param->numberWindowDown, param->numberWindowAcross);
+    floatImage1->allocate();
+    intImage1->allocate();
 
-//    floatImage->allocate();
-//    intImage->allocate();
-// 
+
     cudaStream_t streams[param->nStreams];
     cuAmpcorChunk *chunk[param->nStreams];
     for(int ist=0; ist<param->nStreams; ist++) 
     {
         cudaStreamCreate(&streams[ist]);
-        chunk[ist]= new cuAmpcorChunk(param, masterImage, slaveImage, offsetImageRun, snrImageRun, streams[ist]);
+        chunk[ist]= new cuAmpcorChunk(param, masterImage, slaveImage, offsetImageRun, snrImageRun, intImage1, floatImage1, streams[ist]);
+ 
     }
     
     int nChunksDown = param->numberChunkDown;
@@ -63,7 +71,7 @@ void cuAmpcorController::runAmpcor() {
     std::cout << "Total number of windows (azimuth x range):  " <<param->numberWindowDown << " x " << param->numberWindowAcross  << std::endl;
     std::cout << "to be processed in the number of chunks: " <<nChunksDown << " x " << nChunksAcross  << std::endl;
     
-    for(int i = 60; i<nChunksDown; i++)
+    for(int i = 1; i<nChunksDown; i++)
     {
          std::cout << "Processing chunk (" << i <<", x" << ")" << std::endl;
         for(int j=0; j<nChunksAcross; j+=param->nStreams)
@@ -87,20 +95,27 @@ void cuAmpcorController::runAmpcor() {
     offsetImage->outputToFile(param->offsetImageName, streams[0]);
     snrImage->outputToFile(param->snrImageName, streams[0]);
 
-// Minyan Zhong
-//    floatImage->allocate();
-//    intImage->allocate();
-//
+    snrImage->outputToFile("snrImage1", streams[0]);
+    intImage1->outputToFile("intImage1", streams[0]);
+    floatImage1->outputToFile("floatImage1", streams[0]);
 
     outputGrossOffsets();
+
     delete offsetImage;
     delete snrImage;
+    
+    delete intImage1;
+    delete floatImage1;
+
     delete offsetImageRun;
     delete snrImageRun;
+    
     for (int ist=0; ist<param->nStreams; ist++)
         delete chunk[ist];
+    
     delete masterImage;
     delete slaveImage;	
+
 } 
 
 void cuAmpcorController::outputGrossOffsets()

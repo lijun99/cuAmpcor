@@ -25,7 +25,7 @@ __global__ void cudaKernel_estimateSnr(const float* corrSum, const int* corrVali
 
     float mean = (corrSum[idx] - maxval[idx] * maxval[idx]) / (corrValidCount[idx] - 1);
 
-    snrValue[idx] = maxval[idx] / mean;
+    snrValue[idx] = maxval[idx] * maxval[idx] / mean;
 }
 
 void cuEstimateSnr(cuArrays<float> *corrSum, cuArrays<int> *corrValidCount, cuArrays<float> *maxval, cuArrays<float> *snrValue, cudaStream_t stream)

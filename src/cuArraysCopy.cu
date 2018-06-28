@@ -392,6 +392,33 @@ void cuArraysCopyInsert(cuArrays<float> *imageIn, cuArrays<float> *imageOut, int
 	getLastCudaError("cuArraysCopyInsert Float error");
 }
 
+//
+
+__global__ void cuArraysCopyInsert_kernel(const int* imageIn, const int inNX, const int inNY,
+   int* imageOut, const int outNY, const int offsetX, const int offsetY)
+{
+	int inx = threadIdx.x + blockDim.x*blockIdx.x; 
+	int iny = threadIdx.y + blockDim.y*blockIdx.y;
+	if(inx < inNX && iny < inNY) {
+		int idxOut = IDX2R(inx+offsetX, iny+offsetY, outNY);
+		int idxIn = IDX2R(inx, iny, inNY);
+		imageOut[idxOut] = imageIn[idxIn];
+	}
+}
+
+
+void cuArraysCopyInsert(cuArrays<int> *imageIn, cuArrays<int> *imageOut, int offsetX, int offsetY, cudaStream_t stream)
+{
+	const int nthreads = 16;
+	dim3 threadsperblock(nthreads, nthreads);
+	dim3 blockspergrid(IDIVUP(imageIn->height,nthreads), IDIVUP(imageIn->width,nthreads));
+	cuArraysCopyInsert_kernel<<<blockspergrid, threadsperblock,0, stream>>>(imageIn->devData, imageIn->height, imageIn->width, 
+	       imageOut->devData,  imageOut->width, offsetX, offsetY);
+	getLastCudaError("cuArraysCopyInsert Integer error");
+}
+//
+
+
 
 __global__ void cuArraysCopyInversePadded_kernel(float *imageIn, int inNX, int inNY, int sizeIn,
     float *imageOut, int outNX, int outNY, int sizeOut, int nImages)

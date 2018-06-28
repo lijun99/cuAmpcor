@@ -32,6 +32,8 @@ void cuArraysCopyExtract(cuArrays<float2> *imagesIn, cuArrays<float2> *imagesOut
 
 void cuArraysCopyInsert(cuArrays<float2> *imageIn, cuArrays<float2> *imageOut, int offsetX, int offersetY, cudaStream_t stream);
 void cuArraysCopyInsert(cuArrays<float> *imageIn, cuArrays<float> *imageOut, int offsetX, int offsetY, cudaStream_t stream);
+void cuArraysCopyInsert(cuArrays<int> *imageIn, cuArrays<int> *imageOut, int offsetX, int offersetY, cudaStream_t stream);
+
 void cuArraysCopyInversePadded(cuArrays<float> *imageIn, cuArrays<float> *imageOut,cudaStream_t stream);
 
 void cuArraysCopyPadded(cuArrays<float> *imageIn, cuArrays<float> *imageOut,cudaStream_t stream);

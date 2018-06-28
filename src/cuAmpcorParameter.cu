@@ -50,6 +50,10 @@ cuAmpcorParameter::cuAmpcorParameter()
     
     masterStartPixelDown0 = 0;
     masterStartPixelAcross0 = 0;
+
+    corrRawZoomInHeight = 17; // 8*2+1
+    corrRawZoomInWidth = 17;
+
 }
 
 /**
