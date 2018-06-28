@@ -1,6 +1,9 @@
+*.o
+*.so
 *.i
 *.ii
 *.gpu
 *.ptx
 *.cubin
 *.fatbin
+src/build
