@@ -14,13 +14,13 @@ setup(  name = 'PyCuAmpcor',
         ext_modules = cythonize(Extension(
         "PyCuAmpcor",
         sources=['PyCuAmpcor.pyx'],
-        include_dirs=['/usr/local/cuda-9.1/include',numpy.get_include()], # REPLACE WITH YOUR PATH TO YOUR CUDA LIBRARY HEADERS
+        include_dirs=['/usr/local/cuda/include',numpy.get_include()], # REPLACE WITH YOUR PATH TO YOUR CUDA LIBRARY HEADERS
         extra_compile_args=['-fPIC','-fpermissive'],
         extra_objects=['SlcImage.o','cuAmpcorChunk.o','cuAmpcorParameter.o','cuCorrFrequency.o',
                        'cuCorrNormalization.o','cuCorrTimeDomain.o','cuArraysCopy.o',
                        'cuArrays.o','cuArraysPadding.o','cuOffset.o','cuOverSampler.o',
                        'cuSincOverSampler.o', 'cuDeramp.o','cuAmpcorController.o','cuEstimateStats.o'],
-        extra_link_args=['-L/usr/local/cuda-9.1/lib64',
+        extra_link_args=['-L/usr/local/cuda/lib64',
                         '-L/usr/lib64/nvidia',
                         '-lcuda','-lcudart','-lcufft','-lcublas','-lgdal'], # REPLACE FIRST PATH WITH YOUR PATH TO YOUR CUDA LIBRARIES
         language='c++'

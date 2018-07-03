@@ -71,7 +71,7 @@ void cuAmpcorController::runAmpcor() {
     std::cout << "Total number of windows (azimuth x range):  " <<param->numberWindowDown << " x " << param->numberWindowAcross  << std::endl;
     std::cout << "to be processed in the number of chunks: " <<nChunksDown << " x " << nChunksAcross  << std::endl;
     
-    for(int i = 1; i<nChunksDown; i++)
+    for(int i = 0; i<nChunksDown; i++)
     {
          std::cout << "Processing chunk (" << i <<", x" << ")" << std::endl;
         for(int j=0; j<nChunksAcross; j+=param->nStreams)
