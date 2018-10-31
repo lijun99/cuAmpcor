@@ -9,13 +9,15 @@ from distutils.extension import Extension
 from Cython.Build import cythonize
 import os
 
+import numpy 
+
 os.environ["CC"] = "g++"
 
 setup(  name = 'PyCuAmpcor',
         ext_modules = cythonize(Extension(
         "PyCuAmpcor",
         sources=['PyCuAmpcor.pyx'],
-        include_dirs=['/usr/local/cuda/include'], # REPLACE WITH YOUR PATH TO YOUR CUDA LIBRARY HEADERS
+        include_dirs=['/usr/local/cuda/include', numpy.get_include()], # REPLACE WITH YOUR PATH TO YOUR CUDA LIBRARY HEADERS
         extra_compile_args=['-fPIC','-fpermissive'],
         extra_objects=['SlcImage.o','cuAmpcorChunk.o','cuAmpcorParameter.o','cuCorrFrequency.o',
                        'cuCorrNormalization.o','cuCorrTimeDomain.o','cuArraysCopy.o',
