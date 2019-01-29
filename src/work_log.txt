@@ -1,1 +1,0 @@
-Compile the second time, binary file changes.

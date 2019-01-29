@@ -1,2 +1,3 @@
-/src/*.swp
-/src/*.o
+src/*.swp
+src/*.o
+src/*.txt
