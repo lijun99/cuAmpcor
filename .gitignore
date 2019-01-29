@@ -1,2 +1,2 @@
-*.swp
-*.o
+src/*.swp
+src/*.o
