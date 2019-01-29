@@ -5,7 +5,7 @@ CXXFLAGS = -std=c++11 -fpermissive -fPIC -shared
 NVCCFLAGS = -ccbin g++ -m64 \
 	-gencode arch=compute_60,code=sm_60 \
     -Xcompiler -fPIC -shared -Wno-deprecated-gpu-targets \
-	-ftz=false -prec-div=true -prec-sqrt=true --ptxas-options=-v
+	-ftz=false -prec-div=true -prec-sqrt=true
 
 CXX=g++
 NVCC=nvcc

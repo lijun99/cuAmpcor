@@ -43,6 +43,7 @@ cuAmpcorParameter::cuAmpcorParameter()
     offsetImageName = "DenseOffset.off";
     grossOffsetImageName = "GrossOffset.off";
     snrImageName = "snr.snr";
+    covImageName = "cov.cov";
     numberWindowDown =  1;
     numberWindowAcross = 1; 			
     numberWindowDownInChunk = 1;

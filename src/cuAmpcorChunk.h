@@ -29,6 +29,7 @@ private:
 	cuAmpcorParameter *param;
 	cuArrays<float2> *offsetImage;
 	cuArrays<float> *snrImage;
+	cuArrays<float3> *covImage;
 
 	// added for test	
     cuArrays<int> *intImage1;
@@ -64,10 +65,13 @@ private:
     cuArrays<int> *i_corrBatchZoomInValid, *i_corrBatchValidCount;
         
     cuArrays<float> *r_snrValue;
-	
+
     cuArrays<int2> *i_maxloc;
     cuArrays<float> *r_maxval;
  
+    // Varince estimation.
+    cuArrays<float3> *r_covValue;
+
 public:
 	cuAmpcorChunk()	{}
 	//cuAmpcorChunk(cuAmpcorParameter *param_, SlcImage *master_, SlcImage *slave_);
@@ -75,7 +79,7 @@ public:
 	void setIndex(int idxDown_, int idxAcross_);
 
 	cuAmpcorChunk(cuAmpcorParameter *param_, SlcImage *master_, SlcImage *slave_, cuArrays<float2> *offsetImage_, 
-	            cuArrays<float> *snrImage_, cuArrays<int> *intImage1_, cuArrays<float> *floatImage1_, cudaStream_t stream_);
+	            cuArrays<float> *snrImage_, cuArrays<float3> *covImage_, cuArrays<int> *intImage1_, cuArrays<float> *floatImage1_, cudaStream_t stream_);
     
     
     void loadMasterChunk();

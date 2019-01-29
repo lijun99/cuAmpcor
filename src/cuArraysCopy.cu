@@ -208,14 +208,17 @@ __global__ void cuArraysCopyExtractVaryingOffsetCorr(const float *imageIn, const
 
         int idxImage = blockIdx.z;
 
+        // One thread per out point. Find the coordinates within the current image.
         int outx = threadIdx.x + blockDim.x*blockIdx.x; 
         int outy = threadIdx.y + blockDim.y*blockIdx.y;
 
+        // Find the correponding input.
         int inx = outx + maxloc[idxImage].x - outNX/2;
         int iny = outy + maxloc[idxImage].y - outNY/2;
     
         if (outx < outNX && outy < outNY) 
         {
+                // Find the location in full array.
                 int idxOut = ( blockIdx.z * outNX + outx ) * outNY + outy;
 
                 int idxIn = ( blockIdx.z * inNX + inx ) * inNY + iny;
@@ -284,6 +287,7 @@ void cuArraysCopyExtract(cuArrays<float> *imagesIn, cuArrays<float> *imagesOut, 
 	getLastCudaError("cuArraysCopyExtract error");
 }
 
+//
 
 __global__ void cuArraysCopyExtract_C2C_FixedOffset(const float2 *imageIn, const int inNX, const int inNY,
      float2 *imageOut, const int outNX, const int outNY, const int nImages, 
@@ -315,6 +319,42 @@ void cuArraysCopyExtract(cuArrays<float2> *imagesIn, cuArrays<float2> *imagesOut
 	    imagesOut->devData, imagesOut->height, imagesOut->width, imagesOut->count, offset.x, offset.y);
 	getLastCudaError("cuArraysCopyExtractC2C error");
 }
+//
+
+// float3
+__global__ void cuArraysCopyExtract_C2C_FixedOffset(const float3 *imageIn, const int inNX, const int inNY,
+     float3 *imageOut, const int outNX, const int outNY, const int nImages, 
+     const int offsetX, const int offsetY)
+{
+	int outx = threadIdx.x + blockDim.x*blockIdx.x; 
+	int outy = threadIdx.y + blockDim.y*blockIdx.y;
+	
+	if(outx < outNX && outy < outNY)
+	{	
+		int idxOut = (blockIdx.z * outNX + outx)*outNY+outy;
+		int idxIn = (blockIdx.z*inNX + outx + offsetX)*inNY + outy + offsetY; 
+		imageOut[idxOut] = imageIn[idxIn];
+	}
+}
+
+
+void cuArraysCopyExtract(cuArrays<float3> *imagesIn, cuArrays<float3> *imagesOut, int2 offset, cudaStream_t stream)
+{
+	//assert(imagesIn->height >= imagesOut && inNY >= outNY);
+	const int nthreads = NTHREADS2D;
+	dim3 threadsperblock(nthreads, nthreads,1);
+	dim3 blockspergrid(IDIVUP(imagesOut->height,nthreads), IDIVUP(imagesOut->width,nthreads), imagesOut->count);
+    //std::cout << "debug copyExtract" << imagesOut->width << imagesOut->height << "\n";
+    //imagesIn->debuginfo(stream);
+    //imagesOut->debuginfo(stream);
+	cuArraysCopyExtract_C2C_FixedOffset<<<blockspergrid, threadsperblock,0, stream>>>
+        (imagesIn->devData, imagesIn->height, imagesIn->width, 
+	    imagesOut->devData, imagesOut->height, imagesOut->width, imagesOut->count, offset.x, offset.y);
+	getLastCudaError("cuArraysCopyExtractFloat3 error");
+}
+
+//
+
 
 __global__ void cuArraysCopyExtract_C2R_FixedOffset(const float2 *imageIn, const int inNX, const int inNY,
      float *imageOut, const int outNX, const int outNY, const int nImages, 
@@ -332,6 +372,7 @@ __global__ void cuArraysCopyExtract_C2R_FixedOffset(const float2 *imageIn, const
 }
 
 
+
 void cuArraysCopyExtract(cuArrays<float2> *imagesIn, cuArrays<float> *imagesOut, int2 offset, cudaStream_t stream)
 {
 	//assert(imagesIn->height >= imagesOut && inNY >= outNY);
@@ -343,7 +384,7 @@ void cuArraysCopyExtract(cuArrays<float2> *imagesIn, cuArrays<float> *imagesOut,
 	    imagesOut->devData, imagesOut->height, imagesOut->width, imagesOut->count, offset.x, offset.y);
 	getLastCudaError("cuArraysCopyExtractC2C error");
 }
-
+//
 
 __global__ void cuArraysCopyInsert_kernel(const float2* imageIn, const int inNX, const int inNY,
    float2* imageOut, const int outNY, const int offsetX, const int offsetY)
@@ -367,7 +408,31 @@ void cuArraysCopyInsert(cuArrays<float2> *imageIn, cuArrays<float2> *imageOut, i
 	       imageOut->devData,  imageOut->width, offsetX, offsetY);
 	getLastCudaError("cuArraysCopyInsert error");
 }
+//
+// float3
+__global__ void cuArraysCopyInsert_kernel(const float3* imageIn, const int inNX, const int inNY,
+   float3* imageOut, const int outNY, const int offsetX, const int offsetY)
+{
+	int inx = threadIdx.x + blockDim.x*blockIdx.x; 
+	int iny = threadIdx.y + blockDim.y*blockIdx.y;
+	if(inx < inNX && iny < inNY) {
+		int idxOut = IDX2R(inx+offsetX, iny+offsetY, outNY);
+		int idxIn = IDX2R(inx, iny, inNY);
+		imageOut[idxOut] = make_float3(imageIn[idxIn].x, imageIn[idxIn].y, imageIn[idxIn].z);
+	}
+}
 
+void cuArraysCopyInsert(cuArrays<float3> *imageIn, cuArrays<float3> *imageOut, int offsetX, int offsetY, cudaStream_t stream)
+{
+	const int nthreads = 16;
+	dim3 threadsperblock(nthreads, nthreads);
+	dim3 blockspergrid(IDIVUP(imageIn->height,nthreads), IDIVUP(imageIn->width,nthreads));
+	cuArraysCopyInsert_kernel<<<blockspergrid, threadsperblock,0, stream>>>(imageIn->devData, imageIn->height, imageIn->width, 
+	       imageOut->devData,  imageOut->width, offsetX, offsetY);
+	getLastCudaError("cuArraysCopyInsert error");
+}
+
+//
 
 __global__ void cuArraysCopyInsert_kernel(const float* imageIn, const int inNX, const int inNY,
    float* imageOut, const int outNY, const int offsetX, const int offsetY)
@@ -417,7 +482,6 @@ void cuArraysCopyInsert(cuArrays<int> *imageIn, cuArrays<int> *imageOut, int off
 	getLastCudaError("cuArraysCopyInsert Integer error");
 }
 //
-
 
 
 __global__ void cuArraysCopyInversePadded_kernel(float *imageIn, int inNX, int inNY, int sizeIn,

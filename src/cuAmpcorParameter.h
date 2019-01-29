@@ -130,6 +130,7 @@ public:
     std::string grossOffsetImageName; 
     std::string offsetImageName;    /// Output Offset fields filename 
     std::string snrImageName;       /// Output SNR filename
+    std::string covImageName;
     
     cuAmpcorParameter();  /// Class constructor and default parameters setter
     ~cuAmpcorParameter(); /// Class descontructor 

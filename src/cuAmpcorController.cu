@@ -19,7 +19,9 @@ void cuAmpcorController::runAmpcor() {
     
     cuArrays<float2> *offsetImage, *offsetImageRun;
     cuArrays<float> *snrImage, *snrImageRun;
-    
+    cuArrays<float3> *covImage, *covImageRun;
+
+    // For debugging.    
     cuArrays<int> *intImage1;
     cuArrays<float> *floatImage1;
     
@@ -37,7 +39,9 @@ void cuAmpcorController::runAmpcor() {
     snrImageRun = new cuArrays<float>(nWindowsDownRun, nWindowsAcrossRun);    
     snrImageRun->allocate();
 
-   
+    covImageRun = new cuArrays<float3>(nWindowsDownRun, nWindowsAcrossRun);
+    covImageRun->allocate();
+
     // intImage 1 and floatImage 1 are added for debugging issues
 
     intImage1 = new cuArrays<int>(nWindowsDownRun, nWindowsAcrossRun);
@@ -45,23 +49,25 @@ void cuAmpcorController::runAmpcor() {
  
     floatImage1 = new cuArrays<float>(nWindowsDownRun, nWindowsAcrossRun);
     floatImage1->allocate(); 
-   
+
+    // Offsetfields.
     offsetImage = new cuArrays<float2>(param->numberWindowDown, param->numberWindowAcross);
     offsetImage->allocate();
 
+    // SNR.
     snrImage = new cuArrays<float>(param->numberWindowDown, param->numberWindowAcross);
     snrImage->allocate();
 
-    floatImage1->allocate();
-    intImage1->allocate();
-
+    // Variance.
+    covImage = new cuArrays<float3>(param->numberWindowDown, param->numberWindowAcross);
+    covImage->allocate();
 
     cudaStream_t streams[param->nStreams];
     cuAmpcorChunk *chunk[param->nStreams];
     for(int ist=0; ist<param->nStreams; ist++) 
     {
         cudaStreamCreate(&streams[ist]);
-        chunk[ist]= new cuAmpcorChunk(param, masterImage, slaveImage, offsetImageRun, snrImageRun, intImage1, floatImage1, streams[ist]);
+        chunk[ist]= new cuAmpcorChunk(param, masterImage, slaveImage, offsetImageRun, snrImageRun, covImageRun, intImage1, floatImage1, streams[ist]);
  
     }
     
@@ -88,27 +94,33 @@ void cuAmpcorController::runAmpcor() {
     }
     
     cudaDeviceSynchronize();
-    
+
+    // Do extraction. 
     cuArraysCopyExtract(offsetImageRun, offsetImage, make_int2(0,0), streams[0]);
-    cuArraysCopyExtract(snrImageRun, snrImage, make_int2(0,0), streams[0]); 
+    cuArraysCopyExtract(snrImageRun, snrImage, make_int2(0,0), streams[0]);
+    cuArraysCopyExtract(covImageRun, covImage, make_int2(0,0), streams[0]); 
     
     offsetImage->outputToFile(param->offsetImageName, streams[0]);
     snrImage->outputToFile(param->snrImageName, streams[0]);
+    covImage->outputToFile(param->covImageName, streams[0]);
 
-    snrImage->outputToFile("snrImage1", streams[0]);
+    // Output debugging arrays.
     intImage1->outputToFile("intImage1", streams[0]);
     floatImage1->outputToFile("floatImage1", streams[0]);
 
     outputGrossOffsets();
 
+    // Delete arrays.
     delete offsetImage;
     delete snrImage;
+    delete covImage;
     
     delete intImage1;
     delete floatImage1;
 
     delete offsetImageRun;
     delete snrImageRun;
+    delete covImageRun;
     
     for (int ist=0; ist<param->nStreams; ist++)
         delete chunk[ist];

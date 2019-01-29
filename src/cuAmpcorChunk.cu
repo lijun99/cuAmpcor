@@ -62,7 +62,7 @@ void cuAmpcorChunk::run(int idxDown_, int idxAcross_)
     cuEstimateSnr(r_corrBatchSum, i_corrBatchValidCount, r_maxval, r_snrValue, stream);
 
     // Variance
-
+    cuEstimateVariance(r_corrBatchRaw, offsetInit, r_maxval, r_covValue, stream);
 
     // Using the approximate estimation to adjust slave image (half search window size becomes only 4 pixels)   
     //offsetInit->debuginfo(stream);
@@ -124,21 +124,22 @@ void cuAmpcorChunk::run(int idxDown_, int idxAcross_)
     //offsetInit->debuginfo(stream);
     //offsetZoomIn->debuginfo(stream);
     //offsetFinal->debuginfo(stream);    
-        
+
+    // Do insertion.
+    // Offsetfields. 
     cuArraysCopyInsert(offsetFinal, offsetImage, idxDown_*param->numberWindowDownInChunk, idxAcross_*param->numberWindowAcrossInChunk,stream);
 
-    // insert the intermediate results into full matrices 
+    // Debugging matrix.
     cuArraysCopyInsert(r_corrBatchSum, floatImage1, idxDown_*param->numberWindowDownInChunk, idxAcross_*param->numberWindowAcrossInChunk,stream);
     cuArraysCopyInsert(i_corrBatchValidCount, intImage1, idxDown_*param->numberWindowDownInChunk, idxAcross_*param->numberWindowAcrossInChunk,stream);
 
-    // old way
+    // Old: save max correlation coefficients.
     //cuArraysCopyInsert(corrMaxValue, snrImage, idxDown_*param->numberWindowDownInChunk, idxAcross_*param->numberWindowAcrossInChunk,stream);
-    // new way
+    // New: save SNR
     cuArraysCopyInsert(r_snrValue, snrImage, idxDown_*param->numberWindowDownInChunk, idxAcross_*param->numberWindowAcrossInChunk,stream);    
 
-    //cuArraysCopyInsert(r_corrBatchSum, floatImage, idxDown_*param->numberWindowDownInChunk, idxAcross_*param->numberWindowAcrossInChunk,stream);    
-    //cuArraysCopyInsert(i_corrBatchValidCount, intImage, idxDown_*param->numberWindowDownInChunk, idxAcross_*param->numberWindowAcrossInChunk,stream);    
-
+    // Variance.
+    cuArraysCopyInsert(r_covValue, covImage, idxDown_*param->numberWindowDownInChunk, idxAcross_*param->numberWindowAcrossInChunk,stream);
 }
 
 void cuAmpcorChunk::setIndex(int idxDown_, int idxAcross_)
@@ -236,7 +237,7 @@ void cuAmpcorChunk::loadSlaveChunk()
 }
 
 cuAmpcorChunk::cuAmpcorChunk(cuAmpcorParameter *param_, SlcImage *master_, SlcImage *slave_, 
-    cuArrays<float2> *offsetImage_, cuArrays<float> *snrImage_, cuArrays<int> *intImage1_, cuArrays<float> *floatImage1_, cudaStream_t stream_)
+    cuArrays<float2> *offsetImage_, cuArrays<float> *snrImage_, cuArrays<float3> *covImage_, cuArrays<int> *intImage1_, cuArrays<float> *floatImage1_, cudaStream_t stream_)
 
 {
     param = param_;
@@ -244,6 +245,7 @@ cuAmpcorChunk::cuAmpcorChunk(cuAmpcorParameter *param_, SlcImage *master_, SlcIm
     slaveImage = slave_;	
     offsetImage = offsetImage_;
     snrImage = snrImage_;
+    covImage = covImage_;
 
     intImage1 = intImage1_;
     floatImage1 = floatImage1_;
@@ -400,8 +402,11 @@ cuAmpcorChunk::cuAmpcorChunk(cuAmpcorParameter *param_, SlcImage *master_, SlcIm
 
     r_snrValue->allocate();
 
+    r_covValue = new cuArrays<float3> (param->numberWindowDownInChunk, param->numberWindowAcrossInChunk);
+
+    r_covValue->allocate();
+
     // end of new arrays
-	
 
     if(param->oversamplingMethod) {
         corrSincOverSampler = new cuSincOverSamplerR2R(param->zoomWindowSize, param->oversamplingFactor, stream);

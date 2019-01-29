@@ -103,6 +103,7 @@ cdef extern from "cuAmpcorParameter.h":
         string grossOffsetImageName  
         string offsetImageName     ## Output Offset fields filename 
         string snrImageName        ## Output SNR filename
+        string covImageName        ## Output COV filename
         void setStartPixels(int*, int*, int*, int*) 
         void setStartPixels(int, int, int*, int*) 
         void setStartPixels(int, int, int, int) 
@@ -324,13 +325,21 @@ cdef class PyCuAmpcor(object):
     @offsetImageName.setter
     def offsetImageName(self, str a):
         self.c_cuAmpcor.param.offsetImageName = <string> a.encode()
+
     @property
     def snrImageName(self):
         return self.c_cuAmpcor.param.snrImageName
     @snrImageName.setter
     def snrImageName(self, str a):
         self.c_cuAmpcor.param.snrImageName = <string> a.encode()
-    
+
+    @property
+    def covImageName(self):
+        return self.c_cuAmpcor.param.covImageName
+    @covImageName.setter
+    def covImageName(self, str a):
+        self.c_cuAmpcor.param.covImageName = <string> a.encode()
+ 
     @property
     def masterStartPixelDownStatic(self):
         return self.c_cuAmpcor.param.masterStartPixelDown0
