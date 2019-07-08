@@ -1,3 +1,18 @@
+# ignore rules
+
+# junk
+*~
+__pycache__
+.DS_Store
+
+*.o
+*.so
+
 src/*.swp
 src/*.o
 src/*.txt
+src/build
+
+
+# cython generated files
+src/PyCuAmpcor.cpp
