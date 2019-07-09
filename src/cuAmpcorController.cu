@@ -8,35 +8,35 @@
 #include "cuAmpcorUtil.h"
 #include <iostream>
 
-cuAmpcorController::cuAmpcorController() { param = new cuAmpcorParameter();} 
-cuAmpcorController::~cuAmpcorController() { delete param; } 
+cuAmpcorController::cuAmpcorController() { param = new cuAmpcorParameter();}
+cuAmpcorController::~cuAmpcorController() { delete param; }
 
-void cuAmpcorController::runAmpcor() {	
-  
+void cuAmpcorController::runAmpcor() {
+
     param->deviceID = gpuDeviceInit(param->deviceID);
     SlcImage *masterImage;
     SlcImage *slaveImage;
-    
+
     cuArrays<float2> *offsetImage, *offsetImageRun;
     cuArrays<float> *snrImage, *snrImageRun;
     cuArrays<float3> *covImage, *covImageRun;
 
-    // For debugging.    
+    // For debugging.
     cuArrays<int> *intImage1;
     cuArrays<float> *floatImage1;
-    
+
     masterImage = new SlcImage(param->masterImageName, param->masterImageHeight, param->masterImageWidth, param->mmapSizeInGB);
     slaveImage = new SlcImage(param->slaveImageName, param->slaveImageHeight, param->slaveImageWidth, param->mmapSizeInGB);
-    
+
     int nWindowsDownRun = param->numberChunkDown * param->numberWindowDownInChunk;
     int nWindowsAcrossRun = param->numberChunkAcross * param->numberWindowAcrossInChunk;
-    
+
     std::cout << "Debug " << nWindowsDownRun << " " << param->numberWindowDown << "\n";
 
     offsetImageRun = new cuArrays<float2>(nWindowsDownRun, nWindowsAcrossRun);
     offsetImageRun->allocate();
 
-    snrImageRun = new cuArrays<float>(nWindowsDownRun, nWindowsAcrossRun);    
+    snrImageRun = new cuArrays<float>(nWindowsDownRun, nWindowsAcrossRun);
     snrImageRun->allocate();
 
     covImageRun = new cuArrays<float3>(nWindowsDownRun, nWindowsAcrossRun);
@@ -46,9 +46,9 @@ void cuAmpcorController::runAmpcor() {
 
     intImage1 = new cuArrays<int>(nWindowsDownRun, nWindowsAcrossRun);
     intImage1->allocate();
- 
+
     floatImage1 = new cuArrays<float>(nWindowsDownRun, nWindowsAcrossRun);
-    floatImage1->allocate(); 
+    floatImage1->allocate();
 
     // Offsetfields.
     offsetImage = new cuArrays<float2>(param->numberWindowDown, param->numberWindowAcross);
@@ -64,42 +64,42 @@ void cuAmpcorController::runAmpcor() {
 
     cudaStream_t streams[param->nStreams];
     cuAmpcorChunk *chunk[param->nStreams];
-    for(int ist=0; ist<param->nStreams; ist++) 
+    for(int ist=0; ist<param->nStreams; ist++)
     {
         cudaStreamCreate(&streams[ist]);
         chunk[ist]= new cuAmpcorChunk(param, masterImage, slaveImage, offsetImageRun, snrImageRun, covImageRun, intImage1, floatImage1, streams[ist]);
- 
+
     }
-    
+
     int nChunksDown = param->numberChunkDown;
-    int nChunksAcross = param->numberChunkAcross; 
-    
+    int nChunksAcross = param->numberChunkAcross;
+
     std::cout << "Total number of windows (azimuth x range):  " <<param->numberWindowDown << " x " << param->numberWindowAcross  << std::endl;
     std::cout << "to be processed in the number of chunks: " <<nChunksDown << " x " << nChunksAcross  << std::endl;
-    
+
     for(int i = 0; i<nChunksDown; i++)
     {
-         std::cout << "Processing chunk (" << i <<", x" << ")" << std::endl;
+        std::cout << "Processing chunk (" << i <<", x" << ")" << std::endl;
         for(int j=0; j<nChunksAcross; j+=param->nStreams)
         {
 			//std::cout << "Processing chunk(" << i <<", " << j <<")" << std::endl;
             for(int ist = 0; ist<param->nStreams; ist++)
-            {    
+            {
                 if(j+ist < nChunksAcross) {
-               
+
                     chunk[ist]->run(i, j+ist);
                 }
-            }		          
+            }
         }
     }
-    
+
     cudaDeviceSynchronize();
 
-    // Do extraction. 
+    // Do extraction.
     cuArraysCopyExtract(offsetImageRun, offsetImage, make_int2(0,0), streams[0]);
     cuArraysCopyExtract(snrImageRun, snrImage, make_int2(0,0), streams[0]);
-    cuArraysCopyExtract(covImageRun, covImage, make_int2(0,0), streams[0]); 
-    
+    cuArraysCopyExtract(covImageRun, covImage, make_int2(0,0), streams[0]);
+
     offsetImage->outputToFile(param->offsetImageName, streams[0]);
     snrImage->outputToFile(param->snrImageName, streams[0]);
     covImage->outputToFile(param->covImageName, streams[0]);
@@ -114,27 +114,27 @@ void cuAmpcorController::runAmpcor() {
     delete offsetImage;
     delete snrImage;
     delete covImage;
-    
+
     delete intImage1;
     delete floatImage1;
 
     delete offsetImageRun;
     delete snrImageRun;
     delete covImageRun;
-    
+
     for (int ist=0; ist<param->nStreams; ist++)
         delete chunk[ist];
-    
-    delete masterImage;
-    delete slaveImage;	
 
-} 
+    delete masterImage;
+    delete slaveImage;
+
+}
 
 void cuAmpcorController::outputGrossOffsets()
 {
     cuArrays<float2> *grossOffsets = new cuArrays<float2>(param->numberWindowDown, param->numberWindowAcross);
     grossOffsets->allocateHost();
-    
+
     for(int i=0; i< param->numberWindows; i++)
         grossOffsets->hostData[i] = make_float2(param->grossOffsetDown[i], param->grossOffsetAcross[i]);
     grossOffsets->outputHostToFile(param->grossOffsetImageName);
@@ -203,7 +203,7 @@ void cuAmpcorController::setGrossOffsets(int *in, int size) {
         param->grossOffsets = (int *)malloc(size*sizeof(int));
     mempcpy(param->grossOffsets, in, size*sizeof(int));
     fprintf(stderr, "copy grossOffsets %d\n", size);
-}    
+}
 void cuAmpcorController::setOffsetImageName(std::string s) { param->offsetImageName = s; }
 void cuAmpcorController::setSNRImageName(std::string s) { param->snrImageName = s; }
 //void cuAmpcorController::setMargin(int n) { param->margin = n; }

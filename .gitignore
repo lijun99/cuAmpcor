@@ -5,14 +5,13 @@
 __pycache__
 .DS_Store
 
+# temp files
 *.o
 *.so
-
 src/*.swp
 src/*.o
 src/*.txt
 src/build
-
 
 # cython generated files
 src/PyCuAmpcor.cpp
