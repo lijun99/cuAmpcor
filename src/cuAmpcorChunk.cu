@@ -21,9 +21,9 @@ void cuAmpcorChunk::run(int idxDown_, int idxAcross_)
     // load slave image chunk
     loadSlaveChunk();
     cuArraysAbs(c_slaveBatchRaw, r_slaveBatchRaw, stream);
-
+    
     //std::cout << "load slave chunk ok\n";
-
+    
 
     //cross correlation for none-oversampled data
     if(param->algorithm == 0) {
@@ -33,7 +33,7 @@ void cuAmpcorChunk::run(int idxDown_, int idxAcross_)
         cuCorrTimeDomain(r_masterBatchRaw, r_slaveBatchRaw, r_corrBatchRaw, stream); //time domain cross correlation
     }
     cuCorrNormalize(r_masterBatchRaw, r_slaveBatchRaw, r_corrBatchRaw, stream);
-
+    
 
     // find the maximum location of none-oversampled correlation
     // 41 x 41, if halfsearchrange=20
@@ -41,13 +41,13 @@ void cuAmpcorChunk::run(int idxDown_, int idxAcross_)
     cuArraysMaxloc2D(r_corrBatchRaw, offsetInit, r_maxval, stream);
 
     offsetInit->outputToFile("offsetInit1", stream);
-
-    // Estimation of statistics
+    
+   // Estimation of statistics
     // Author: Minyan Zhong
     // Extraction of correlation surface around the peak
     cuArraysCopyExtractCorr(r_corrBatchRaw, r_corrBatchRawZoomIn, i_corrBatchZoomInValid, offsetInit, stream);
 
-    cudaDeviceSynchronize();
+    // cudaDeviceSynchronize();
 
     // debug: output the intermediate results
     r_maxval->outputToFile("r_maxval",stream);
@@ -146,7 +146,7 @@ void cuAmpcorChunk::setIndex(int idxDown_, int idxAcross_)
 {
     idxChunkDown = idxDown_;
     idxChunkAcross = idxAcross_;
-	idxChunk = idxChunkAcross + idxChunkDown*param->numberChunkAcross;
+    idxChunk = idxChunkAcross + idxChunkDown*param->numberChunkAcross;
 
     if(idxChunkDown == param->numberChunkDown -1) {
 		nWindowsDown = param->numberWindowDown - param->numberWindowDownInChunk*(param->numberChunkDown -1);
@@ -194,8 +194,8 @@ void cuAmpcorChunk::loadMasterChunk()
     int width = param->masterChunkWidth[idxChunk];
 
     // try allocate/deallocate on the fly to save gpu memory 07/09/19
-    c_masterChunkRaw = new cuArrays<float2> (param->maxMasterChunkHeight, param->maxMasterChunkWidth);
-    c_masterChunkRaw->allocate();
+    //c_masterChunkRaw = new cuArrays<float2> (param->maxMasterChunkHeight, param->maxMasterChunkWidth);
+    //c_masterChunkRaw->allocate();
 
     masterImage->loadToDevice(c_masterChunkRaw->devData, startD, startA, height, width, stream);
     //std::cout << "debug load master: " << startD << " " <<  startA << " " <<  height << " "  << width << "\n";
@@ -208,23 +208,24 @@ void cuAmpcorChunk::loadMasterChunk()
     // if derampMethod = 0 (no deramp), take amplitudes; otherwise, copy complex data
     if(param->derampMethod == 0) {
         cuArraysCopyToBatchAbsWithOffset(c_masterChunkRaw, param->masterChunkWidth[idxChunk],
-            c_masterBatchRaw, ChunkOffsetDown->devData, ChunkOffsetAcross->devData, stream);
+                                         c_masterBatchRaw, ChunkOffsetDown->devData, ChunkOffsetAcross->devData, stream);
     }
     else {
         cuArraysCopyToBatchWithOffset(c_masterChunkRaw, param->masterChunkWidth[idxChunk],
-            c_masterBatchRaw, ChunkOffsetDown->devData, ChunkOffsetAcross->devData, stream);
+                                      c_masterBatchRaw, ChunkOffsetDown->devData, ChunkOffsetAcross->devData, stream);
     }
-
-    delete c_masterChunkRaw;
+    // std::cout << "copying master chunk done\n";
+    // cudaDeviceSynchronize();    
+    //c_masterChunkRaw->deallocate();
 }
 
 void cuAmpcorChunk::loadSlaveChunk()
 {
     // try allocate/deallocate on the fly to save gpu memory 07/09/19
 
-    c_slaveChunkRaw = new cuArrays<float2> (param->maxSlaveChunkHeight, param->maxSlaveChunkWidth);
-    c_slaveChunkRaw->allocate();
-
+    //c_slaveChunkRaw = new cuArrays<float2> (param->maxSlaveChunkHeight, param->maxSlaveChunkWidth);
+    //c_slaveChunkRaw->allocate();
+    
          //load a chunk from mmap to gpu
     slaveImage->loadToDevice(c_slaveChunkRaw->devData,
         param->slaveChunkStartPixelDown[idxChunk],
@@ -246,8 +247,9 @@ void cuAmpcorChunk::loadSlaveChunk()
        cuArraysCopyToBatchWithOffset(c_slaveChunkRaw, param->slaveChunkWidth[idxChunk],
         c_slaveBatchRaw, ChunkOffsetDown->devData, ChunkOffsetAcross->devData, stream);
     }
-
-    delete c_slaveChunkRaw;
+    // std::cout << "copying slave chunk done\n";
+    // cudaDeviceSynchronize();    
+    //c_slaveChunkRaw->deallocate();
 }
 
 cuAmpcorChunk::cuAmpcorChunk(cuAmpcorParameter *param_, SlcImage *master_, SlcImage *slave_,
@@ -263,16 +265,16 @@ cuAmpcorChunk::cuAmpcorChunk(cuAmpcorParameter *param_, SlcImage *master_, SlcIm
 
     intImage1 = intImage1_;
     floatImage1 = floatImage1_;
-
+    
     stream = stream_;
-
+    
     std::cout << "debug Chunk creator " << param->maxMasterChunkHeight << " " << param->maxMasterChunkWidth << "\n";
     // try allocate/deallocate on the fly to save gpu memory 07/09/19
-    // c_masterChunkRaw = new cuArrays<float2> (param->maxMasterChunkHeight, param->maxMasterChunkWidth);
-    // c_masterChunkRaw->allocate();
-
-    // c_slaveChunkRaw = new cuArrays<float2> (param->maxSlaveChunkHeight, param->maxSlaveChunkWidth);
-    // c_slaveChunkRaw->allocate();
+     c_masterChunkRaw = new cuArrays<float2> (param->maxMasterChunkHeight, param->maxMasterChunkWidth);
+     c_masterChunkRaw->allocate();
+    
+     c_slaveChunkRaw = new cuArrays<float2> (param->maxSlaveChunkHeight, param->maxSlaveChunkWidth);
+     c_slaveChunkRaw->allocate();
 
     ChunkOffsetDown = new cuArrays<int> (param->numberWindowDownInChunk, param->numberWindowAcrossInChunk);
     ChunkOffsetDown->allocate();

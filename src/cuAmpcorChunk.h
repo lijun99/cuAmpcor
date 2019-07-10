@@ -16,26 +16,26 @@
 class cuAmpcorChunk{
 private:
     int idxChunkDown;
-	int idxChunkAcross;
+    int idxChunkAcross;
     int idxChunk;
     int nWindowsDown;
     int nWindowsAcross;
+    
+    int devId;
+    cudaStream_t stream; 
+    
+    SlcImage *masterImage;
+    SlcImage *slaveImage;
+    cuAmpcorParameter *param;
+    cuArrays<float2> *offsetImage;
+    cuArrays<float> *snrImage;
+    cuArrays<float3> *covImage;
 
-	int devId;
-	cudaStream_t stream; 
-	
-	SlcImage *masterImage;
-	SlcImage *slaveImage;
-	cuAmpcorParameter *param;
-	cuArrays<float2> *offsetImage;
-	cuArrays<float> *snrImage;
-	cuArrays<float3> *covImage;
-
-	// added for test	
+    // added for test	
     cuArrays<int> *intImage1;
     cuArrays<float> *floatImage1;
-	
-	cuArrays<float2> * c_masterChunkRaw, * c_slaveChunkRaw; 
+    
+    cuArrays<float2> * c_masterChunkRaw, * c_slaveChunkRaw; 
     cuArrays<float2> * c_masterBatchRaw, * c_slaveBatchRaw, * c_slaveBatchZoomIn;
     cuArrays<float> * r_masterBatchRaw, * r_slaveBatchRaw;
     cuArrays<float2> * c_masterBatchOverSampled, * c_slaveBatchOverSampled; 
@@ -44,19 +44,19 @@ private:
     
     cuArrays<int> *ChunkOffsetDown, *ChunkOffsetAcross;
 	 
-	cuOverSamplerC2C *masterBatchOverSampler, *slaveBatchOverSampler;
+    cuOverSamplerC2C *masterBatchOverSampler, *slaveBatchOverSampler;
     
     cuOverSamplerR2R *corrOverSampler;
     cuSincOverSamplerR2R *corrSincOverSampler; 
     
-	//for frequency domain
-	cuFreqCorrelator *cuCorrFreqDomain, *cuCorrFreqDomain_OverSampled;
+    //for frequency domain
+    cuFreqCorrelator *cuCorrFreqDomain, *cuCorrFreqDomain_OverSampled;
     
-	cuArrays<int2> *offsetInit;
-	cuArrays<int2> *offsetZoomIn;
-	cuArrays<float2> *offsetFinal;
+    cuArrays<int2> *offsetInit;
+    cuArrays<int2> *offsetZoomIn;
+    cuArrays<float2> *offsetFinal;
     cuArrays<float> *corrMaxValue;
-
+    
     
     //SNR estimation
 
@@ -73,24 +73,22 @@ private:
     cuArrays<float3> *r_covValue;
 
 public:
-	cuAmpcorChunk()	{}
-	//cuAmpcorChunk(cuAmpcorParameter *param_, SlcImage *master_, SlcImage *slave_);
-	
-	void setIndex(int idxDown_, int idxAcross_);
-
-	cuAmpcorChunk(cuAmpcorParameter *param_, SlcImage *master_, SlcImage *slave_, cuArrays<float2> *offsetImage_, 
-	            cuArrays<float> *snrImage_, cuArrays<float3> *covImage_, cuArrays<int> *intImage1_, cuArrays<float> *floatImage1_, cudaStream_t stream_);
+    cuAmpcorChunk()	{}
+    //cuAmpcorChunk(cuAmpcorParameter *param_, SlcImage *master_, SlcImage *slave_);
     
+    void setIndex(int idxDown_, int idxAcross_);
+    
+    cuAmpcorChunk(cuAmpcorParameter *param_, SlcImage *master_, SlcImage *slave_, cuArrays<float2> *offsetImage_, 
+                  cuArrays<float> *snrImage_, cuArrays<float3> *covImage_, cuArrays<int> *intImage1_, cuArrays<float> *floatImage1_, cudaStream_t stream_);
     
     void loadMasterChunk();
     void loadSlaveChunk();
     void getRelativeOffset(int *rStartPixel, const int *oStartPixel, int diff);
-	
+    
     ~cuAmpcorChunk(); 
-	
-	void run(int, int); 
+    
+    void run(int, int); 
 };
 
-
-
 #endif 
+// end of file

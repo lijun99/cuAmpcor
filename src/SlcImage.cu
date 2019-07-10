@@ -152,8 +152,10 @@ void SlcImage::loadToDevice(float2 *dArray, size_t h_offset, size_t w_offset, si
     // @note 
     // We assume down/across directions as rows/cols. Therefore, SLC mmap and device array are both row major. 
     // cuBlas assumes both source and target arrays are column major. 
-    // To use cublasSetMatrix, we need to switch w_tile/h_tile for rows/cols  
-    // checkCudaErrors(cublasSetMatrixAsync(w_tile, h_tile, sizeof(float2), startPtr, width, dArray, w_tile, stream)); 
+    // To use cublasSetMatrix, we need to switch w_tile/h_tile for rows/cols
+
+    // std::cout << "debug load array: " << w_tile << " " << h_tile << " " << width << " " << w_offset << " " << h_offset << "\n";
+    //checkCudaErrors(cublasSetMatrixAsync(w_tile, h_tile, sizeof(float2), startPtr, width, dArray, w_tile, stream)); 
     
     checkCudaErrors(cudaMemcpy2DAsync(dArray, w_tile*sizeof(float2), startPtr, width*sizeof(float2), 
                                       w_tile*sizeof(float2), h_tile, cudaMemcpyHostToDevice,stream)); 
