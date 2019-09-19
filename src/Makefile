@@ -11,16 +11,16 @@ NVCCFLAGS = -ccbin g++ -m64 \
 CXX=g++
 NVCC=nvcc
 
-DEPS = cudaUtil.h cudaError.h cuArrays.h SlcImage.h cuAmpcorParameter.h
-OBJS =  SlcImage.o cuArrays.o cuArraysCopy.o cuArraysPadding.o cuOverSampler.o \
+DEPS = cudaUtil.h cudaError.h cuArrays.h GDALImage.h cuAmpcorParameter.h
+OBJS =  GDALImage.o cuArrays.o cuArraysCopy.o cuArraysPadding.o cuOverSampler.o \
 	    cuSincOverSampler.o cuDeramp.o cuOffset.o \
         cuCorrNormalization.o cuAmpcorParameter.o cuCorrTimeDomain.o cuCorrFrequency.o \
         cuAmpcorChunk.o cuAmpcorController.o cuEstimateStats.o
 
 all: pyampcor
 
-SlcImage.o: SlcImage.cu $(DEPS)
-	$(NVCC) $(NVCCFLAGS) -c -o $@ SlcImage.cu
+GDALImage.o: GDALImage.cu $(DEPS)
+	$(NVCC) $(NVCCFLAGS) -c -o $@ GDALImage.cu
 
 cuArrays.o: cuArrays.cu $(DEPS)
 	$(NVCC) $(NVCCFLAGS) -c -o $@ cuArrays.cu

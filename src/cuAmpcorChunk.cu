@@ -250,7 +250,7 @@ void cuAmpcorChunk::loadSlaveChunk()
     delete c_slaveChunkRaw;
 }
 
-cuAmpcorChunk::cuAmpcorChunk(cuAmpcorParameter *param_, SlcImage *master_, SlcImage *slave_,
+cuAmpcorChunk::cuAmpcorChunk(cuAmpcorParameter *param_, GDALImage *master_, GDALImage *slave_,
     cuArrays<float2> *offsetImage_, cuArrays<float> *snrImage_, cuArrays<float3> *covImage_, cuArrays<int> *intImage1_, cuArrays<float> *floatImage1_, cudaStream_t stream_)
 
 {

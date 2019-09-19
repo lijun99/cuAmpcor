@@ -1,7 +1,7 @@
 // Implementation of cuAmpcorController
 
 #include "cuAmpcorController.h"
-#include "SlcImage.h"
+#include "GDALImage.h"
 #include "cuArrays.h"
 #include "cudaUtil.h"
 #include "cuAmpcorChunk.h"
@@ -13,9 +13,14 @@ cuAmpcorController::~cuAmpcorController() { delete param; }
 
 void cuAmpcorController::runAmpcor() {
 
+    // set the gpu id
     param->deviceID = gpuDeviceInit(param->deviceID);
-    SlcImage *masterImage;
-    SlcImage *slaveImage;
+    // initialize the gdal driver
+    GDALAllRegister();
+    // master and slave images; use band=1 as default
+    // TODO: selecting band
+    GDALImage *masterImage = new GDALImage(param->masterImageName, 1, param->mmapSizeInGB);
+    GDALImage *slaveImage = new GDALImage(param->slaveImageName, 1, param->mmapSizeInGB);
 
     cuArrays<float2> *offsetImage, *offsetImageRun;
     cuArrays<float> *snrImage, *snrImageRun;
@@ -24,9 +29,6 @@ void cuAmpcorController::runAmpcor() {
     // For debugging.
     cuArrays<int> *intImage1;
     cuArrays<float> *floatImage1;
-
-    masterImage = new SlcImage(param->masterImageName, param->masterImageHeight, param->masterImageWidth, param->mmapSizeInGB);
-    slaveImage = new SlcImage(param->slaveImageName, param->slaveImageHeight, param->slaveImageWidth, param->mmapSizeInGB);
 
     int nWindowsDownRun = param->numberChunkDown * param->numberWindowDownInChunk;
     int nWindowsAcrossRun = param->numberChunkAcross * param->numberWindowAcrossInChunk;

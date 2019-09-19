@@ -16,7 +16,7 @@ setup(  name = 'PyCuAmpcor',
         sources=['PyCuAmpcor.pyx'],
         include_dirs=['/usr/local/cuda/include', numpy.get_include()], # REPLACE WITH YOUR PATH TO YOUR CUDA LIBRARY HEADERS
         extra_compile_args=['-fPIC','-fpermissive'],
-        extra_objects=['SlcImage.o','cuAmpcorChunk.o','cuAmpcorParameter.o','cuCorrFrequency.o',
+        extra_objects=['GDALImage.o','cuAmpcorChunk.o','cuAmpcorParameter.o','cuCorrFrequency.o',
                        'cuCorrNormalization.o','cuCorrTimeDomain.o','cuArraysCopy.o',
                        'cuArrays.o','cuArraysPadding.o','cuOffset.o','cuOverSampler.o',
                        'cuSincOverSampler.o', 'cuDeramp.o','cuAmpcorController.o','cuEstimateStats.o'],
