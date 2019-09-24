@@ -35,9 +35,15 @@ private:
     cuArrays<int> *intImage1;
     cuArrays<float> *floatImage1;
 
+    // gpu buffer
 	cuArrays<float2> * c_masterChunkRaw, * c_slaveChunkRaw;
+	cuArrays<float> * r_masterChunkRaw, * r_slaveChunkRaw;
+
+	// gpu windows raw data
     cuArrays<float2> * c_masterBatchRaw, * c_slaveBatchRaw, * c_slaveBatchZoomIn;
     cuArrays<float> * r_masterBatchRaw, * r_slaveBatchRaw;
+
+    // gpu windows oversampled data
     cuArrays<float2> * c_masterBatchOverSampled, * c_slaveBatchOverSampled;
     cuArrays<float> * r_masterBatchOverSampled, * r_slaveBatchOverSampled;
     cuArrays<float> * r_corrBatchRaw, * r_corrBatchZoomIn, * r_corrBatchZoomInOverSampled, * r_corrBatchZoomInAdjust;

@@ -1,5 +1,9 @@
 // -*- c++ -*-
-///\brief
+/**
+ * \brief Class for an image described GDAL vrt
+ *
+ * only complex (pixelOffset=8) or real(pixelOffset=4) images are supported, such as SLC and single-precision TIFF
+ */
 
 #ifndef __GDALIMAGE_H
 #define __GDALIMAGE_H
@@ -21,6 +25,8 @@ private:
     void * _memPtr = NULL;
 
     int _pixelSize; //in bytes
+
+    bool _isComplex;
 
     CPLVirtualMem * _poBandVirtualMem = NULL;
     GDALDataset * _poDataset = NULL;
@@ -51,6 +57,11 @@ public:
     int getPixelSize()
     {
         return _pixelSize;
+    }
+
+    bool isComplex()
+    {
+        return _isComplex;
     }
 
     void loadToDevice(void *dArray, size_t h_offset, size_t w_offset, size_t h_tile, size_t w_tile, cudaStream_t stream);

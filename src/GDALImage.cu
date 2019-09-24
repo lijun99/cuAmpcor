@@ -12,7 +12,8 @@
 #include <unistd.h>
 
 
-/*! \brief Constructor
+/**
+ * \brief Constructor
  *
  * @param filename a std::string with the raster image file name
  */
@@ -43,8 +44,6 @@ GDALImage::GDALImage(std::string filename, int band, int cacheSizeInGB)
     _width = poBand->GetXSize();
     _height = poBand->GetYSize();
 
-
-
     char **papszOptions = NULL;
     // if cacheSizeInGB = 0, use default
     // else set the option
@@ -70,6 +69,10 @@ GDALImage::GDALImage(std::string filename, int band, int cacheSizeInGB)
     // get the starting pointer
     _memPtr = CPLVirtualMemGetAddr(_poBandVirtualMem);
 
+    // determine the image type
+    _isComplex = (_pixelSize==8) ? true : false;
+
+    // all done
 }
 
 
@@ -108,3 +111,4 @@ GDALImage::~GDALImage()
     delete _poDataset;
 }
 
+// end of file

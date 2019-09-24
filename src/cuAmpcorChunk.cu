@@ -187,67 +187,117 @@ void cuAmpcorChunk::getRelativeOffset(int *rStartPixel, const int *oStartPixel, 
 
 void cuAmpcorChunk::loadMasterChunk()
 {
-    //load a chunk from mmap to gpu
-    int startD = param->masterChunkStartPixelDown[idxChunk];
-    int startA = param->masterChunkStartPixelAcross[idxChunk];
-    int height =  param->masterChunkHeight[idxChunk];
-    int width = param->masterChunkWidth[idxChunk];
 
-    // try allocate/deallocate on the fly to save gpu memory 07/09/19
-    c_masterChunkRaw = new cuArrays<float2> (param->maxMasterChunkHeight, param->maxMasterChunkWidth);
-    c_masterChunkRaw->allocate();
+    // we first load the whole chunk of image from cpu to a gpu buffer c(r)_masterChunkRaw
+    // then copy to a batch of windows with (nImages, height, width) (leading dimension on the right)
 
-    masterImage->loadToDevice(c_masterChunkRaw->devData, startD, startA, height, width, stream);
-    //std::cout << "debug load master: " << startD << " " <<  startA << " " <<  height << " "  << width << "\n";
-    //copy the chunk to a batch of images format (nImages, height, width)
-    //use cpu for some simple math
+    // get the chunk size to be loaded to gpu
+    int startD = param->masterChunkStartPixelDown[idxChunk]; //start pixel down (along height)
+    int startA = param->masterChunkStartPixelAcross[idxChunk]; // start pixel across (along width)
+    int height =  param->masterChunkHeight[idxChunk]; // number of pixels along height
+    int width = param->masterChunkWidth[idxChunk];  // number of pixels along width
+
+    //use cpu to compute the starting positions for each window
     getRelativeOffset(ChunkOffsetDown->hostData, param->masterStartPixelDown, param->masterChunkStartPixelDown[idxChunk]);
+    // copy the positions to gpu
     ChunkOffsetDown->copyToDevice(stream);
+    // same for the across direction
     getRelativeOffset(ChunkOffsetAcross->hostData, param->masterStartPixelAcross, param->masterChunkStartPixelAcross[idxChunk]);
     ChunkOffsetAcross->copyToDevice(stream);
-    // if derampMethod = 0 (no deramp), take amplitudes; otherwise, copy complex data
-    if(param->derampMethod == 0) {
-        cuArraysCopyToBatchAbsWithOffset(c_masterChunkRaw, param->masterChunkWidth[idxChunk],
-            c_masterBatchRaw, ChunkOffsetDown->devData, ChunkOffsetAcross->devData, stream);
+
+    // check whether the image is complex (e.g., SLC) or real( e.g. TIFF)
+    if(masterImage->isComplex())
+    {
+        // allocate a gpu buffer to load data from cpu/file
+        // try allocate/deallocate the buffer on the fly to save gpu memory 07/09/19
+        c_masterChunkRaw = new cuArrays<float2> (param->maxMasterChunkHeight, param->maxMasterChunkWidth);
+        c_masterChunkRaw->allocate();
+
+        // load the data from cpu
+        masterImage->loadToDevice((void *)c_masterChunkRaw->devData, startD, startA, height, width, stream);
+        //std::cout << "debug load master: " << startD << " " <<  startA << " " <<  height << " "  << width << "\n";
+
+        //copy the chunk to a batch format (nImages, height, width)
+        // if derampMethod = 0 (no deramp), take amplitudes; otherwise, copy complex data
+        if(param->derampMethod == 0) {
+            cuArraysCopyToBatchAbsWithOffset(c_masterChunkRaw, param->masterChunkWidth[idxChunk],
+                c_masterBatchRaw, ChunkOffsetDown->devData, ChunkOffsetAcross->devData, stream);
+        }
+        else {
+            cuArraysCopyToBatchWithOffset(c_masterChunkRaw, param->masterChunkWidth[idxChunk],
+                c_masterBatchRaw, ChunkOffsetDown->devData, ChunkOffsetAcross->devData, stream);
+        }
+        // deallocate the gpu buffer
+        delete c_masterChunkRaw;
     }
+    // if the image is real
     else {
-        cuArraysCopyToBatchWithOffset(c_masterChunkRaw, param->masterChunkWidth[idxChunk],
-            c_masterBatchRaw, ChunkOffsetDown->devData, ChunkOffsetAcross->devData, stream);
+        r_masterChunkRaw = new cuArrays<float> (param->maxMasterChunkHeight, param->maxMasterChunkWidth);
+        r_masterChunkRaw->allocate();
+
+        // load the data from cpu
+        masterImage->loadToDevice((void *)r_masterChunkRaw->devData, startD, startA, height, width, stream);
+
+        // copy the chunk (real) to a batch format (complex)
+        cuArraysCopyToBatchWithOffsetR2C(r_masterChunkRaw, param->masterChunkWidth[idxChunk],
+                c_masterBatchRaw, ChunkOffsetDown->devData, ChunkOffsetAcross->devData, stream);
+        // deallocate the gpu buffer
+        delete r_masterChunkRaw;
     }
 
-    delete c_masterChunkRaw;
+
 }
 
 void cuAmpcorChunk::loadSlaveChunk()
 {
-    // try allocate/deallocate on the fly to save gpu memory 07/09/19
 
-    c_slaveChunkRaw = new cuArrays<float2> (param->maxSlaveChunkHeight, param->maxSlaveChunkWidth);
-    c_slaveChunkRaw->allocate();
-
-         //load a chunk from mmap to gpu
-    slaveImage->loadToDevice(c_slaveChunkRaw->devData,
-        param->slaveChunkStartPixelDown[idxChunk],
-        param->slaveChunkStartPixelAcross[idxChunk],
-        param->slaveChunkHeight[idxChunk],
-        param->slaveChunkWidth[idxChunk],
-        stream);
     //copy to a batch format (nImages, height, width)
     getRelativeOffset(ChunkOffsetDown->hostData, param->slaveStartPixelDown, param->slaveChunkStartPixelDown[idxChunk]);
     ChunkOffsetDown->copyToDevice(stream);
     getRelativeOffset(ChunkOffsetAcross->hostData, param->slaveStartPixelAcross, param->slaveChunkStartPixelAcross[idxChunk]);
     ChunkOffsetAcross->copyToDevice(stream);
-    if(param->derampMethod == 0) {
-    cuArraysCopyToBatchAbsWithOffset(c_slaveChunkRaw, param->slaveChunkWidth[idxChunk],
-        c_slaveBatchRaw, ChunkOffsetDown->devData, ChunkOffsetAcross->devData, stream);
-    }
-    else
-    {
-       cuArraysCopyToBatchWithOffset(c_slaveChunkRaw, param->slaveChunkWidth[idxChunk],
-        c_slaveBatchRaw, ChunkOffsetDown->devData, ChunkOffsetAcross->devData, stream);
-    }
 
-    delete c_slaveChunkRaw;
+    if(slaveImage->isComplex())
+    {
+        c_slaveChunkRaw = new cuArrays<float2> (param->maxSlaveChunkHeight, param->maxSlaveChunkWidth);
+        c_slaveChunkRaw->allocate();
+
+        //load a chunk from mmap to gpu
+        slaveImage->loadToDevice(c_slaveChunkRaw->devData,
+            param->slaveChunkStartPixelDown[idxChunk],
+            param->slaveChunkStartPixelAcross[idxChunk],
+            param->slaveChunkHeight[idxChunk],
+            param->slaveChunkWidth[idxChunk],
+            stream);
+
+        if(param->derampMethod == 0) {
+            cuArraysCopyToBatchAbsWithOffset(c_slaveChunkRaw, param->slaveChunkWidth[idxChunk],
+                c_slaveBatchRaw, ChunkOffsetDown->devData, ChunkOffsetAcross->devData, stream);
+        }
+        else {
+           cuArraysCopyToBatchWithOffset(c_slaveChunkRaw, param->slaveChunkWidth[idxChunk],
+                c_slaveBatchRaw, ChunkOffsetDown->devData, ChunkOffsetAcross->devData, stream);
+        }
+        delete c_slaveChunkRaw;
+    }
+    else { //real image
+        //allocate the gpu buffer
+        r_slaveChunkRaw = new cuArrays<float> (param->maxSlaveChunkHeight, param->maxSlaveChunkWidth);
+        r_slaveChunkRaw->allocate();
+
+        //load a chunk from mmap to gpu
+        slaveImage->loadToDevice(r_slaveChunkRaw->devData,
+            param->slaveChunkStartPixelDown[idxChunk],
+            param->slaveChunkStartPixelAcross[idxChunk],
+            param->slaveChunkHeight[idxChunk],
+            param->slaveChunkWidth[idxChunk],
+            stream);
+
+        // convert to the batch format
+        cuArraysCopyToBatchWithOffsetR2C(r_slaveChunkRaw, param->slaveChunkWidth[idxChunk],
+                c_slaveBatchRaw, ChunkOffsetDown->devData, ChunkOffsetAcross->devData, stream);
+        delete r_slaveChunkRaw;
+    }
 }
 
 cuAmpcorChunk::cuAmpcorChunk(cuAmpcorParameter *param_, GDALImage *master_, GDALImage *slave_,
@@ -266,7 +316,7 @@ cuAmpcorChunk::cuAmpcorChunk(cuAmpcorParameter *param_, GDALImage *master_, GDAL
 
     stream = stream_;
 
-    std::cout << "debug Chunk creator " << param->maxMasterChunkHeight << " " << param->maxMasterChunkWidth << "\n";
+    // std::cout << "debug Chunk creator " << param->maxMasterChunkHeight << " " << param->maxMasterChunkWidth << "\n";
     // try allocate/deallocate on the fly to save gpu memory 07/09/19
     // c_masterChunkRaw = new cuArrays<float2> (param->maxMasterChunkHeight, param->maxMasterChunkWidth);
     // c_masterChunkRaw->allocate();
