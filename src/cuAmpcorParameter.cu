@@ -5,7 +5,7 @@
 
 #include "cuAmpcorParameter.h"
 #include <stdio.h>
-
+#include <iostream>
 #ifndef IDIVUP
 #define IDIVUP(i,j) ((i+j-1)/j)
 #endif
@@ -184,6 +184,12 @@ void cuAmpcorParameter::setStartPixels(int mStartD, int mStartA, int gOffsetD, i
 			masterStartPixelAcross[i] = mStartA + col*skipSampleAcrossRaw;
 			grossOffsetAcross[i] = gOffsetA;
 			slaveStartPixelAcross[i] = masterStartPixelAcross[i] + grossOffsetAcross[i] - halfSearchRangeAcrossRaw;
+
+            if (row==0 && col==0) {
+            std::cout<<"Starting Pixel"<<std::endl;
+            std::cout<<masterStartPixelDown[i]<<" "<<masterStartPixelAcross[i]<<" "<<slaveStartPixelDown[i]<<" "<<slaveStartPixelAcross[i]<<std::endl;
+            }
+
 		}		
     }
     setChunkStartPixels();

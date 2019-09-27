@@ -75,7 +75,13 @@ public:
     {
         return size*count;
     }
-    
+
+    // getCount added by Minyan Zhong 2019.09.26
+    size_t getCount()
+    {
+        return count;
+    }
+
     long getByteSize()
     {
         return width*height*count*sizeof(T);

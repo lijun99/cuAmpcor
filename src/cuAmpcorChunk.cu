@@ -40,7 +40,7 @@ void cuAmpcorChunk::run(int idxDown_, int idxAcross_)
     //cuArraysMaxloc2D(r_corrBatchRaw, offsetInit, stream);
     cuArraysMaxloc2D(r_corrBatchRaw, offsetInit, r_maxval, stream);
 
-    offsetInit->outputToFile("offsetInit1", stream);
+    //offsetInit->outputToFile("offsetInit1", stream);
     
    // Estimation of statistics
     // Author: Minyan Zhong
@@ -50,10 +50,10 @@ void cuAmpcorChunk::run(int idxDown_, int idxAcross_)
     // cudaDeviceSynchronize();
 
     // debug: output the intermediate results
-    r_maxval->outputToFile("r_maxval",stream);
-    r_corrBatchRaw->outputToFile("r_corrBatchRaw",stream);
-    r_corrBatchRawZoomIn->outputToFile("r_corrBatchRawZoomIn",stream);
-    i_corrBatchZoomInValid->outputToFile("i_corrBatchZoomInValid",stream);
+    //r_maxval->outputToFile("r_maxval",stream);
+    //r_corrBatchRaw->outputToFile("r_corrBatchRaw",stream);
+    //r_corrBatchRawZoomIn->outputToFile("r_corrBatchRawZoomIn",stream);
+    //i_corrBatchZoomInValid->outputToFile("i_corrBatchZoomInValid",stream);
 
     // Summation of correlation and data point values
     cuArraysSumCorr(r_corrBatchRawZoomIn, i_corrBatchZoomInValid, r_corrBatchSum, i_corrBatchValidCount, stream);

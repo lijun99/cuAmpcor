@@ -138,9 +138,13 @@ __global__ void cudaKernel_estimateVar(const float* corrBatchRaw, const int NX, 
 void cuEstimateVariance(cuArrays<float> *corrBatchRaw, cuArrays<int2> *maxloc, cuArrays<float> *maxval, cuArrays<float3> *covValue, cudaStream_t stream)
 {
 
-    int size = corrBatchRaw->getSize();
+    // Changed by Minyan Zhong
+    //int size = corrBatchRaw->getSize();
+    int size = corrBatchRaw->getCount();
 
     // One dimensional launching parameters to loop over every correlation surface.
     cudaKernel_estimateVar<NTHREADS><<< IDIVUP(size, NTHREADS), NTHREADS, 0, stream>>>
         (corrBatchRaw->devData, corrBatchRaw->height, corrBatchRaw->width, maxloc->devData, maxval->devData, covValue->devData, size);
+    
+    getLastCudaError("Covariance Estimation error\n");
 }
