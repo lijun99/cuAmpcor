@@ -132,8 +132,7 @@ void GDALImage::loadToDevice(void *dArray, size_t h_offset, size_t w_offset, siz
             _memPtr, // pData
             w_tile*h_tile, 1, // nBufXSize, nBufYSize
             _dataType, //eBufType
-            0, 0, //nPixelSpace, nLineSpace in pData
-            NULL //psExtraArg extra resampling callback
+            0, 0 //nPixelSpace, nLineSpace in pData
             );
 
         if(err != CE_None)
