@@ -22,18 +22,25 @@ private:
     size_t _fileSize;
     int _height;
     int _width;
+
+    // buffer pointer
     void * _memPtr = NULL;
 
     int _pixelSize; //in bytes
 
-    bool _isComplex;
+    int _isComplex;
 
+    size_t _bufferSize;
+    int _useMmap;
+
+    GDALDataType _dataType;
     CPLVirtualMem * _poBandVirtualMem = NULL;
     GDALDataset * _poDataset = NULL;
+    GDALRasterBand * _poBand = NULL;
 
 public:
     GDALImage() = delete;
-    GDALImage(std::string fn, int band=1, int cacheSizeInGB=0);
+    GDALImage(std::string fn, int band=1, int cacheSizeInGB=0, int useMmap=1);
 
     void * getmemPtr()
     {

@@ -62,7 +62,8 @@ cdef extern from "cuAmpcorParameter.h":
         int slaveImageHeight            	## slave image height
         int slaveImageWidth            		## slave image width
 
-        int mmapSizeInGB                    ## mmap buffer size in unit of Gigabytes
+        int useMmap                         ## whether to use mmap
+        int mmapSizeInGB                    ## mmap buffer size in unit of Gigabytes (if not mmmap, the buffer size)
 
         ## total number of chips/windows
         int numberWindowDown            	## number of total windows (down)
@@ -143,6 +144,12 @@ cdef class PyCuAmpcor(object):
     @nStreams.setter
     def nStreams(self, int a):
         self.c_cuAmpcor.param.nStreams = a
+    @property
+    def useMmap(self):
+        return self.c_cuAmpcor.param.useMmap
+    @useMmap.setter
+    def useMmap(self, int a):
+        self.c_cuAmpcor.param.useMmap = a
     @property
     def mmapSize(self):
         return self.c_cuAmpcor.param.mmapSizeInGB

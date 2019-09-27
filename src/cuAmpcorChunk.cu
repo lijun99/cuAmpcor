@@ -62,7 +62,7 @@ void cuAmpcorChunk::run(int idxDown_, int idxAcross_)
     cuEstimateSnr(r_corrBatchSum, i_corrBatchValidCount, r_maxval, r_snrValue, stream);
 
     // Variance
-    cuEstimateVariance(r_corrBatchRaw, offsetInit, r_maxval, r_covValue, stream);
+    // cuEstimateVariance(r_corrBatchRaw, offsetInit, r_maxval, r_covValue, stream);
 
     // Using the approximate estimation to adjust slave image (half search window size becomes only 4 pixels)
     //offsetInit->debuginfo(stream);
