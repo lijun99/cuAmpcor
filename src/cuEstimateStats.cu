@@ -55,7 +55,7 @@ void cuEstimateSnr(cuArrays<float> *corrSum, cuArrays<int> *corrValidCount, cuAr
 
 
     //for (int i=0; i<size; i++){
-        
+
     //    std::cout<<corrSum->hostData[i]<<std::endl;
     //    std::cout<<corrValidCount->hostData[i]<<std::endl;
 
@@ -71,7 +71,7 @@ void cuEstimateSnr(cuArrays<float> *corrSum, cuArrays<int> *corrValidCount, cuAr
 
 
 template <const int BLOCKSIZE> // number of threads per block.
-__global__ void cudaKernel_estimateVar(const float* corrBatchRaw, const int NX, const int NY, const int2* maxloc, const float* maxval, float3* covValue, const int size) 
+__global__ void cudaKernel_estimateVar(const float* corrBatchRaw, const int NX, const int NY, const int2* maxloc, const float* maxval, float3* covValue, const int size)
 {
 
     // Find image id.
@@ -138,9 +138,10 @@ __global__ void cudaKernel_estimateVar(const float* corrBatchRaw, const int NX, 
 void cuEstimateVariance(cuArrays<float> *corrBatchRaw, cuArrays<int2> *maxloc, cuArrays<float> *maxval, cuArrays<float3> *covValue, cudaStream_t stream)
 {
 
-    int size = corrBatchRaw->getSize();
+    int size = corrBatchRaw->count;
 
     // One dimensional launching parameters to loop over every correlation surface.
     cudaKernel_estimateVar<NTHREADS><<< IDIVUP(size, NTHREADS), NTHREADS, 0, stream>>>
         (corrBatchRaw->devData, corrBatchRaw->height, corrBatchRaw->width, maxloc->devData, maxval->devData, covValue->devData, size);
+    getLastCudaError("cudaKernel_estimateVar error\n");
 }
