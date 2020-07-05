@@ -34,19 +34,33 @@ void cuEstimateSnr(cuArrays<float> *corrSum, cuArrays<int> *corrValidCount, cuAr
     int size = corrSum->getSize();
 
     //std::cout<<size<<std::endl;
+
     //corrSum->allocateHost();
+
     //corrSum->copyToHost(stream);
+
     //std::cout<<"corr sum"<<std::endl;
+
     //corrValidCount->allocateHost();
+
     //corrValidCount->copyToHost(stream);
+
     //std::cout<<"valid count"<<std::endl;
+
     //maxval->allocateHost();
+
     //maxval->copyToHost(stream);
+
     //std::cout<<"maxval"<<std::endl;
+
+
     //for (int i=0; i<size; i++){
+
     //    std::cout<<corrSum->hostData[i]<<std::endl;
     //    std::cout<<corrValidCount->hostData[i]<<std::endl;
+
     //    std::cout<<maxval->hostData[i]<<std::endl;
+
     //}
 
     cudaKernel_estimateSnr<NTHREADS><<< IDIVUP(size, NTHREADS), NTHREADS, 0, stream>>>
