@@ -53,17 +53,7 @@ Some special notices for PyCuAmpcor:
 
 ### 2.2 Standalone Installation
 
-You may also install PyCuAmpcor as a standalone package.
-
-```bash
-    # go to PyCuAmpcor source directory
-    cd contrib/PyCuAmpcor/src
-    # edit Makefile to provide the correct gdal include path and gpu architecture to NVCCFLAGS
-    # call make to compile
-    make
-    # install 
-    python3 setup.py install  
- ```
+You may also install PyCuAmpcor as a standalone package with the cmake config file.
 
 ## 3. User Guide
 
