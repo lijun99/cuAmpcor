@@ -1,0 +1,20 @@
+[build-system]
+requires = ["scikit-build-core"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "pycuampcor"
+version = "2.0"
+description = "Amplitude Cross-Correlation with CUDA"
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.6"
+
+[tool.scikit-build]
+# optional: set CMake options
+cmake.minimum-version = "3.15"
+sdist.include = ["src"]
+wheel.packages = ["pycuampcor"]
+
+[tool.scikit-build.cmake.define]
+CMAKE_BUILD_TYPE = "Release"

@@ -1,23 +1,35 @@
-# Early exit if prereqs not available
-if(NOT TARGET GDAL::GDAL
-OR NOT TARGET CUDA::cufft
-OR NOT pybind11_FOUND
-   )
-    return()
-endif()
+# -*- cmake -*-
+# Example with conda:
+#   cmake .. -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_CUDA_ARCHITECTURES=native -DCMAKE_PREFIX_PATH=${CONDA_PREFIX} -DCMAKE_BUILD_TYPE=Release
 
+# minimum cmake version to support CUDA and Python
+cmake_minimum_required(VERSION 3.18)
+
+# project name
+project(pycuampcor LANGUAGES CUDA CXX)
+
+# C++ Standard
+set(CMAKE_CXX_STANDARD 11)
+
+# CUDA requirement
+find_package(CUDAToolkit COMPONENTS cudart cufft REQUIRED)
 set(CMAKE_CUDA_STANDARD 11)
 set(CMAKE_CUDA_STANDARD_REQUIRED TRUE)
-set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --prec-div=true --prec-sqrt=true")
 
+if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+    set(CMAKE_CUDA_ARCHITECTURES 52 60 70 75 80 86 90)
+endif()
 
-pybind11_add_module(PyCuAmpcor
+# python and pybind11 requirement
+find_package(Python 3.6 COMPONENTS Interpreter Development REQUIRED)
+set(PYBIND11_PYTHON_VERSION ${Python_VERSION})
+set(PYBIND11_FINDPYTHON ON) # Use new FindPython if available
+find_package(pybind11 CONFIG REQUIRED)
+
+# python module
+pybind11_add_module(pycuampcor
     src/PyCuAmpcor.cpp
     src/SlcImage.cpp
-    src/SConscript
-    src/cuAmpcorProcessor.cpp
-    src/cuAmpcorProcessorTwoPass.cpp
-    src/cuAmpcorProcessorOnePass.cpp
     src/cuAmpcorController.cpp
     src/cuAmpcorParameter.cpp
     src/cuArrays.cpp
@@ -35,16 +47,43 @@ pybind11_add_module(PyCuAmpcor
     src/cuSincOverSampler.cu
     src/cudaError.cpp
     src/cudaUtil.cpp
-    )
-target_include_directories(PyCuAmpcor PRIVATE
-    src
-    )
-target_link_libraries(PyCuAmpcor PRIVATE
-    CUDA::cufft
-    GDAL::GDAL
+    src/cuAmpcorProcessor.cpp
+    src/cuAmpcorProcessorTwoPass.cpp
+    src/cuAmpcorProcessorOnePass.cpp
     )
 
-InstallSameDir(
-    __init__.py
-    PyCuAmpcor
+# set_property(TARGET pycuampcor PROPERTY CUDA_SEPARABLE_COMPILATION ON)
+
+target_include_directories(pycuampcor PRIVATE
+    src
     )
+
+target_link_libraries(pycuampcor PRIVATE
+    CUDA::cufft
+    )
+
+# Condition to check if using skbuild
+if (SKBUILD)
+    # Install package
+    install(TARGETS pycuampcor
+            LIBRARY DESTINATION pycuampcor)
+else()
+    # Install package
+    set(PBCUDA_INSTALL_DIR ${Python_SITEARCH}/pycuampcor)
+
+    # Install compiled library
+    install(TARGETS pycuampcor
+            LIBRARY DESTINATION ${PBCUDA_INSTALL_DIR})
+
+    # Install __init__.py
+    install(FILES ${CMAKE_SOURCE_DIR}/pycuampcor/__init__.py
+            DESTINATION ${PBCUDA_INSTALL_DIR})
+    message(STATUS "not using skbuild, standard install.")
+endif()
+
+
+
+
+
+
+

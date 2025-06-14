@@ -5,7 +5,7 @@
 #include "cuAmpcorParameter.h"
 #include "cudaUtil.h"
 
-PYBIND11_MODULE(PyCuAmpcor, m)
+PYBIND11_MODULE(pycuampcor, m)
 {
     m.doc() = "Python module controller for underlying CUDA-Ampcor code";
 

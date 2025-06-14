@@ -62,10 +62,6 @@ Some special notices for PyCuAmpcor:
 You may also install PyCuAmpcor as a standalone package.
 
 ```bash
-    # go to PyCuAmpcor source directory
-    cd contrib/PyCuAmpcor/
-    cp CMakeLists.txt.standalone CMakeLists.txt
-    # follow CMake routines
     mkdir build && cd build
     cmake .. -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
       -DCMAKE_CUDA_ARCHITECTURES=native \
@@ -73,6 +69,12 @@ You may also install PyCuAmpcor as a standalone package.
       -DCMAKE_BUILD_TYPE=Release 
     make -j && make install
  ```
+
+Or simply use 
+
+```bash
+    pip install . 
+```
 
 ## 3. User Guide
 

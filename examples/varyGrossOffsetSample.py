@@ -2,12 +2,7 @@
 #
 
 import numpy as np
-try:
-    # if installed with ISCE2
-    from contrib.PyCuAmpcor.PyCuAmpcor import PyCuAmpcor
-except ModuleNotFoundError:
-    # if standalone
-    from PyCuAmpcor import PyCuAmpcor
+from pycuampcor import PyCuAmpcor
 
 def main():
     '''
