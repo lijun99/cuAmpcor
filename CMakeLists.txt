@@ -76,7 +76,7 @@ else()
             LIBRARY DESTINATION ${PBCUDA_INSTALL_DIR})
 
     # Install __init__.py
-    install(FILES ${CMAKE_SOURCE_DIR}/pycuampcor/__init__.py
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/pycuampcor/__init__.py
             DESTINATION ${PBCUDA_INSTALL_DIR})
     message(STATUS "not using skbuild, standard install.")
 endif()
