@@ -255,7 +255,7 @@ class grossOffsets:
  
         ####Step 4: Convert EN velocity to rng and azimuth
         #Local los and azi vector in ENU coordinate
-        print(' Coverting EN to rdr...')
+        print(' Converting EN to rdr...')
         incr = np.radians(inc)
         azir = np.radians(azi)
         losr = np.radians(azi-90.0)

@@ -99,13 +99,13 @@ void cuAmpcorController::runAmpcor()
     cudaStream_t streams[param->nStreams];
     std::unique_ptr<cuAmpcorProcessor> chunk[param->nStreams];
     // iterate over cuda streams
-    for(int ist=0; ist<param->nStreams; ist++)
+    for(int istream=0; istream < param->nStreams; istream++)
     {
         // create each stream
-        checkCudaErrors(cudaStreamCreate(&streams[ist]));
+        checkCudaErrors(cudaStreamCreate(&streams[istream]));
         // create the chunk processor for each stream
-        chunk[ist]= cuAmpcorProcessor::create(param->workflow, param, referenceImage, secondaryImage,
-            offsetImageRun, snrImageRun, covImageRun, peakValueImageRun, streams[ist]);
+        chunk[istream]= cuAmpcorProcessor::create(param->workflow, param, referenceImage, secondaryImage,
+            offsetImageRun, snrImageRun, covImageRun, peakValueImageRun, streams[istream]);
     }
 
     int nChunksDown = param->numberChunkDown;
@@ -129,11 +129,11 @@ void cuAmpcorController::runAmpcor()
         for(int j=0; j<nChunksAcross; j+=param->nStreams)
         {
             // iterate over cuda streams to process chunks
-            for(int ist = 0; ist < param->nStreams; ist++)
+            for(int istream = 0; istream < param->nStreams; istream++)
             {
-                int chunkIdxAcross = j+ist;
+                int chunkIdxAcross = j+istream;
                 if(chunkIdxAcross < nChunksAcross) {
-                    chunk[ist]->run(i, chunkIdxAcross);
+                    chunk[istream]->run(i, chunkIdxAcross);
                 }
             }
         }
@@ -186,11 +186,11 @@ void cuAmpcorController::runAmpcor()
     delete covImageRun;
     delete peakValueImageRun;
 
-    for (int ist=0; ist<param->nStreams; ist++)
+    for (int istream=0; istream < param->nStreams; istream++)
     {
         // cufftplan etc are stream dependent, need to be deleted before stream is destroyed
-        chunk[ist].release();
-        checkCudaErrors(cudaStreamDestroy(streams[ist]));
+        chunk[istream].release();
+        checkCudaErrors(cudaStreamDestroy(streams[istream]));
     }
 
     delete referenceImage;

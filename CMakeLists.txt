@@ -69,16 +69,18 @@ if (SKBUILD)
             LIBRARY DESTINATION pycuampcor)
 else()
     # Install package
-    set(PBCUDA_INSTALL_DIR ${Python_SITEARCH}/pycuampcor)
+    if(NOT DEFINED PYCUAMPCOR_INSTALL_DIR)
+        set(PYCUAMPCOR_INSTALL_DIR ${Python_SITEARCH}/pycuampcor)
+    endif()
 
     # Install compiled library
     install(TARGETS pycuampcor
-            LIBRARY DESTINATION ${PBCUDA_INSTALL_DIR})
+            LIBRARY DESTINATION ${PYCUAMPCOR_INSTALL_DIR})
 
     # Install __init__.py
     install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/pycuampcor/__init__.py
-            DESTINATION ${PBCUDA_INSTALL_DIR})
-    message(STATUS "not using skbuild, standard install.")
+            DESTINATION ${PYCUAMPCOR_INSTALL_DIR})
+    message(STATUS "Installing pycuampcor to: ${PYCUAMPCOR_INSTALL_DIR}")
 endif()
 
 

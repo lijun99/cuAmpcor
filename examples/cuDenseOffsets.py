@@ -15,7 +15,13 @@ import isceobj
 from isceobj.Util.decorators import use_api
 from isceobj.Util.ImageUtil import ImageLib as IML
 
-from pycuampcor import PyCuAmpcor
+try:
+    # if installed with ISCE2
+    from contrib.pycuampcor import PyCuAmpcor
+except ModuleNotFoundError:
+    # if standalone
+    from pycuampcor import PyCuAmpcor
+
 
 EXAMPLE = '''example
   cuDenseOffsets.py -r ./SLC/20151120/20151120.slc.full -s ./SLC/20151214/20151214.slc.full

@@ -2,7 +2,12 @@
 #
 
 import numpy as np
-from pycuampcor import PyCuAmpcor
+try:
+    # if installed with ISCE2
+    from isce.component.contrib.pycuampcor import PyCuAmpcor
+except ModuleNotFoundError:
+    # if standalone
+    from pycuampcor import PyCuAmpcor
 
 def main():
     '''
@@ -27,7 +32,7 @@ def main():
     objOffset.numberWindowAcross = 2
     objOffset.numberWindowDownInChunk = 2
     objOffset.numberWindowAcrossInChunk = 2
-    # 2 set other dependent parameters and allocate aray parameters
+    # 2 set other dependent parameters and allocate array parameters
     objOffset.setupParams()
 
     #3 set gross offsets: constant or varying

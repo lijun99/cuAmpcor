@@ -6,7 +6,12 @@
 #
 
 import argparse
-from pycuampcor import PyCuAmpcor
+try:
+    # if installed with ISCE2
+    from isce.component.contrib.pycuampcor import PyCuAmpcor
+except ModuleNotFoundError:
+    # if standalone
+    from pycuampcor import PyCuAmpcor
 
 def main():
     '''

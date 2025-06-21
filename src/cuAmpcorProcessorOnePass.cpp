@@ -212,7 +212,7 @@ cuAmpcorProcessorOnePass::cuAmpcorProcessorOnePass(cuAmpcorParameter *param_, Sl
     r_secondaryBatchOverSampled->allocate();
 
     referenceBatchOverSampler = new cuOverSamplerC2C(
-        c_referenceBatchRaw->height, c_referenceBatchRaw->width, //orignal size
+        c_referenceBatchRaw->height, c_referenceBatchRaw->width, //original size
         c_referenceBatchOverSampled->height, c_referenceBatchOverSampled->width, //oversampled size
         c_referenceBatchRaw->count, stream);
 
@@ -315,15 +315,15 @@ void cuAmpcorProcessorOnePass::loadReferenceChunk()
     // then copy to a batch of windows with (nImages, height, width) (leading dimension on the right)
 
     // get the chunk size to be loaded to gpu
-    int startD = param->referenceChunkStartPixelDown[idxChunk]; //start pixel down (along height)
-    int startA = param->referenceChunkStartPixelAcross[idxChunk]; // start pixel across (along width)
+    int startDown = param->referenceChunkStartPixelDown[idxChunk]; //start pixel down (along height)
+    int startAcross = param->referenceChunkStartPixelAcross[idxChunk]; // start pixel across (along width)
     int height =  param->referenceChunkHeight[idxChunk]; // number of pixels along height
     int width = param->referenceChunkWidth[idxChunk];  // number of pixels along width
 
 #ifdef CUAMPCOR_DEBUG
     std::cout << "loading reference chunk ...\n "
               << "    index: " << idxChunk << " "
-              << "starting pixel: (" << startD << ", " << startA << ") "
+              << "starting pixel: (" << startDown << ", " << startAcross << ") "
               << "size : (" << height << ", " << width << ")"
               << "\n";
 #endif
@@ -378,7 +378,7 @@ void cuAmpcorProcessorOnePass::loadReferenceChunk()
             c_referenceChunkRaw->allocate();
 
             // load the data from cpu
-            referenceImage->loadToDevice((void *)c_referenceChunkRaw->devData, startD, startA, height, width, stream);
+            referenceImage->loadToDevice((void *)c_referenceChunkRaw->devData, startDown, startAcross, height, width, stream);
 
             //copy the chunk to a batch format (nImages, height, width)
             // if derampMethod = 0 (no deramp), take amplitudes; otherwise, copy complex data
@@ -401,7 +401,7 @@ void cuAmpcorProcessorOnePass::loadReferenceChunk()
             r_referenceChunkRaw->allocate();
 
             // load the data from cpu
-            referenceImage->loadToDevice((void *)r_referenceChunkRaw->devData, startD, startA, height, width, stream);
+            referenceImage->loadToDevice((void *)r_referenceChunkRaw->devData, startDown, startAcross, height, width, stream);
 
             // copy the chunk (real) to a batch format (complex)
             cuArraysCopyToBatchWithOffsetR2C(r_referenceChunkRaw,

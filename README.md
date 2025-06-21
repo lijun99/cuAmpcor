@@ -162,9 +162,9 @@ If you need more control of the computation, or incorporate the PyCuAmpcor proce
 * create a PyCuAmpcor instance
 ```python
 # if installed with ISCE2
-from isce.contrib.PyCuAmpcor.PyCuAmpcor import PyCuAmpcor
+from isce.components.contrib.pycuampcor import PyCuAmpcor
 # if standalone
-from PyCuAmpcor import PyCuAmpcr
+from pycuampcor import PyCuAmpcor
 # create an instance
 objOffset = PyCuAmpcor()
 ```
@@ -253,14 +253,14 @@ Note also PyCuAmpcor parameters refer to the names used by the PyCuAmpcor Python
 
 **Process Parameters**
 
-| PyCuAmpcor           | Notes                     |
-| :---                 | :----                     |
-| devID                | The CUDA GPU to be used for computation, usually=0, or users can use the CUDA_VISIBLE_DEVICES=n enviromental variable to choose GPU |
-| nStreams | The number of CUDA streams to be used, recommended=2, to overlap the CUDA kernels with data copying, more streams require more memory which isn't alway better |
-| useMmap              | Whether to use memory map cached file I/O, recommended=1, supported by GDAL vrt driver (needs >=3.1.0) and GeoTIFF |
-| mmapSize             | The cache size used for memory map, in units of GB. The larger the better, but not exceed 1/4 the total physical memory. |
-| numberWindowDownInChunk |  The number of windows processed in a batch/chunk, along lines |
-| numberWindowAcrossInChunk | The number of windows processed in a batch/chunk, along columns |
+| PyCuAmpcor           | Notes                                                                                                                                                           |
+| :---                 |:----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| devID                | The CUDA GPU to be used for computation, usually=0, or users can use the CUDA_VISIBLE_DEVICES=n environmental variable to choose GPU                            |
+| nStreams | The number of CUDA streams to be used, recommended=2, to overlap the CUDA kernels with data copying, more streams require more memory which isn't always better |
+| useMmap              | Whether to use memory map cached file I/O, recommended=1, supported by GDAL vrt driver (needs >=3.1.0) and GeoTIFF                                              |
+| mmapSize             | The cache size used for memory map, in units of GB. The larger the better, but not exceed 1/4 the total physical memory.                                        |
+| numberWindowDownInChunk | The number of windows processed in a batch/chunk, along lines                                                                                                   |
+| numberWindowAcrossInChunk | The number of windows processed in a batch/chunk, along columns                                                                                                 |
 
 Many windows are processed together to maximize the usage of GPU cores; which is called as a Chunk. The total number of windows in a chunk is limited by the GPU memory. We recommend
 numberWindowDownInChunk=1, numberWindowAcrossInChunk=10, for a window size=64.
@@ -340,7 +340,7 @@ For cases you choose a varying grossOffset, you may use two numpy arrays to pass
 
 to set all the starting pixels for reference/secondary windows.
 
-Sometimes, adding a large gross offset may cause the windows near the edge to be out of range of the orignal image. To avoid memory access errors, call
+Sometimes, adding a large gross offset may cause the windows near the edge to be out of range of the original image. To avoid memory access errors, call
 
 ```python
    objOffset.checkPixelInImageRange()
@@ -445,7 +445,7 @@ ROIPAC always performs deramping with Method 1, to obtain the ramp by averaging 
 
 **Difference to ROIPAC**
 
-In ROIPAC, an extra resizing step is performed on the correlation surface, from (2\*halfZoomWindowSizeRaw\*rawDataOversamplingFactor+1, 2\*halfZoomWindowSizeRaw\*rawDataOversamplingFactor+1) to (i_cw, i_cw), centered at the peak (in ROIPAC, the peak seeking is incorporated in the correlation module while is seperate in PyCuAmpcor). i_cw is a user configurable variable; it could be smaller or bigger than 2\*i_srchp\*i_ovs+1=17 (fixed), leading to extraction or enlargement by padding 0s. This procedure is not performed in PyCuAmpcor, as it makes little difference in the next oversampling procedure.
+In ROIPAC, an extra resizing step is performed on the correlation surface, from (2\*halfZoomWindowSizeRaw\*rawDataOversamplingFactor+1, 2\*halfZoomWindowSizeRaw\*rawDataOversamplingFactor+1) to (i_cw, i_cw), centered at the peak (in ROIPAC, the peak seeking is incorporated in the correlation module while is separate in PyCuAmpcor). i_cw is a user configurable variable; it could be smaller or bigger than 2\*i_srchp\*i_ovs+1=17 (fixed), leading to extraction or enlargement by padding 0s. This procedure is not performed in PyCuAmpcor, as it makes little difference in the next oversampling procedure.
 
 ### 5.6 Oversample the correlation surface and find the peak position
 

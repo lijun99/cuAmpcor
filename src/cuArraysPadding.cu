@@ -10,7 +10,7 @@
 // cuda kernel for zero padding for FFT oversampling,
 // for both even and odd sequences
 // @param[in] image1 input images
-// @param[inout] image2 output images - memset to 0 in prior
+// @param[in,out] image2 output images - memset to 0 in prior
 // @note siding Nyquist frequency for even length with negative frequency
 // for even N - positive f[0, ..., N/2-1],
 //              zeros 0...0,
@@ -43,7 +43,7 @@ __global__ void cuArraysPaddingMany_kernel(
 // cuda kernel for zero padding for FFT oversampling,
 // for both even and odd sequences
 // @param[in] image1 input images
-// @param[inout] image2 output images - memset to 0 in prior
+// @param[in,out] image2 output images - memset to 0 in prior
 // @note for even length (height, width or both),
 //       the Nyquist frequency (N/2) component is split between positive and negative frequencies.
 __global__ void cuArraysPaddingMany_split_Nyquist_kernel(

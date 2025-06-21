@@ -33,7 +33,7 @@ void SlcImage::remapIfNeeded(size_t required_start, size_t required_end)
     if(required_start < mapped_offset || required_end > mapped_offset + mapped_size)
     {
         // out of range, remap
-        // unmap first, if neccesary
+        // unmap first, if necessary
         if(mapped_data!=nullptr)
             munmap(mapped_data, mapped_size);
         // align new mapping offset

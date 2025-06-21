@@ -1,2 +1,2 @@
 #!/usr/bin/env python
-from .pycuampcor import PyCuAmpcor
+from .pycuampcor import *

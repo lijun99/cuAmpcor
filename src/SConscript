@@ -18,17 +18,13 @@ listFiles = ['SlcImage.cpp', 'cuArrays.cpp', 'cuArraysCopy.cu',
              'cuAmpcorProcessor.cpp', 'cuEstimateStats.cu',
              'cuAmpcorProcessorTwoPass.cpp', 'cuAmpcorProcessorOnePass.cpp']
 
-# add gdal include path
-gdal_cflags = subprocess.check_output('gdal-config --cflags', shell=True)[:-1].decode('utf-8')
-envPyCuAmpcor.Append(ENABLESHAREDNVCCFLAG = ' -DNDEBUG ' + gdal_cflags)
+envPyCuAmpcor.Append(ENABLESHAREDNVCCFLAG = ' -DNDEBUG ')
 
 def pybind11PseudoBuilder(env, src, bld, inst):
     listFiles = [ src ]
     env.MergeFlags('-fopenmp -O3 -std=c++11 -fPIC -pthread -Wno-unused-result -Wsign-compare -DNDEBUG -g -fwrapv -Wall')
-    libList = ['gdal']
-    env.PrependUnique(LIBS=libList)
     env.Append(CPPDEFINES = 'GPU_ACC_ENABLED')
-    lib = env.LoadableModule(target='PyCuAmpcor.abi3.so', source=listFiles)
+    lib = env.LoadableModule(target='pycuampcor.abi3.so', source=listFiles)
 
     env.Install(inst, lib)
     env.Alias('install', inst)
