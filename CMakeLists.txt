@@ -13,8 +13,28 @@ set(CMAKE_CXX_STANDARD 11)
 
 # CUDA requirement
 find_package(CUDAToolkit COMPONENTS cudart cufft REQUIRED)
-set(CMAKE_CUDA_STANDARD 11)
-set(CMAKE_CUDA_STANDARD_REQUIRED TRUE)
+message(STATUS "Found CUDA version: ${CUDAToolkit_VERSION}")
+# Set C++ standard based on CUDA version
+if (CUDAToolkit_VERSION VERSION_GREATER_EQUAL 13.0)
+    # CUDA 13 and later requires at least C++17
+    set(CMAKE_CUDA_STANDARD 17)
+    set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+
+    # Also set host compiler C++ standard
+    set(CMAKE_CXX_STANDARD 17)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+    message(STATUS "Using C++17 because CUDA 13+ requires it")
+else()
+    # For older CUDA versions (and e.g. GCC 4.8)
+    set(CMAKE_CUDA_STANDARD 11)
+    set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+
+    set(CMAKE_CXX_STANDARD 11)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+    message(STATUS "Using C++11 for compatibility (CUDA < 13)")
+endif()
 
 if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
     set(CMAKE_CUDA_ARCHITECTURES 52 60 70 75 80 86 90)

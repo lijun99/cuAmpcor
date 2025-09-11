@@ -29,8 +29,6 @@ int gpuDeviceInit(int devID)
 void gpuDeviceList()
 {
     int device_count = 0;
-    int current_device = 0;
-    cudaDeviceProp deviceProp;
     checkCudaErrors(cudaGetDeviceCount(&device_count));
 
     fprintf(stderr, "Detecting all CUDA devices ...\n");
@@ -39,21 +37,29 @@ void gpuDeviceList()
         exit(EXIT_FAILURE);
     }
 
-    while (current_device < device_count) {
+    for (int current_device = 0; current_device < device_count; ++current_device) {
+        cudaDeviceProp deviceProp;
         checkCudaErrors(cudaGetDeviceProperties(&deviceProp, current_device));
+
+#if CUDART_VERSION < 13000   // computeMode field removed in CUDA 13
         if (deviceProp.computeMode == cudaComputeModeProhibited) {
-            fprintf(stderr, "CUDA Device [%d]: \"%s\" is not available: "
-                    "device is running in <Compute Mode Prohibited> \n",
+            fprintf(stderr,
+                    "CUDA Device [%d]: \"%s\" is not available: "
+                    "device is running in <Compute Mode Prohibited>\n",
                     current_device, deviceProp.name);
-        } else if (deviceProp.major < 1) {
-            fprintf(stderr, "CUDA Device [%d]: \"%s\" is not available: "
-                    "device does not support CUDA \n",
+            continue;
+        }
+#endif
+
+        if (deviceProp.major < 1) {
+            fprintf(stderr,
+                    "CUDA Device [%d]: \"%s\" is not available: "
+                    "device does not support CUDA\n",
                     current_device, deviceProp.name);
         } else {
             fprintf(stderr, "CUDA Device [%d]: \"%s\" is available.\n",
                     current_device, deviceProp.name);
         }
-        current_device++;
     }
 }
 
