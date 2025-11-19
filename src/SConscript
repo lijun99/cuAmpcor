@@ -22,7 +22,7 @@ envPyCuAmpcor.Append(ENABLESHAREDNVCCFLAG = ' -DNDEBUG ')
 
 def pybind11PseudoBuilder(env, src, bld, inst):
     listFiles = [ src ]
-    env.MergeFlags('-fopenmp -O3 -std=c++11 -fPIC -pthread -Wno-unused-result -Wsign-compare -DNDEBUG -g -fwrapv -Wall')
+    env.MergeFlags('-fopenmp -O3 -fPIC -pthread -Wno-unused-result -Wsign-compare -DNDEBUG -g -fwrapv -Wall')
     env.Append(CPPDEFINES = 'GPU_ACC_ENABLED')
     lib = env.LoadableModule(target='pycuampcor.abi3.so', source=listFiles)
 
