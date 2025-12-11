@@ -33,6 +33,7 @@ PYBIND11_MODULE(pycuampcor, m)
         .DEF_PARAM(int, deviceID)
         .DEF_PARAM(int, nStreams)
         .DEF_PARAM(int, derampMethod)
+        .DEF_PARAM(int, derampAxis)
         .DEF_PARAM(int, workflow)
 
         .DEF_PARAM(str, referenceImageName)

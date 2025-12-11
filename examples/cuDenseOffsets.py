@@ -16,11 +16,14 @@ from isceobj.Util.decorators import use_api
 from isceobj.Util.ImageUtil import ImageLib as IML
 
 try:
+    # try standalone at first
+    from pycuampcor import PyCuAmpcor
+    print("using standalone pycuampcor")
+except ImportdError:
     # if installed with ISCE2
     from contrib.pycuampcor import PyCuAmpcor
-except ModuleNotFoundError:
-    # if standalone
-    from pycuampcor import PyCuAmpcor
+    print("using pycuampcor from isce")
+
 
 
 EXAMPLE = '''example
@@ -112,6 +115,10 @@ def createParser():
                         help='anti-aliasing oversampling factor, equivalent to i_ovs in RIOPAC (default: %(default)s).')
     parser.add_argument('--drmp', '--deramp', dest='deramp', type=int, default=0,
                         help='remove phase ramp of complex signals before antialiasing oversampling (0: use magnitude instead (for TOPS), 1: linear phase ramp, 2: skip deramping) (default: %(default)s).')
+
+    parser.add_argument('--drmp-axis', '--deramp-axis', dest='deramp_axis', type=int, default=2,
+                        help='axis to remove phase (0: along column/azimuth only, 1: along row/range only, 2: along both axes) (default: %(default)s).')
+
 
     # gross offset
     gross = parser.add_argument_group('Initial gross offset')
@@ -221,6 +228,8 @@ def estimateOffsetField(reference, secondary, inps=None):
     objOffset.nStreams = inps.nstreams #cudaStreams
     objOffset.derampMethod = inps.deramp
     print('deramp method (0: magnitude, 1: linear phase ramp, 2: skip deramping): ', objOffset.derampMethod)
+    objOffset.derampAxis = inps.deramp_axis
+    print('deramp axis (0: col/azimuth, 1: row/range, 2: both axes): ', objOffset.derampAxis)
 
     objOffset.referenceImageName = reference
     objOffset.referenceImageHeight = length

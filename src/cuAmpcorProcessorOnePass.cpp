@@ -16,19 +16,31 @@ void cuAmpcorProcessorOnePass::run(int idxDown_, int idxAcross_)
 
     // load reference image chunk
     loadReferenceChunk();
-    // oversample reference
-    // (deramping included in oversampler)
-    referenceBatchOverSampler->execute(c_referenceBatchRaw, c_referenceBatchOverSampled, param->derampMethod);
-    // c_referenceBatchRaw and c_referenceBatchOverSampled now have enlarged size
-
-    int2 offset = make_int2((c_referenceBatchOverSampled->height - r_referenceBatchOverSampled->height)/2,
-        (c_referenceBatchOverSampled->width - r_referenceBatchOverSampled->width)/2);
-    // extract and take amplitudes
-    cuArraysCopyExtractAbs(c_referenceBatchOverSampled, r_referenceBatchOverSampled, offset, stream);
 
 #ifdef CUAMPCOR_DEBUG
     // dump the raw reference image(s)
     c_referenceBatchRaw->outputToFile("c_referenceBatchRaw", stream);
+#endif
+
+    // deramp reference
+    cuDeramp(param->derampMethod, c_referenceBatchRaw, param->derampAxis, stream);
+
+#ifdef CUAMPCOR_DEBUG
+    // dump the deramped reference image(s)
+    c_referenceBatchRaw->outputToFile("c_referenceBatchRawDeramped", stream);
+#endif
+
+    // oversample reference
+    referenceBatchOverSampler->execute(c_referenceBatchRaw, c_referenceBatchOverSampled);
+
+    // offset to extract
+    int2 offset = make_int2((c_referenceBatchOverSampled->height - r_referenceBatchOverSampled->height)/2,
+        (c_referenceBatchOverSampled->width - r_referenceBatchOverSampled->width)/2);
+
+    // extract and take amplitudes
+    cuArraysCopyExtractAbs(c_referenceBatchOverSampled, r_referenceBatchOverSampled, offset, stream);
+
+#ifdef CUAMPCOR_DEBUG
     // dump the oversampled reference image(s)
     c_referenceBatchOverSampled->outputToFile("c_referenceBatchOverSampled", stream);
     r_referenceBatchOverSampled->outputToFile("r_referenceBatchOverSampled", stream);
@@ -44,14 +56,26 @@ void cuAmpcorProcessorOnePass::run(int idxDown_, int idxAcross_)
 
     // load secondary image chunk to c_secondaryBatchRaw
     loadSecondaryChunk();
+
+#ifdef CUAMPCOR_DEBUG
+    // dump the raw reference image(s)
+    c_secondaryBatchRaw->outputToFile("c_secondaryBatchRaw", stream);
+#endif
+
+    // deramp secondary image(s)
+    cuDeramp(param->derampMethod, c_secondaryBatchRaw, param->derampAxis, stream);
+
+#ifdef CUAMPCOR_DEBUG
+    // dump the raw reference image(s)
+    c_secondaryBatchRaw->outputToFile("c_secondaryBatchRawDeramped", stream);
+#endif
+
     // oversampling the secondary image(s)
-    secondaryBatchOverSampler->execute(c_secondaryBatchRaw, c_secondaryBatchOverSampled, param->derampMethod);
+    secondaryBatchOverSampler->execute(c_secondaryBatchRaw, c_secondaryBatchOverSampled);
     // take amplitudes
     cuArraysAbs(c_secondaryBatchOverSampled, r_secondaryBatchOverSampled, stream);
 
 #ifdef CUAMPCOR_DEBUG
-    // dump the raw secondary image
-    c_secondaryBatchRaw->outputToFile("c_secondaryBatchRaw", stream);
     // dump the oversampled secondary image(s)
     c_secondaryBatchOverSampled->outputToFile("c_secondaryBatchOverSampled", stream);
     r_secondaryBatchOverSampled->outputToFile("r_secondaryBatchOverSampled", stream);
@@ -132,7 +156,8 @@ void cuAmpcorProcessorOnePass::run(int idxDown_, int idxAcross_)
 #endif
 
     //find the max again, within the range of \pm 1 pixel * totalOS
-    cuArraysMaxloc2D(r_corrBatchZoomInOverSampled, param->corrZoomInOversampledSearchStart, param->corrZoomInOversampledSearchRange, offsetZoomIn, corrMaxValue, stream);
+    cuArraysMaxloc2D(r_corrBatchZoomInOverSampled, param->corrZoomInOversampledSearchStart, param->corrZoomInOversampledSearchRange,
+        offsetZoomIn, corrMaxValue, stream);
 
 #ifdef CUAMPCOR_DEBUG
     // dump the max location on oversampled correlation surface
