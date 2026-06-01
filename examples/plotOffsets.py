@@ -20,16 +20,16 @@ def read_vrt(file_path):
     return azimuth_data, range_data
 
 # Function to plot Azimuth Offset and Range Offset data as 2D color maps
-def plot_color_maps(azimuth_data, range_data, vmin_azimuth=None, vmax_azimuth=None, vmin_range=None, vmax_range=None):
+def plot_color_maps(azimuth_data, range_data, vmin_azimuth=None, vmax_azimuth=None, vmin_range=None, vmax_range=None, cmap="viridis"):
     fig, axes = plt.subplots(1, 2, figsize=(12, 6))
 
     # Plot the Azimuth Offset band
-    im_azimuth = axes[0].imshow(azimuth_data, cmap="viridis", vmin=vmin_azimuth, vmax=vmax_azimuth)
+    im_azimuth = axes[0].imshow(azimuth_data, cmap=cmap, vmin=vmin_azimuth, vmax=vmax_azimuth)
     axes[0].set_title("Azimuth Offset")
     plt.colorbar(im_azimuth, ax=axes[0])
 
     # Plot the Range Offset band
-    im_range = axes[1].imshow(range_data, cmap="viridis", vmin=vmin_range, vmax=vmax_range)
+    im_range = axes[1].imshow(range_data, cmap=cmap, vmin=vmin_range, vmax=vmax_range)
     axes[1].set_title("Range Offset")
     plt.colorbar(im_range, ax=axes[1])
 
@@ -37,8 +37,8 @@ def plot_color_maps(azimuth_data, range_data, vmin_azimuth=None, vmax_azimuth=No
     plt.show()
 
 # Function to plot 3D surface plots for Azimuth Offset and Range Offset
-def plot_3d_surfaces(azimuth_data, range_data, vmin_azimuth=None, vmax_azimuth=None, vmin_range=None, vmax_range=None):
-	
+def plot_3d_surfaces(azimuth_data, range_data, vmin_azimuth=None, vmax_azimuth=None, vmin_range=None, vmax_range=None, cmap="viridis"):
+
 	# exclude points out of the plot range
     azimuth_data = np.where((azimuth_data < vmin_azimuth) | (azimuth_data > vmax_azimuth), np.nan, azimuth_data)
     range_data = np.where((range_data < vmin_range) | (range_data > vmax_range), np.nan, range_data)
@@ -59,7 +59,7 @@ def plot_3d_surfaces(azimuth_data, range_data, vmin_azimuth=None, vmax_azimuth=N
 
     # Plot the Azimuth Offset 3D surface
     ax1 = fig.add_subplot(121, projection='3d')
-    surf1 = ax1.plot_surface(x, y, azimuth_data.T, cmap="viridis", edgecolor='none', vmin=vmin_azimuth, vmax=vmax_azimuth)
+    surf1 = ax1.plot_surface(x, y, azimuth_data.T, cmap=cmap, edgecolor='none', vmin=vmin_azimuth, vmax=vmax_azimuth)
     ax1.set_title("Azimuth Offset - 3D Surface Plot")
     # ax1.view_init(elev=30, azim=-60)  # Adjust view angle for Azimuth Offset
     ax1.set_zlim(vmin_azimuth, vmax_azimuth)
@@ -68,7 +68,7 @@ def plot_3d_surfaces(azimuth_data, range_data, vmin_azimuth=None, vmax_azimuth=N
 
     # Plot the Range Offset 3D surface
     ax2 = fig.add_subplot(122, projection='3d')
-    surf2 = ax2.plot_surface(x, y, range_data.T, cmap="viridis", edgecolor='none', vmin=vmin_range, vmax=vmax_range)
+    surf2 = ax2.plot_surface(x, y, range_data.T, cmap=cmap, edgecolor='none', vmin=vmin_range, vmax=vmax_range)
     ax2.set_title("Range Offset - 3D Surface Plot")
     # ax2.view_init(elev=30, azim=-60)  # Adjust view angle for Range Offset
     ax2.set_zlim(vmin_range, vmax_range)
@@ -80,7 +80,7 @@ def plot_3d_surfaces(azimuth_data, range_data, vmin_azimuth=None, vmax_azimuth=N
     
     
 # Function to plot 3D surface plots for Azimuth Offset and Range Offset
-def plot_velocity(azimuth_data, range_data, grid=20, vmin_azimuth=None, vmax_azimuth=None, vmin_range=None, vmax_range=None, ):
+def plot_velocity(azimuth_data, range_data, grid=20, vmin_azimuth=None, vmax_azimuth=None, vmin_range=None, vmax_range=None, cmap="viridis"):
 	
 	# exclude points out of the plot range
     azimuth_data = np.where((azimuth_data < vmin_azimuth) | (azimuth_data > vmax_azimuth), np.nan, azimuth_data)
@@ -104,7 +104,7 @@ def plot_velocity(azimuth_data, range_data, grid=20, vmin_azimuth=None, vmax_azi
     # Plot the Azimuth Offset 3D surface
     ax1 = fig.add_subplot(111)
     ax1.set_title("Offset vector Plot")
-    vmap = ax1.imshow(velocity, cmap="viridis", vmin=vmin_azimuth, vmax=vmax_azimuth)
+    vmap = ax1.imshow(velocity, cmap=cmap, vmin=vmin_azimuth, vmax=vmax_azimuth)
     plt.colorbar(vmap, ax=ax1)
     ax1.quiver(x, y, u, v, color='r')
 
@@ -125,6 +125,7 @@ if __name__ == "__main__":
     parser.add_argument("--vmax_azimuth", type=float, default=None, help="Maximum value for Azimuth Offset colormap")
     parser.add_argument("--vmin_range", type=float, default=None, help="Minimum value for Range Offset colormap")
     parser.add_argument("--vmax_range", type=float, default=None, help="Maximum value for Range Offset colormap")
+    parser.add_argument("--cmap", type=str, default="viridis", help="Matplotlib colormap name (default: viridis)")
 
 
     args = parser.parse_args()
@@ -150,10 +151,10 @@ if __name__ == "__main__":
         vmin_range = -args.range
         vmax_range = args.range
     else:
-        vmin_azimuth = args.vmin_azimuth or azimuth_data.min()
-        vmax_azimuth = args.vmax_azimuth or azimuth_data.max() 
-        vmin_range = args.vmin_range or range_data.min()
-        vmax_range = args.vmax_range or range_data.max()		
+        vmin_azimuth = args.vmin_azimuth if args.vmin_azimuth is not None else azimuth_data.min()
+        vmax_azimuth = args.vmax_azimuth if args.vmax_azimuth is not None else azimuth_data.max()
+        vmin_range = args.vmin_range if args.vmin_range is not None else range_data.min()
+        vmax_range = args.vmax_range if args.vmax_range is not None else range_data.max()
 
     # plot surface 3d when requested
     if args.plot_3d:
@@ -163,9 +164,10 @@ if __name__ == "__main__":
             vmin_azimuth,
             vmax_azimuth,
             vmin_range,
-            vmax_range
+            vmax_range,
+            args.cmap
         )
-    # plot the velocity intensity map and vector field				
+    # plot the velocity intensity map and vector field
     elif args.plot_velocity:
         plot_velocity(
             azimuth_data,
@@ -174,12 +176,14 @@ if __name__ == "__main__":
             vmin_azimuth,
             vmax_azimuth,
             vmin_range,
-            vmax_range
+            vmax_range,
+            args.cmap
         )
     else:
-	# Plot the color maps
+        # Plot the color maps
         plot_color_maps(
             azimuth_data,
             range_data,
-            vmin_azimuth, vmax_azimuth, vmin_range, vmax_range       			
+            vmin_azimuth, vmax_azimuth, vmin_range, vmax_range,
+            args.cmap
         )
