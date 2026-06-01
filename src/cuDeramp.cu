@@ -124,8 +124,8 @@ __global__ void cuLinearDeramp_kernel(real2_type *images, const int imageNX, int
         pixelIdxX = i/imageNY;
         pixelIdxY = i%imageNY;
         double phase = pixelIdxX*phaseX + pixelIdxY*phaseY;
-        double phase_cos = cos(phase);
-        double phase_sin = sin(phase);
+        double phase_sin, phase_cos;
+        sincos(phase, &phase_sin, &phase_cos);
         image[i] = make_real2(
             image[i].x*phase_cos - image[i].y*phase_sin,
             image[i].x*phase_sin + image[i].y*phase_cos);
