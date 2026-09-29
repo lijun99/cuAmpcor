@@ -48,6 +48,9 @@ bool cuAmpcorController::isDoublePrecision()
  */
 void cuAmpcorController::runAmpcor()
 {
+    // check whether the parameters are set up
+    param->checkReadyToRun();
+
     // initialize the device (gpu id) or the cpu threads
     param->deviceID = backendInit(param);
 

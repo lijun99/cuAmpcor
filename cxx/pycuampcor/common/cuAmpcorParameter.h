@@ -125,24 +125,25 @@ public:
 
     int referenceStartPixelDown0;    ///< first starting pixel in reference image (down)
     int referenceStartPixelAcross0;  ///< first starting pixel in reference image (across)
-    int *referenceStartPixelDown;    ///< reference starting pixels for each window (down)
-    int *referenceStartPixelAcross;  ///< reference starting pixels for each window (across)
-    int *secondaryStartPixelDown;    ///< secondary starting pixels for each window (down)
-    int *secondaryStartPixelAcross;  ///< secondary starting pixels for each window (across)
+    int *referenceStartPixelDown = nullptr;    ///< reference starting pixels for each window (down)
+    int *referenceStartPixelAcross = nullptr;  ///< reference starting pixels for each window (across)
+    int *secondaryStartPixelDown = nullptr;    ///< secondary starting pixels for each window (down)
+    int *secondaryStartPixelAcross = nullptr;  ///< secondary starting pixels for each window (across)
     int grossOffsetDown0;       ///< gross offset static component (down)
     int grossOffsetAcross0;     ///< gross offset static component (across)
-    int *grossOffsetDown;		///< Gross offsets between reference and secondary windows (down)
-    int *grossOffsetAcross;     ///< Gross offsets between reference and secondary windows (across)
+    int *grossOffsetDown = nullptr;		///< Gross offsets between reference and secondary windows (down)
+    int *grossOffsetAcross = nullptr;     ///< Gross offsets between reference and secondary windows (across)
     int mergeGrossOffset;       ///< whether to merge gross offsets into the final offsets
 
-    int *referenceChunkStartPixelDown;    ///< reference starting pixels for each chunk (down)
-    int *referenceChunkStartPixelAcross;  ///< reference starting pixels for each chunk (across)
-    int *secondaryChunkStartPixelDown;    ///< secondary starting pixels for each chunk (down)
-    int *secondaryChunkStartPixelAcross;  ///< secondary starting pixels for each chunk (across)
-    int *referenceChunkHeight;   ///< reference chunk height
-    int *referenceChunkWidth;    ///< reference chunk width
-    int *secondaryChunkHeight;   ///< secondary chunk height
-    int *secondaryChunkWidth;    ///< secondary chunk width
+    int *referenceChunkStartPixelDown = nullptr;    ///< reference starting pixels for each chunk (down)
+    int *referenceChunkStartPixelAcross = nullptr;  ///< reference starting pixels for each chunk (across)
+    int *secondaryChunkStartPixelDown = nullptr;    ///< secondary starting pixels for each chunk (down)
+    int *secondaryChunkStartPixelAcross = nullptr;  ///< secondary starting pixels for each chunk (across)
+    int *referenceChunkHeight = nullptr;   ///< reference chunk height
+    int *referenceChunkWidth = nullptr;    ///< reference chunk width
+    int *secondaryChunkHeight = nullptr;   ///< secondary chunk height
+    int *secondaryChunkWidth = nullptr;    ///< secondary chunk width
+    bool chunkStartPixelsSet = false; ///< whether the window/chunk starting pixels are set
     int maxReferenceChunkHeight, maxReferenceChunkWidth; ///< max reference chunk size
     int maxSecondaryChunkHeight, maxSecondaryChunkWidth; ///< max secondary chunk size
 
@@ -177,6 +178,8 @@ public:
     void setChunkStartPixels();
     // check whether all chunks/windows are within the image range
     void checkPixelInImageRange();
+    void checkArraysAllocated() const;
+    void checkReadyToRun() const;
     // Process other parameters after Python Input
     void setupParameters();
     void _setupParameters_TwoPass();

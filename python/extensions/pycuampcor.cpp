@@ -108,6 +108,8 @@ PYBIND11_MODULE(PYCUAMPCOR_MODULE, m)
         })
         .def("setVaryingGrossOffset", [](cls& self, std::vector<int> vD,
                                                     std::vector<int> vA) {
+            if ((int)vD.size() != self.param->numberWindows || (int)vA.size() != self.param->numberWindows)
+                throw std::invalid_argument("The size of gross offsets does not match the number of windows");
             self.param->setStartPixels(
                     self.param->referenceStartPixelDown0,
                     self.param->referenceStartPixelAcross0,
