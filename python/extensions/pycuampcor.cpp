@@ -61,6 +61,8 @@ PYBIND11_MODULE(PYCUAMPCOR_MODULE, m)
         .DEF_PARAM(str, snrImageName)
         .DEF_PARAM(str, covImageName)
         .DEF_PARAM(str, peakValueImageName)
+        // alias used by isce3 (v1)
+        .DEF_PARAM_RENAME(str, corrImageName, peakValueImageName)
 
         .DEF_PARAM(int, rawDataOversamplingFactor)
         .DEF_PARAM(int, corrStatWindowSize)
