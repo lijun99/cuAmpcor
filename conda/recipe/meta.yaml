@@ -1,0 +1,76 @@
+{% set name = "pycuampcor" %}
+{% set version = "2.1.0" %}
+{% set number = 0 %}
+
+# cuda builds get a higher build number so that they are preferred where the
+# __cuda virtual package (an NVIDIA driver) is available; cpu builds otherwise
+{% if cuda_compiler_version != "None" %}
+{% set number = number + 100 %}
+{% endif %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  path: ../..
+
+build:
+  number: {{ number }}
+  skip: true  # [win]
+  skip: true  # [osx and cuda_compiler_version != "None"]
+  string: cuda{{ cuda_compiler_version | replace('.', '') }}_py{{ CONDA_PY }}h{{ PKG_HASH }}_{{ number }}  # [cuda_compiler_version != "None"]
+  string: cpu_py{{ CONDA_PY }}h{{ PKG_HASH }}_{{ number }}  # [cuda_compiler_version == "None"]
+  script:
+    - {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation -Ccmake.define.PYCUAMPCOR_CUDA=ON -Ccmake.define.CMAKE_CUDA_ARCHITECTURES=all-major  # [cuda_compiler_version != "None"]
+    - {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation -Ccmake.define.PYCUAMPCOR_CUDA=OFF  # [cuda_compiler_version == "None"]
+
+requirements:
+  build:
+    - {{ compiler('cxx') }}
+    - {{ stdlib('c') }}
+    - {{ compiler('cuda') }}  # [cuda_compiler_version != "None"]
+    - cmake >=3.18
+    - ninja
+  host:
+    - python
+    - pip
+    - scikit-build-core >=0.10
+    - pybind11
+    - fftw
+    - llvm-openmp  # [osx]
+    - cuda-version {{ cuda_compiler_version }}  # [cuda_compiler_version != "None"]
+    - cuda-cudart-dev  # [cuda_compiler_version != "None"]
+    - libcufft-dev  # [cuda_compiler_version != "None"]
+  run:
+    - python
+    - __cuda  # [cuda_compiler_version != "None"]
+
+test:
+  source_files:
+    - tests
+  requires:
+    - pytest
+    - numpy
+  imports:
+    - pycuampcor
+  commands:
+    - python -c "import pycuampcor; assert pycuampcor.has_cuda"  # [cuda_compiler_version != "None"]
+    - python -c "import pycuampcor; assert not pycuampcor.has_cuda"  # [cuda_compiler_version == "None"]
+    - pytest -v tests/python
+
+about:
+  home: https://github.com/lijun99/cuAmpcor
+  license: MIT
+  license_file: LICENSE
+  summary: Amplitude cross-correlation (ampcor) for SAR images with CPU (OpenMP) and CUDA backends
+  description: |
+    PyCuAmpcor estimates the pixel offsets between two SAR images with the
+    amplitude cross-correlation (feature tracking) method. The cpu variant
+    provides PyCPUAmpcor; the cuda variant provides both PyCPUAmpcor and
+    PyCuAmpcor (GPU).
+  dev_url: https://github.com/lijun99/cuAmpcor
+
+extra:
+  recipe-maintainers:
+    - lijun99

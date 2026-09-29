@@ -1,0 +1,31 @@
+# build variants: cpu-only and cuda (cpu+gpu)
+cuda_compiler:
+  - None
+  - cuda-nvcc
+cuda_compiler_version:
+  - None
+  - "12.6"
+zip_keys:
+  - - cuda_compiler
+    - cuda_compiler_version
+
+c_compiler:
+  - gcc                 # [linux]
+c_compiler_version:
+  - "13"                # [linux]
+cxx_compiler:
+  - gxx                 # [linux]
+cxx_compiler_version:
+  - "13"                # [linux]
+c_stdlib:
+  - sysroot             # [linux]
+  - macosx_deployment_target  # [osx]
+c_stdlib_version:
+  - "2.17"              # [linux]
+  - "10.13"             # [osx]
+
+python:
+  - "3.10"
+  - "3.11"
+  - "3.12"
+  - "3.13"
