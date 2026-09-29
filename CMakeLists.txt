@@ -49,6 +49,20 @@ else()
     message(STATUS "Not building the CUDA backend")
 endif()
 
+# CPU backend requirements
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+if(PYCUAMPCOR_DOUBLE)
+    find_package(FFTW REQUIRED COMPONENTS Double)
+    set(PYCUAMPCOR_FFTW_TARGET FFTW::Double)
+else()
+    find_package(FFTW REQUIRED COMPONENTS Float)
+    set(PYCUAMPCOR_FFTW_TARGET FFTW::Float)
+endif()
+find_package(OpenMP COMPONENTS CXX)
+if(NOT OpenMP_CXX_FOUND)
+    message(WARNING "OpenMP is not found; the CPU backend will use a single thread")
+endif()
+
 # python and pybind11 requirement
 find_package(Python 3.8 COMPONENTS Interpreter Development.Module REQUIRED)
 set(PYBIND11_FINDPYTHON ON) # Use new FindPython if available
@@ -57,8 +71,10 @@ find_package(pybind11 CONFIG REQUIRED)
 # source lists
 set(PYCUAMPCOR_CXX_DIR ${CMAKE_CURRENT_SOURCE_DIR}/cxx/pycuampcor)
 include(${PYCUAMPCOR_CXX_DIR}/common/Sources.cmake)
+include(${PYCUAMPCOR_CXX_DIR}/cpu/Sources.cmake)
 include(${PYCUAMPCOR_CXX_DIR}/cuda/Sources.cmake)
 list(TRANSFORM PYCUAMPCOR_COMMON_SOURCES PREPEND ${PYCUAMPCOR_CXX_DIR}/common/)
+list(TRANSFORM PYCUAMPCOR_CPU_SOURCES PREPEND ${PYCUAMPCOR_CXX_DIR}/cpu/)
 list(TRANSFORM PYCUAMPCOR_CUDA_SOURCES PREPEND ${PYCUAMPCOR_CXX_DIR}/cuda/)
 
 # add a python extension module pycuampcor._<backend>, exposing class <pyclass>
@@ -87,6 +103,12 @@ function(pycuampcor_add_backend backend pyclass)
     list(APPEND PYCUAMPCOR_TARGETS ${target})
     set(PYCUAMPCOR_TARGETS ${PYCUAMPCOR_TARGETS} PARENT_SCOPE)
 endfunction()
+
+pycuampcor_add_backend(cpu PyCPUAmpcor)
+target_link_libraries(_cpu PRIVATE ${PYCUAMPCOR_FFTW_TARGET})
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(_cpu PRIVATE OpenMP::OpenMP_CXX)
+endif()
 
 if(PYCUAMPCOR_WITH_CUDA)
     pycuampcor_add_backend(cuda PyCuAmpcor)

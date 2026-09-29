@@ -3,11 +3,13 @@
 
 #include "cuAmpcorController.h"
 #include "cuAmpcorParameter.h"
+#ifdef PYCUAMPCOR_BACKEND_CUDA
 #include "cudaUtil.h"
+#endif
 
 PYBIND11_MODULE(PYCUAMPCOR_MODULE, m)
 {
-    m.doc() = "Python module controller for underlying CUDA-Ampcor code";
+    m.doc() = "Python module controller for underlying ampcor code";
 
     using namespace pycuampcor::PYCUAMPCOR_BACKEND;
     using str = std::string;
@@ -33,6 +35,7 @@ PYBIND11_MODULE(PYCUAMPCOR_MODULE, m)
         .DEF_PARAM(int, algorithm)
         .DEF_PARAM(int, deviceID)
         .DEF_PARAM(int, nStreams)
+        .DEF_PARAM(int, nThreads)
         .DEF_PARAM(int, derampMethod)
         .DEF_PARAM(int, derampAxis)
         .DEF_PARAM(int, workflow)
@@ -109,6 +112,7 @@ PYBIND11_MODULE(PYCUAMPCOR_MODULE, m)
                     vD.data(), vA.data());
         })
 
+#ifdef PYCUAMPCOR_BACKEND_CUDA
         .def_static("device_init", [](int device = 0) {
             return gpuDeviceInit(device);
         },
@@ -122,5 +126,6 @@ PYBIND11_MODULE(PYCUAMPCOR_MODULE, m)
         .def("device_list", &gpuDeviceList,
         "List all available cuda devices")
 
+#endif
     ;
 }
