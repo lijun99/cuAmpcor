@@ -190,8 +190,8 @@ cuOverSamplerR2R::~cuOverSamplerR2R()
 {
     cufft_Error(cufftDestroy(forwardPlan));
     cufft_Error(cufftDestroy(backwardPlan));
-    workSizeIn->deallocate();
-    workSizeOut->deallocate();
+    delete workSizeIn;
+    delete workSizeOut;
 }
 
 // end of file

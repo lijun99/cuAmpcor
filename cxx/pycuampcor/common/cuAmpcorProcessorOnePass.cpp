@@ -509,7 +509,7 @@ void cuAmpcorProcessorOnePass::loadSecondaryChunk()
 // destructor
 cuAmpcorProcessorOnePass::~cuAmpcorProcessorOnePass()
 {
-    corrNormalizerOverSampled.release();
+    corrNormalizerOverSampled.reset();
 
     if(param->corrSurfaceOverSamplingMethod) {
         delete corrSincOverSampler;

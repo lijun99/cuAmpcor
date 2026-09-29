@@ -588,8 +588,8 @@ cuAmpcorProcessorTwoPass::cuAmpcorProcessorTwoPass(cuAmpcorParameter *param_, Sl
 // destructor
 cuAmpcorProcessorTwoPass::~cuAmpcorProcessorTwoPass()
 {
-    corrNormalizerOverSampled.release();
-    corrNormalizerRaw.release();
+    corrNormalizerOverSampled.reset();
+    corrNormalizerRaw.reset();
 
     if(param->corrSurfaceOverSamplingMethod) {
         delete corrSincOverSampler;

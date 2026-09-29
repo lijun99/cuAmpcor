@@ -60,9 +60,9 @@ cuFreqCorrelator::~cuFreqCorrelator()
 {
     cufft_Error(cufftDestroy(forwardPlan));
     cufft_Error(cufftDestroy(backwardPlan));	
-    workFM->deallocate();
-    workFS->deallocate();
-    workT->deallocate();
+    delete workFM;
+    delete workFS;
+    delete workT;
 }	
 
 
