@@ -63,6 +63,8 @@ conda build conda/recipe -c conda-forge
 
 which builds both variants (for a single variant, use e.g. `--variants "{cuda_compiler: [None], cuda_compiler_version: [None]}"`).
 
+The recipe for conda-forge (building from a tagged release, with the variants defined by the conda-forge global pinning, e.g., cpu, cuda 12 and cuda 13) is in *conda/conda-forge*.
+
 ### 2.2 Installation with pip
 
 ```bash
