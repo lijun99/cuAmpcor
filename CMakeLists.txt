@@ -40,7 +40,12 @@ endif()
 
 if(PYCUAMPCOR_WITH_CUDA)
     if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-        set(CMAKE_CUDA_ARCHITECTURES 60 70 75 80 86 89 90)
+        if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.23)
+            # all major architectures supported by the CUDA toolkit in use
+            set(CMAKE_CUDA_ARCHITECTURES all-major)
+        else()
+            set(CMAKE_CUDA_ARCHITECTURES 60 70 75 80 86)
+        endif()
     endif()
     enable_language(CUDA)
     set(CMAKE_CUDA_STANDARD 17)
