@@ -97,24 +97,43 @@ CMake options:
 
 PyCuAmpcor offers a debug mode which outputs intermediate results, enabled with the Debug build type, *-DCMAKE_BUILD_TYPE=Debug*.
 
-The tests can be run with
+### 2.4 Tests
+
+The tests are organized as
+
+* *tests/cxx*: C++ unit tests (with GoogleTest) of the processing kernels and helpers (copying, statistics, offsets, FFT oversamplers and correlators, normalization, deramping, sinc interpolation, parameters, image loading), each checked against a simple reference. The test sources are backend-agnostic and compiled for each backend (`test_cpu`, `test_cuda`); tests of the CUDA backend are skipped if no GPU is available.
+* *tests/python*: tests of the python package,
+    * *test_synthetic.py*: accuracy and robustness with synthetic images of known sub-pixel shifts, for both workflows and correlation surface oversampling methods, and CPU/GPU consistency;
+    * *test_regression.py*: regression tests with the *ovs128-rho0.8* data (from isce3), against the isce3 outputs and against reference outputs of this package (*tests/data/ampcor/ovs128-rho0.8/golden*);
+    * *test_api.py*: parameters, gross offsets, real images, and error handling.
+
+To build and run the C++ unit tests,
+
+```bash
+    cmake -S . -B build -DPYCUAMPCOR_BUILD_TESTS=ON -DCMAKE_PREFIX_PATH=$CONDA_PREFIX
+    cmake --build build -j && ctest --test-dir build
+```
+
+To run the python tests (after installation),
 
 ```bash
     pytest tests/python
 ```
 
-### 2.4 Installation with ISCE2
+If a change of the results is intended, regenerate the reference outputs with `python tests/python/make_golden.py` and commit them.
+
+### 2.5 Installation with ISCE2
 
 PyCuAmpcor is included in [ISCE2](https://github.com/isce-framework/isce2) (as *contrib/pycuampcor*), and can be compiled/installed by CMake or SCons, together with ISCE2. An installation guide can be found at [isce-framework](https://github.com/isce-framework/isce2#building-isce).
 
-### 2.5 Code organization
+### 2.6 Code organization
 
 * *cxx/pycuampcor/common*: the backend-agnostic code (parameters, controller, processors for the two-pass and one-pass workflows, image i/o), compiled once for each backend;
 * *cxx/pycuampcor/cuda*: the CUDA backend, in namespace `pycuampcor::cuda`;
 * *cxx/pycuampcor/cpu*: the CPU backend, in namespace `pycuampcor::cpu`;
 * *python/extensions*: the pybind11 bindings, compiled to `pycuampcor._cuda` and `pycuampcor._cpu`;
 * *python/packages/pycuampcor*: the python package;
-* *tests/python*: tests;
+* *tests/cxx*, *tests/python*, *tests/data*: tests and test data (see [2.4 Tests](#24-tests));
 * *conda/recipe*: the conda recipe.
 
 ## 3. User Guide
