@@ -1,4 +1,4 @@
-# PyCuAmpcor - Amplitude Cross-Correlation with GPU (Version 2)
+# PyCuAmpcor - Amplitude Cross-Correlation with GPU and CPU (Version 2)
 
 ## Contents
 
@@ -32,49 +32,90 @@ InSAR images are band-limited, which enables the correlation surface interpolati
 
 In general, the two-pass workflow performs more efficiently than the one-pass workflow, and is adequate in most situations. However, when high frequency noises are present, manifested as noisy correlation surfaces, the one-pass workflow is recommended for its improved accuracy.
 
+PyCuAmpcor offers two implementations with the same interface and results (within floating-point round-off):
+
+* `PyCuAmpcor`, the CUDA implementation for NVIDIA GPUs;
+* `PyCPUAmpcor`, the CPU implementation, which processes batches of windows (chunks) in parallel with OpenMP threads and uses FFTW for FFTs.
+
 PyCuAmpcor follows the same procedure as the FORTRAN code, ampcor.F, from the ROIPAC package. In order to optimize the performance on GPU, some implementations are slightly different. In the [list the procedures](#5-list-of-procedures), we show the detailed steps of this workflow, as well as its difference to the Fortran code.
 
 ## 2. Installation
 
-### 2.1 Installation with ISCE2
+### 2.1 Conda packages
 
-PyCuAmpcor is included in [ISCE2](https://github.com/isce-framework/isce2), and can be compiled/installed by CMake or SCons, together with ISCE2. An installation guide can be found at [isce-framework](https://github.com/isce-framework/isce2#building-isce).
+The `pycuampcor` conda package comes in two variants,
 
-Some special notices for PyCuAmpcor:
+* `cpu`: with the CPU implementation (`PyCPUAmpcor`) only;
+* `cuda`: with both the CPU and CUDA implementations (`PyCPUAmpcor` and `PyCuAmpcor`), which requires an NVIDIA driver.
 
-* PyCuAmpcor now uses the GDAL VRT driver to read image files. The memory-map accelerated I/O is only supported by GDAL version >=3.1.0. Earlier versions of GDAL are supported, but run slower.
-
-* PyCuAmpcor offers a debug mode which outputs intermediate results. For end users, you may disable the debug mode by
-
-    * CMake, use the Release build type *-DCMAKE_BUILD_TYPE=Release*
-    * SCons, it is disabled by default with the -DNDEBUG flag in SConscript
-
-* PyCuAmpcor requires CUDA-Enabled GPUs with compute capabilities >=2.0. You may specify the targeted architecture by, e.g., for P100
-
-    * CMake, add the flag *-DCMAKE_CUDA_ARCHITECTURES=60*. (35 for K40/80, 70 for V100, or use *native* to instruct cmake to automatically detect the CUDA-capable GPU(s) on the system where cmake is being run).
-
-    * SCons, modify the *scons_tools/cuda.py* file by adding *-arch=sm_60* to *env['ENABLESHAREDNVCCFLAG']*.
-
-  Note that if the *-arch* option is not specified, CUDA 10 uses sm_30 as default while CUDA 11 and 12 use sm_52 as default. GPU architectures with lower compute capabilities will not run the compiled code properly.
-
-### 2.2 Standalone Installation
-
-You may also install PyCuAmpcor as a standalone package.
+Conda chooses the `cuda` variant automatically if an NVIDIA driver is detected, or the `cpu` variant otherwise. You may also select a variant explicitly,
 
 ```bash
-    mkdir build && cd build
-    cmake .. -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
-      -DCMAKE_CUDA_ARCHITECTURES=native \
-      -DCMAKE_PREFIX_PATH=${CONDA_PREFIX} \
-      -DCMAKE_BUILD_TYPE=Release 
-    make -j && make install
- ```
-
-Or simply use 
-
-```bash
-    pip install . 
+conda install pycuampcor=*=cpu*   # CPU only
+conda install pycuampcor=*=cuda*  # CPU + GPU
 ```
+
+To build the conda packages from the recipe in *conda/recipe*,
+
+```bash
+conda build conda/recipe -c conda-forge
+```
+
+which builds both variants (for a single variant, use e.g. `--variants "{cuda_compiler: [None], cuda_compiler_version: [None]}"`).
+
+### 2.2 Installation with pip
+
+```bash
+    pip install .
+```
+
+The CUDA implementation is built if a CUDA compiler (nvcc) is found. The build requires a C++17 compiler, CMake >= 3.18, pybind11, FFTW (single precision), and optionally OpenMP and CUDA >= 11. CMake options can be passed with `-C`, e.g.,
+
+```bash
+    # CPU only
+    pip install . -Ccmake.define.PYCUAMPCOR_CUDA=OFF
+    # CUDA for a specific GPU architecture
+    pip install . -Ccmake.define.CMAKE_CUDA_ARCHITECTURES=native
+```
+
+### 2.3 Installation with CMake
+
+```bash
+    cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
+      -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+      -DCMAKE_CUDA_ARCHITECTURES=native \
+      -DCMAKE_BUILD_TYPE=Release
+    cmake --build build -j && cmake --install build
+```
+
+CMake options:
+
+* `PYCUAMPCOR_CUDA`: AUTO (default, build the CUDA implementation if a CUDA compiler is found), ON, or OFF;
+* `PYCUAMPCOR_DOUBLE`: use double precision for internal computations (default OFF);
+* `PYCUAMPCOR_INSTALL_DIR`: the directory to install the python package (default, `site-packages/pycuampcor` of the python in use);
+* `CMAKE_CUDA_ARCHITECTURES`: the targeted GPU architectures, e.g., `native` to detect the GPU(s) on the system, or `60` for P100, `70` for V100, `80` for A100.
+
+PyCuAmpcor offers a debug mode which outputs intermediate results, enabled with the Debug build type, *-DCMAKE_BUILD_TYPE=Debug*.
+
+The tests can be run with
+
+```bash
+    pytest tests/python
+```
+
+### 2.4 Installation with ISCE2
+
+PyCuAmpcor is included in [ISCE2](https://github.com/isce-framework/isce2) (as *contrib/pycuampcor*), and can be compiled/installed by CMake or SCons, together with ISCE2. An installation guide can be found at [isce-framework](https://github.com/isce-framework/isce2#building-isce).
+
+### 2.5 Code organization
+
+* *cxx/pycuampcor/common*: the backend-agnostic code (parameters, controller, processors for the two-pass and one-pass workflows, image i/o), compiled once for each backend;
+* *cxx/pycuampcor/cuda*: the CUDA backend, in namespace `pycuampcor::cuda`;
+* *cxx/pycuampcor/cpu*: the CPU backend, in namespace `pycuampcor::cpu`;
+* *python/extensions*: the pybind11 bindings, compiled to `pycuampcor._cuda` and `pycuampcor._cpu`;
+* *python/packages/pycuampcor*: the python package;
+* *tests/python*: tests;
+* *conda/recipe*: the conda recipe.
 
 ## 3. User Guide
 
@@ -164,9 +205,11 @@ If you need more control of the computation, or incorporate the PyCuAmpcor proce
 # if installed with ISCE2
 from isce.components.contrib.pycuampcor import PyCuAmpcor
 # if standalone
-from pycuampcor import PyCuAmpcor
-# create an instance
+from pycuampcor import PyCuAmpcor, PyCPUAmpcor
+# create an instance (GPU)
 objOffset = PyCuAmpcor()
+# or for CPU
+objOffset = PyCPUAmpcor()
 ```
 
 * set various parameters, e.g., (see a [list of configurable parameters](#4-list-of-parameters) below)
@@ -237,7 +280,7 @@ If you prefer to plot the offsets in 3D or overlay the velocity vectors (quiver)
 | covImageName              | The output file name for variance of the correlation surface            |
 | peakValueImageName        | The output file name for the normalized correlation surface peak values |
 
-PyCuAmpcor now uses exclusively the GDAL driver to read images, only single-precision binary data are supported. (Image heights/widths are still required as inputs; they are mainly for dimension checking.  We will update later to read them with the GDAL driver). Multi-band is not currently supported, but can be added if desired.
+PyCuAmpcor reads images as raw binary files (e.g., ENVI format, or the data file of a GDAL VRT raw raster) with memory map, and image heights/widths are required as inputs. Single-precision complex (referenceImageDataType/secondaryImageDataType=2, default) or real (=1) data are supported. Multi-band is not currently supported, but can be added if desired.
 
 The offset output is arranged in BIP format, with each pixel (azimuth offset, range offset). In addition to a static gross offset (i.e., a constant for all search windows), PyCuAmpcor supports varying gross offsets as inputs (e.g., for glaciers, users can compute the gross offsets with the velocity model for different locations and use them as inputs for PyCuAmpcor.
 
@@ -257,6 +300,7 @@ Note also PyCuAmpcor parameters refer to the names used by the PyCuAmpcor Python
 | :---                 |:----------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | devID                | The CUDA GPU to be used for computation, usually=0, or users can use the CUDA_VISIBLE_DEVICES=n environmental variable to choose GPU                            |
 | nStreams | The number of CUDA streams to be used, recommended=2, to overlap the CUDA kernels with data copying, more streams require more memory which isn't always better |
+| nThreads             | (CPU only) The number of CPU threads to be used, 0 (default) for the OpenMP default (e.g., set by the OMP_NUM_THREADS environmental variable)                  |
 | useMmap              | Whether to use memory map cached file I/O, recommended=1, supported by GDAL vrt driver (needs >=3.1.0) and GeoTIFF                                              |
 | mmapSize             | The cache size used for memory map, in units of GB. The larger the better, but not exceed 1/4 the total physical memory.                                        |
 | numberWindowDownInChunk | The number of windows processed in a batch/chunk, along lines                                                                                                   |
