@@ -60,7 +60,7 @@ test:
     - pytest -v tests/python
 
 about:
-  home: https://github.com/lijun99/cuAmpcor
+  home: https://github.com/earthdef/cuAmpcor
   license: MIT
   license_file: LICENSE
   summary: Amplitude cross-correlation (ampcor) for SAR images with CPU (OpenMP) and CUDA backends
@@ -69,7 +69,7 @@ about:
     amplitude cross-correlation (feature tracking) method. The cpu variant
     provides PyCPUAmpcor; the cuda variant provides both PyCPUAmpcor and
     PyCuAmpcor (GPU).
-  dev_url: https://github.com/lijun99/cuAmpcor
+  dev_url: https://github.com/earthdef/cuAmpcor
 
 extra:
   recipe-maintainers:

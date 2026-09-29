@@ -13,7 +13,7 @@ package:
   version: {{ version }}
 
 source:
-  url: https://github.com/lijun99/cuAmpcor/archive/refs/tags/v{{ version }}.tar.gz
+  url: https://github.com/earthdef/cuAmpcor/archive/refs/tags/v{{ version }}.tar.gz
   sha256: 0000000000000000000000000000000000000000000000000000000000000000
 
 build:
@@ -62,7 +62,7 @@ test:
     - pytest -v tests/python
 
 about:
-  home: https://github.com/lijun99/cuAmpcor
+  home: https://github.com/earthdef/cuAmpcor
   license: MIT
   license_family: MIT
   license_file: LICENSE
@@ -72,8 +72,8 @@ about:
     amplitude cross-correlation (feature tracking) method, for InSAR processing
     with ISCE2/ISCE3. The cpu variant provides PyCPUAmpcor; the cuda variant
     provides both PyCPUAmpcor and PyCuAmpcor (GPU).
-  dev_url: https://github.com/lijun99/cuAmpcor
-  doc_url: https://github.com/lijun99/cuAmpcor/blob/main/README.md
+  dev_url: https://github.com/earthdef/cuAmpcor
+  doc_url: https://github.com/earthdef/cuAmpcor/blob/main/README.md
 
 extra:
   recipe-maintainers:

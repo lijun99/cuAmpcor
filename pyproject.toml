@@ -15,7 +15,7 @@ dependencies = []
 test = ["pytest", "numpy"]
 
 [project.urls]
-Homepage = "https://github.com/lijun99/cuAmpcor"
+Homepage = "https://github.com/earthdef/cuAmpcor"
 
 [tool.scikit-build]
 cmake.version = ">=3.18"
