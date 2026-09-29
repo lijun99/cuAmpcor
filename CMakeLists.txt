@@ -66,6 +66,8 @@ if(NOT OpenMP_CXX_FOUND)
 endif()
 
 # python and pybind11 requirement
+# prefer the python in the active (e.g., conda) environment over newer system versions
+set(Python_FIND_UNVERSIONED_NAMES FIRST)
 find_package(Python 3.8 COMPONENTS Interpreter Development.Module REQUIRED)
 set(PYBIND11_FINDPYTHON ON) # Use new FindPython if available
 find_package(pybind11 CONFIG REQUIRED)
