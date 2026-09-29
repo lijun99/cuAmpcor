@@ -121,8 +121,10 @@ def run_ampcor(impl, images, outdir, workflow=0, ovs_method=0, algorithm=0,
     ampcor.setConstantGrossOffset(0, 0)
     ampcor.runAmpcor()
 
+    # outputs are in the internal precision
+    dtype = np.float64 if ampcor.isDoublePrecision() else np.float32
     shape = n_windows
-    return {name: np.fromfile(os.path.join(outdir, name), dtype=np.float32)
+    return {name: np.fromfile(os.path.join(outdir, name), dtype=dtype)
             .reshape(*shape, bands)
             for name, bands in outputs.items()}
 
