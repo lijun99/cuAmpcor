@@ -276,9 +276,9 @@ cuAmpcorProcessorOnePass::cuAmpcorProcessorOnePass(cuAmpcorParameter *param_, Sl
     offsetFinal = new cuArrays<real2_type> (param->numberWindowDownInChunk, param->numberWindowAcrossInChunk);
     offsetFinal->allocate();
 
-    // the sinc interpolation center is at the correlation surface center
-    // E.g. (10, 10) for 21x21.
-    maxLocShift = make_int2(param->corrWindowSize.x/2,  param->corrWindowSize.y/2);
+    // the zoom-in correlation surface is extracted around the peak,
+    // so the sinc interpolation center needs no extra shift
+    maxLocShift = make_int2(0, 0);
 
     corrMaxValue = new cuArrays<real_type> (param->numberWindowDownInChunk, param->numberWindowAcrossInChunk);
     corrMaxValue->allocate();
