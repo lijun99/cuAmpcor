@@ -259,7 +259,7 @@ void cuArraysCopyC2R(cuArrays<complex_type> *image1, cuArrays<real_type> *image2
     const int nthreads = 16;
     dim3 blockSize(nthreads, nthreads, 1);
     dim3 gridSize(IDIVUP(image2->height,nthreads), IDIVUP(image2->width,nthreads), image2->count);
-    real_type factor = 1.0f/image1->size; //the FFT factor
+    real_type factor = real_type(1)/image1->size; //the FFT factor
     cuArraysCopyC2R_kernel<<<gridSize,blockSize, 0 , stream>>> (
         image1->devData, image1->height, image1->width,
         image2->devData, image2->height, image2->width,

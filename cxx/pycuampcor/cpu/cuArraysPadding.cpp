@@ -24,7 +24,7 @@ void cuArraysFFTPaddingMany(cuArrays<complex_type> *image1, cuArrays<complex_typ
 {
     const int height1 = image1->height, width1 = image1->width, size1 = image1->size;
     const int height2 = image2->height, width2 = image2->width, size2 = image2->size;
-    const real_type factor = 1.0f/size1;
+    const real_type factor = real_type(1)/size1;
 
     image2->setZero(stream);
     for(int imageIdx = 0; imageIdx < image1->count; imageIdx++)

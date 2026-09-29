@@ -122,7 +122,7 @@ void cuArraysCopyC2R(cuArrays<complex_type> *image1, cuArrays<real_type> *image2
 {
     const int inNY = image1->width;
     const int outNX = image2->height, outNY = image2->width;
-    const real_type factor = 1.0f/image1->size; //the FFT factor
+    const real_type factor = real_type(1)/image1->size; //the FFT factor
     for(int idxImage = 0; idxImage < image2->count; idxImage++) {
         const int idxImageX = idxImage/image2->countW;
         const int idxImageY = idxImage%image2->countW;

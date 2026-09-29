@@ -40,7 +40,7 @@ void cuSincOverSamplerR2R::cuSetupSincKernel()
     real_type r_wgthgt =  (1.0f - r_pedestal)/2.0f;
     real_type r_soff = (i_filtercoef-1.0f)/2.0f;
     real_type r_soff_inverse = 1.0f/r_soff;
-    real_type r_decfactor_inverse = 1.0f/i_decfactor;
+    real_type r_decfactor_inverse = real_type(1)/i_decfactor;
 
     for(int i = 0; i <= i_filtercoef; i++) {
         real_type r_wa = i - r_soff;

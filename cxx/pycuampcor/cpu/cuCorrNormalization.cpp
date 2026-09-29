@@ -17,7 +17,7 @@ namespace pycuampcor::cpu {
 void cuArraysSubtractMean(cuArrays<real_type> *images, stream_t)
 {
     const int imageSize = images->size;
-    const real_type invSize = 1.0f/imageSize;
+    const real_type invSize = real_type(1)/imageSize;
     for(int idxImage = 0; idxImage < images->count; idxImage++) {
         real_type *image = images->devData + (size_t)idxImage*imageSize;
         double sum = 0.0;

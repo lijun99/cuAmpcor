@@ -91,7 +91,7 @@ void cuArraysMeanValue(cuArrays<real_type> *images, cuArrays<real_type> *mean, c
 {
     const dim3 grid(images->count, 1, 1);
     const int imageSize = images->width*images->height;
-    const real_type invSize = 1.0f/imageSize;
+    const real_type invSize = real_type(1)/imageSize;
 
     cuArraysMean_kernel<NTHREADS> <<<grid,NTHREADS,0,stream>>>(images->devData, mean->devData, imageSize, invSize, images->count);
     getLastCudaError("cuArraysMeanValue kernel error\n");
@@ -135,7 +135,7 @@ void cuArraysSubtractMean(cuArrays<real_type> *images, cudaStream_t stream)
 {
     const dim3 grid(images->count, 1, 1);
     const int imageSize = images->width*images->height;
-    const real_type invSize = 1.0f/imageSize;
+    const real_type invSize = real_type(1)/imageSize;
 
     cuArraysSubtractMean_kernel<NTHREADS> <<<grid,NTHREADS,0,stream>>>(images->devData, imageSize, invSize, images->count);
     getLastCudaError("cuArraysSubtractMean kernel error\n");
@@ -377,7 +377,7 @@ void cuCorrNormalize(cuArrays<real_type> *templates, cuArrays<real_type> *images
     const int nImages = images->count;
     const int imageNY = images->width;
     const dim3 grid(1, 1, nImages);
-    const real_type invTemplateSize = 1.0f/templates->size;
+    const real_type invTemplateSize = real_type(1)/templates->size;
 
     if      (imageNY <=   64) {
         cuCorrNormalize_kernel< 6><<<grid,  64, 0, stream>>>(nImages,
@@ -439,7 +439,7 @@ void cuCorrNormalizeFixed(cuArrays<real_type> *correlation, cuArrays<real_type> 
 {
     const int nImages = correlation->count;
     const dim3 grid(1, 1, nImages);
-    const real_type invReferenceSize = 1.0f/reference->size;
+    const real_type invReferenceSize = real_type(1)/reference->size;
     cuCorrNormalize_kernel<Log2<Size>::value><<<grid, Size, 0, stream>>>(nImages,
                 reference->devData, reference->height, reference->width, reference->size,
                 secondary->devData, secondary->height, secondary->width, secondary->size,

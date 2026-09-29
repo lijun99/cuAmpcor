@@ -102,9 +102,9 @@ void cuSubPixelOffset2Pass(cuArrays<int2> *offsetInit, cuArrays<int2> *offsetZoo
     stream_t)
 {
     const size_t size = offsetInit->getSize();
-    const float OSratio = 1.0f/(float)(OverSampleRatioZoomin*OverSampleRatioRaw);
-    const float xoffset = xHalfRangeInit ;
-    const float yoffset = yHalfRangeInit ;
+    const real_type OSratio = real_type(1)/(OverSampleRatioZoomin*OverSampleRatioRaw);
+    const real_type xoffset = xHalfRangeInit ;
+    const real_type yoffset = yHalfRangeInit ;
     for(size_t idx = 0; idx < size; idx++) {
         offsetFinal->devData[idx].x = OSratio*(offsetZoomIn->devData[idx].x) + offsetInit->devData[idx].x - xoffset;
         offsetFinal->devData[idx].y = OSratio*(offsetZoomIn->devData[idx].y) + offsetInit->devData[idx].y - yoffset;

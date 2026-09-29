@@ -136,7 +136,7 @@ void cuArraysFFTPaddingMany(cuArrays<complex_type> *image1, cuArrays<complex_typ
     dim3 dimGrid(BlockPerGridx, BlockPerGridy, image1->count);
 
     checkCudaErrors(cudaMemsetAsync(image2->devData, 0, image2->getByteSize(),stream));
-    real_type factor = 1.0f/image1->size;
+    real_type factor = real_type(1)/image1->size;
     cuArraysPaddingMany_kernel<<<dimGrid, dimBlock, 0, stream>>>(
         image1->devData, image1->height, image1->width, image1->size,
         image2->devData, image2->height, image2->width, image2->size, factor);

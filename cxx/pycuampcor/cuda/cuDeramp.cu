@@ -146,7 +146,7 @@ void cuLinearDeramp(cuArrays<real2_type> *images, const int axis, cudaStream_t s
 
     const dim3 grid(images->count);
     const int imageSize = images->width*images->height;
-    const real_type invSize = 1.0f/imageSize;
+    const real_type invSize = real_type(1)/imageSize;
 
     if(imageSize <=64) {
         cuLinearDeramp_kernel<64> <<<grid, 64, 0, stream>>>

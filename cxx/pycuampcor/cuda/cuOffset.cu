@@ -222,9 +222,9 @@ void cuSubPixelOffset2Pass(cuArrays<int2> *offsetInit, cuArrays<int2> *offsetZoo
     cudaStream_t stream)
 {
     int size = offsetInit->getSize();
-    float OSratio = 1.0f/(float)(OverSampleRatioZoomin*OverSampleRatioRaw);
-    float xoffset = xHalfRangeInit ;
-    float yoffset = yHalfRangeInit ;
+    real_type OSratio = real_type(1)/(OverSampleRatioZoomin*OverSampleRatioRaw);
+    real_type xoffset = xHalfRangeInit ;
+    real_type yoffset = yHalfRangeInit ;
 
     cuSubPixelOffset2Pass_kernel<<<IDIVUP(size, NTHREADS), NTHREADS, 0, stream>>>
         (offsetInit->devData, offsetZoomIn->devData,
