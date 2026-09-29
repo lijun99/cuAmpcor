@@ -5,6 +5,8 @@
 #include <cuda_runtime.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdexcept>
+#include <string>
 #include "cudaError.h"
 
 namespace pycuampcor::cuda {
@@ -15,13 +17,11 @@ int gpuDeviceInit(int devID)
     checkCudaErrors(cudaGetDeviceCount(&device_count));
 
     if (device_count == 0) {
-        fprintf(stderr, "gpuDeviceInit() CUDA error: no devices supporting CUDA.\n");
-        exit(EXIT_FAILURE);
+        throw std::runtime_error("gpuDeviceInit() CUDA error: no devices supporting CUDA.");
     }
 
     if (devID < 0 || devID > device_count - 1) {
-        fprintf(stderr, "gpuDeviceInit() Device %d is not a valid GPU device. \n", devID);
-        exit(EXIT_FAILURE);
+        throw std::runtime_error("gpuDeviceInit() Device " + std::to_string(devID) + " is not a valid GPU device.");
     }
 
     checkCudaErrors(cudaSetDevice(devID));
@@ -37,8 +37,7 @@ void gpuDeviceList()
 
     fprintf(stderr, "Detecting all CUDA devices ...\n");
     if (device_count == 0) {
-        fprintf(stderr, "CUDA error: no devices supporting CUDA.\n");
-        exit(EXIT_FAILURE);
+        throw std::runtime_error("CUDA error: no devices supporting CUDA.");
     }
 
     for (int current_device = 0; current_device < device_count; ++current_device) {

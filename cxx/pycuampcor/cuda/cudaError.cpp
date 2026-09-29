@@ -4,28 +4,34 @@
 #include <cufft.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <exception>
+#include <stdexcept>
+#include <string>
 
 namespace pycuampcor::cuda {
 
-#ifdef __DRIVER_TYPES_H__
-#ifndef DEVICE_RESET
-#define DEVICE_RESET cudaDeviceReset();
-#endif
-#else
-#ifndef DEVICE_RESET
-#define DEVICE_RESET
-#endif
-#endif
+// report an error: throw an exception (translated to a python RuntimeError),
+// or print the message if an exception is already propagating (e.g., in destructors during unwinding)
+static void reportError(const std::string &message)
+{
+    if (std::uncaught_exceptions() > 0) {
+        fprintf(stderr, "%s\n", message.c_str());
+        return;
+    }
+    throw std::runtime_error(message);
+}
+
+static const char * errorString(cudaError_t result) { return cudaGetErrorString(result); }
+static const char * errorString(cufftResult_t) { return "cufft error"; }
 
 template<typename T >
 void check(T result, char const *const func, const char *const file, int const line)
 {
     if (result) {
-        fprintf(stderr, "CUDA error at %s:%d code=%d(%s) \n",
-                file, line, static_cast<unsigned int>(result), func);
-        DEVICE_RESET
-        // Make sure we call CUDA Device Reset before exiting
-        exit(EXIT_FAILURE);
+        char message[1024];
+        snprintf(message, sizeof(message), "CUDA error at %s:%d code=%d(%s) \"%s\"",
+                file, line, static_cast<unsigned int>(result), errorString(result), func);
+        reportError(message);
     }
 }
 
@@ -38,12 +44,11 @@ void __getLastCudaError(const char *errorMessage, const char *file, const int li
 
     if (cudaSuccess != err)
     {
-        fprintf(stderr, "%s(%i) : CUDA error : %s : (%d) %s.\n",
+        char message[1024];
+        snprintf(message, sizeof(message), "%s(%i) : CUDA error : %s : (%d) %s.",
                 file, line, errorMessage, (int)err, cudaGetErrorString(err));
-        DEVICE_RESET
-        exit(EXIT_FAILURE);
+        reportError(message);
     }
 }
-
 
 } // namespace
