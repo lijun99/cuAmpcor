@@ -24,6 +24,15 @@ SlcImage::SlcImage(const std::string& filepath, size_t img_height, size_t img_wi
     if (fd == -1) {
         throw std::runtime_error("Failed to open file: " + filepath);
     }
+    // check the file is large enough for the given image size
+    struct stat st;
+    if (fstat(fd, &st) == 0 && (size_t)st.st_size < file_size) {
+        close(fd);
+        fd = -1;
+        throw std::runtime_error("The file " + filepath + " (" + std::to_string(st.st_size)
+            + " bytes) is smaller than the image size " + std::to_string(height) + " x "
+            + std::to_string(width) + " x " + std::to_string(pixel_size) + " bytes");
+    }
 }
 
 void SlcImage::remapIfNeeded(size_t required_start, size_t required_end)
@@ -44,9 +53,18 @@ void SlcImage::remapIfNeeded(size_t required_start, size_t required_end)
         if (mapped_size > max_map_size) {
             mapped_size = max_map_size;
         }
+        // the mapped region must cover the requested range
+        if (required_end > mapped_offset + mapped_size) {
+            mapped_data = nullptr;
+            mapped_size = 0;
+            throw std::runtime_error("The requested image tile exceeds the file size or the mmap buffer size;"
+                " check the image size or increase mmapSize (in GB)");
+        }
         // remap
         mapped_data = mmap(nullptr, mapped_size, PROT_READ, MAP_PRIVATE, fd, mapped_offset);
         if (mapped_data == MAP_FAILED) {
+            mapped_data = nullptr;
+            mapped_size = 0;
             throw std::runtime_error("Failed to mmap file at offset " + std::to_string(mapped_offset));
         }
     }
