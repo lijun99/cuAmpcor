@@ -17,11 +17,11 @@ from isceobj.Util.ImageUtil import ImageLib as IML
 
 try:
     # try standalone at first
-    from pycuampcor import PyCuAmpcor
+    import pycuampcor
     print("using standalone pycuampcor")
-except ImportdError:
+except ImportError:
     # if installed with ISCE2
-    from contrib.pycuampcor import PyCuAmpcor
+    from contrib import pycuampcor
     print("using pycuampcor from isce")
 
 
@@ -156,6 +156,10 @@ def createParser():
                         help='GPU ID (default: %(default)s).')
     proc.add_argument('--nstreams', dest='nstreams', type=int, default=1,
                         help='Number of cuda streams (default: %(default)s).')
+    proc.add_argument('--cpu', dest='cpu', action='store_true',
+                        help='Use the CPU implementation instead of GPU.')
+    proc.add_argument('--nthreads', dest='nthreads', type=int, default=0,
+                        help='Number of CPU threads, 0 for the OpenMP default (default: %(default)s).')
     proc.add_argument('--usemmap', dest='usemmap', type=int, default=1,
                         help='Whether to use memory map for loading image files (default: %(default)s).')
     proc.add_argument('--mmapsize', dest='mmapsize', type=int, default=8,
@@ -219,13 +223,17 @@ def estimateOffsetField(reference, secondary, inps=None):
     width = sar.getWidth()
     length = sar.getLength()
 
-    # create a PyCuAmpcor instance
-    objOffset = PyCuAmpcor()
+    # create a PyCuAmpcor (GPU) or PyCPUAmpcor (CPU) instance
+    if inps.cpu:
+        objOffset = pycuampcor.PyCPUAmpcor()
+        objOffset.nThreads = inps.nthreads
+    else:
+        objOffset = pycuampcor.PyCuAmpcor()
+        objOffset.deviceID = inps.gpuid
+        objOffset.nStreams = inps.nstreams #cudaStreams
 
     objOffset.workflow = inps.workflow
     objOffset.algorithm = inps.algorithm
-    objOffset.deviceID = inps.gpuid
-    objOffset.nStreams = inps.nstreams #cudaStreams
     objOffset.derampMethod = inps.deramp
     print('deramp method (0: magnitude, 1: linear phase ramp, 2: skip deramping): ', objOffset.derampMethod)
     objOffset.derampAxis = inps.deramp_axis
