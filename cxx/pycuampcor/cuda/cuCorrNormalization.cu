@@ -20,6 +20,8 @@
  */
 
 #include "cuAmpcorUtil.h"
+#include <stdexcept>
+#include <string>
 #include <stdio.h>
 
 namespace pycuampcor::cuda {
@@ -419,8 +421,8 @@ void cuCorrNormalize(cuArrays<real_type> *templates, cuArrays<real_type> *images
     }
     else
     {
-        fprintf(stderr, "The (oversampled) window size along the across direction %d should be smaller than 1024.\n", imageNY);
-        throw;
+        throw std::invalid_argument("The (oversampled) window size along the across direction "
+            + std::to_string(imageNY) + " should be smaller than 1024.");
     }
 
 }

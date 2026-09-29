@@ -6,6 +6,8 @@
  */
 
 #include "cuAmpcorUtil.h"
+#include <stdexcept>
+#include <string>
 
 namespace pycuampcor::cuda {
 
@@ -109,8 +111,9 @@ void cuCorrTimeDomain(cuArrays<real_type> *templates,
     const int nImages = images->count;
     const int imageNY = images->width;
 
-#if defined(CUAMPCOR_DOUBLE) && __CUDA_ARCH__ < 800
-    // For GPUs older than A100, static shared memory limit is 48K
+#ifdef CUAMPCOR_DOUBLE
+    // static shared memory is limited to 48K; the same NPT must be used in both host and device passes
+    // (so __CUDA_ARCH__ can't be used to choose NPT here)
     const int NPT = 4;
 #else
     const int NPT = 8;
@@ -167,13 +170,6 @@ void cuCorrTimeDomain(cuArrays<real_type> *templates,
             results->devData, results->height, results->width, results->size);
         getLastCudaError("cuArraysCorrTime error");
     }
-#ifdef CUAMPCOR_DOUBLE
-    // For double precision, limit the maximum threads to 768 to avoid shared memory overflow
-    else {
-        fprintf(stderr, "The (oversampled) window size along the across direction %d should be smaller than 640 (double precision).\n", imageNY);
-        throw;
-    }
-#else
     else if (imageNY <=  768) {
         cuArraysCorrTime_kernel< 768,NPT><<<grid, 768, 0, stream>>>(nImages,
             templates->devData, templates->height, templates->width, templates->size,
@@ -196,10 +192,9 @@ void cuCorrTimeDomain(cuArrays<real_type> *templates,
         getLastCudaError("cuArraysCorrTime error");
     }
     else {
-        fprintf(stderr, "The (oversampled) window size along the across direction %d should be smaller than 1024.\n", imageNY);
-        throw;
+        throw std::invalid_argument("The (oversampled) window size along the across direction "
+            + std::to_string(imageNY) + " should be smaller than 1024.");
     }
-#endif
 }
 // end of file
 
