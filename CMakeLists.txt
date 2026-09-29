@@ -48,34 +48,35 @@ find_package(pybind11 CONFIG REQUIRED)
 
 # python module
 pybind11_add_module(pycuampcor
-    src/PyCuAmpcor.cpp
-    src/SlcImage.cpp
-    src/cuAmpcorController.cpp
-    src/cuAmpcorParameter.cpp
-    src/cuArrays.cpp
-    src/cuArraysCopy.cu
-    src/cuArraysPadding.cu
-    src/cuCorrFrequency.cu
-    src/cuCorrNormalization.cu
-    src/cuCorrNormalizationSAT.cu
-    src/cuCorrNormalizer.cpp
-    src/cuCorrTimeDomain.cu
-    src/cuDeramp.cu
-    src/cuEstimateStats.cu
-    src/cuOffset.cu
-    src/cuOverSampler.cpp
-    src/cuSincOverSampler.cu
-    src/cudaError.cpp
-    src/cudaUtil.cpp
-    src/cuAmpcorProcessor.cpp
-    src/cuAmpcorProcessorTwoPass.cpp
-    src/cuAmpcorProcessorOnePass.cpp
+    python/extensions/pycuampcor.cpp
+    cxx/pycuampcor/common/SlcImage.cpp
+    cxx/pycuampcor/common/cuAmpcorController.cpp
+    cxx/pycuampcor/common/cuAmpcorParameter.cpp
+    cxx/pycuampcor/cuda/cuArrays.cpp
+    cxx/pycuampcor/cuda/cuArraysCopy.cu
+    cxx/pycuampcor/cuda/cuArraysPadding.cu
+    cxx/pycuampcor/cuda/cuCorrFrequency.cu
+    cxx/pycuampcor/cuda/cuCorrNormalization.cu
+    cxx/pycuampcor/cuda/cuCorrNormalizationSAT.cu
+    cxx/pycuampcor/cuda/cuCorrNormalizer.cpp
+    cxx/pycuampcor/cuda/cuCorrTimeDomain.cu
+    cxx/pycuampcor/cuda/cuDeramp.cu
+    cxx/pycuampcor/cuda/cuEstimateStats.cu
+    cxx/pycuampcor/cuda/cuOffset.cu
+    cxx/pycuampcor/cuda/cuOverSampler.cpp
+    cxx/pycuampcor/cuda/cuSincOverSampler.cu
+    cxx/pycuampcor/cuda/cudaError.cpp
+    cxx/pycuampcor/cuda/cudaUtil.cpp
+    cxx/pycuampcor/common/cuAmpcorProcessor.cpp
+    cxx/pycuampcor/common/cuAmpcorProcessorTwoPass.cpp
+    cxx/pycuampcor/common/cuAmpcorProcessorOnePass.cpp
     )
 
 # set_property(TARGET pycuampcor PROPERTY CUDA_SEPARABLE_COMPILATION ON)
 
 target_include_directories(pycuampcor PRIVATE
-    src
+    cxx/pycuampcor/common
+    cxx/pycuampcor/cuda
     )
 
 target_link_libraries(pycuampcor PRIVATE
@@ -98,7 +99,7 @@ else()
             LIBRARY DESTINATION ${PYCUAMPCOR_INSTALL_DIR})
 
     # Install __init__.py
-    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/pycuampcor/__init__.py
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/python/packages/pycuampcor/__init__.py
             DESTINATION ${PYCUAMPCOR_INSTALL_DIR})
     message(STATUS "Installing pycuampcor to: ${PYCUAMPCOR_INSTALL_DIR}")
 endif()
