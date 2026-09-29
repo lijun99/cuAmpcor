@@ -599,7 +599,7 @@ void cuArraysSetConstant(cuArrays<real_type> *imageIn, real_type value, cudaStre
     int size = imageIn->getSize();
 
     cuArraysSetConstant_kernel<<<IDIVUP(size, nthreads), nthreads, 0, stream>>>
-        (imageIn->devData, imageIn->size, value);
+        (imageIn->devData, size, value);
      getLastCudaError("cuArraysSetConstant error");
 }
 

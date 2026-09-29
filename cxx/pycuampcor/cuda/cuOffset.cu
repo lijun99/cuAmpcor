@@ -31,6 +31,8 @@ __device__ void max_reduction_2d(const real_type* const image,
 {
     int tid = threadIdx.x;
     shval[tid] = -REAL_MAX;
+    // default to the first pixel in case no value is larger (e.g., all NaNs)
+    shloc[tid] = IDX2R(start.x, start.y, imageSize.y);
 
     // reduction for intra-block elements
     // i.e., for elements with i, i+BLOCKSIZE, i+2*BLOCKSIZE ...
