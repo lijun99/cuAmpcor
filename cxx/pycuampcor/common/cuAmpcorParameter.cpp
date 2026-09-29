@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <stdexcept>
+#include <string>
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND {
 
@@ -96,8 +97,8 @@ void cuAmpcorParameter::setupParameters()
     // common parameter settings
     numberWindows = numberWindowDown*numberWindowAcross;
     if(numberWindows <=0) {
-        fprintf(stderr, "Incorrect number of windows! (%d, %d)\n", numberWindowDown, numberWindowAcross);
-        exit(EXIT_FAILURE);
+        throw std::invalid_argument("Incorrect number of windows! ("
+            + std::to_string(numberWindowDown) + ", " + std::to_string(numberWindowAcross) + ")");
     }
 
     numberChunkDown = IDIVUP(numberWindowDown, numberWindowDownInChunk);
@@ -374,11 +375,16 @@ void cuAmpcorParameter::setChunkStartPixels()
             mChunkED += windowSizeHeightRawEnlarged;
             if (mChunkED > referenceImageHeight) mChunkED = referenceImageHeight;
             mChunkEA += windowSizeWidthRawEnlarged;
-            if (mChunkEA > referenceImageWidth) mChunkED = referenceImageWidth;
+            if (mChunkEA > referenceImageWidth) mChunkEA = referenceImageWidth;
             sChunkED += searchWindowSizeHeightRaw;
             if (sChunkED > secondaryImageHeight) sChunkED = secondaryImageHeight;
             sChunkEA += searchWindowSizeWidthRaw;
-            if (sChunkEA > secondaryImageWidth) sChunkED = secondaryImageWidth;
+            if (sChunkEA > secondaryImageWidth) sChunkEA = secondaryImageWidth;
+            // chunks entirely outside the image have zero size (and will be filled with zeros)
+            if (mChunkED < mChunkSD) mChunkED = mChunkSD;
+            if (mChunkEA < mChunkSA) mChunkEA = mChunkSA;
+            if (sChunkED < sChunkSD) sChunkED = sChunkSD;
+            if (sChunkEA < sChunkSA) sChunkEA = sChunkSA;
             // set the starting pixel and size of the chunk
             referenceChunkStartPixelDown[idxChunk]   = mChunkSD;
             referenceChunkStartPixelAcross[idxChunk] = mChunkSA;
@@ -420,7 +426,7 @@ void cuAmpcorParameter::checkPixelInImageRange()
             endPixel = referenceStartPixelDown[i] + windowSizeHeightRaw;
             if(endPixel >= referenceImageHeight)
             {
-                printf("Warning: Warning: Reference Window end pixel out of range in Down, window (%d,%d), pixel %d\n", row, col, endPixel);
+                printf("Warning: Reference Window end pixel out of range in Down, window (%d,%d), pixel %d\n", row, col, endPixel);
             }
             endPixel = referenceStartPixelAcross[i] + windowSizeWidthRaw;
             if(endPixel >= referenceImageWidth)
