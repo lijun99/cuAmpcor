@@ -5,7 +5,7 @@
 #include "cuAmpcorParameter.h"
 #include "cudaUtil.h"
 
-PYBIND11_MODULE(pycuampcor, m)
+PYBIND11_MODULE(PYCUAMPCOR_MODULE, m)
 {
     m.doc() = "Python module controller for underlying CUDA-Ampcor code";
 
@@ -13,7 +13,7 @@ PYBIND11_MODULE(pycuampcor, m)
     using str = std::string;
     using cls = cuAmpcorController;
 
-    pybind11::class_<cls>(m, "PyCuAmpcor")
+    pybind11::class_<cls>(m, PYBIND11_TOSTRING(PYCUAMPCOR_CLASS))
         .def(pybind11::init<>())
 
         // define a trivial binding for a controller method

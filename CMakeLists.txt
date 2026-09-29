@@ -1,114 +1,111 @@
 # -*- cmake -*-
 # Example with conda:
-#   cmake .. -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_CUDA_ARCHITECTURES=native -DCMAKE_PREFIX_PATH=${CONDA_PREFIX} -DCMAKE_BUILD_TYPE=Release
+#   cmake -S . -B build -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
+#         -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_ARCHITECTURES=native
+#
+# Options:
+#   PYCUAMPCOR_CUDA   AUTO (default, build the CUDA backend if a CUDA compiler is found), ON, OFF
+#   PYCUAMPCOR_DOUBLE use double precision for internal computations (default OFF)
 
 # minimum cmake version to support CUDA and Python
 cmake_minimum_required(VERSION 3.18)
 
 # project name
-project(pycuampcor LANGUAGES CUDA CXX)
+project(pycuampcor LANGUAGES CXX)
 
 # C++ Standard
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# CUDA requirement
-find_package(CUDAToolkit COMPONENTS cudart cufft REQUIRED)
-message(STATUS "Found CUDA version: ${CUDAToolkit_VERSION}")
-# Set C++ standard based on CUDA version
-if (CUDAToolkit_VERSION VERSION_GREATER_EQUAL 13.0)
-    # CUDA 13 and later requires at least C++17
-    set(CMAKE_CUDA_STANDARD 17)
-    set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+set(PYCUAMPCOR_CUDA AUTO CACHE STRING "Build the CUDA backend (AUTO, ON, OFF)")
+set_property(CACHE PYCUAMPCOR_CUDA PROPERTY STRINGS AUTO ON OFF)
+option(PYCUAMPCOR_DOUBLE "Use double precision for internal computations" OFF)
 
-    # Also set host compiler C++ standard
-    set(CMAKE_CXX_STANDARD 17)
-    set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-    message(STATUS "Using C++17 because CUDA 13+ requires it")
+# CUDA backend
+if(PYCUAMPCOR_CUDA STREQUAL "AUTO")
+    include(CheckLanguage)
+    check_language(CUDA)
+    if(CMAKE_CUDA_COMPILER)
+        set(PYCUAMPCOR_WITH_CUDA ON)
+    else()
+        set(PYCUAMPCOR_WITH_CUDA OFF)
+    endif()
+elseif(PYCUAMPCOR_CUDA)
+    set(PYCUAMPCOR_WITH_CUDA ON)
 else()
-    # For older CUDA versions (and e.g. GCC 4.8)
-    set(CMAKE_CUDA_STANDARD 11)
-    set(CMAKE_CUDA_STANDARD_REQUIRED ON)
-
-    set(CMAKE_CXX_STANDARD 11)
-    set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-    message(STATUS "Using C++11 for compatibility (CUDA < 13)")
+    set(PYCUAMPCOR_WITH_CUDA OFF)
 endif()
 
-if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-    set(CMAKE_CUDA_ARCHITECTURES 52 60 70 75 80 86 90)
+if(PYCUAMPCOR_WITH_CUDA)
+    if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+        set(CMAKE_CUDA_ARCHITECTURES 60 70 75 80 86 89 90)
+    endif()
+    enable_language(CUDA)
+    set(CMAKE_CUDA_STANDARD 17)
+    set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+    find_package(CUDAToolkit 11 COMPONENTS cudart cufft REQUIRED)
+    message(STATUS "Building the CUDA backend with CUDA ${CUDAToolkit_VERSION}")
+else()
+    message(STATUS "Not building the CUDA backend")
 endif()
 
 # python and pybind11 requirement
-find_package(Python 3.6 COMPONENTS Interpreter Development REQUIRED)
-set(PYBIND11_PYTHON_VERSION ${Python_VERSION})
+find_package(Python 3.8 COMPONENTS Interpreter Development.Module REQUIRED)
 set(PYBIND11_FINDPYTHON ON) # Use new FindPython if available
 find_package(pybind11 CONFIG REQUIRED)
 
-# python module
-pybind11_add_module(pycuampcor
-    python/extensions/pycuampcor.cpp
-    cxx/pycuampcor/common/SlcImage.cpp
-    cxx/pycuampcor/common/cuAmpcorController.cpp
-    cxx/pycuampcor/common/cuAmpcorParameter.cpp
-    cxx/pycuampcor/cuda/cuArrays.cpp
-    cxx/pycuampcor/cuda/cuArraysCopy.cu
-    cxx/pycuampcor/cuda/cuArraysPadding.cu
-    cxx/pycuampcor/cuda/cuCorrFrequency.cu
-    cxx/pycuampcor/cuda/cuCorrNormalization.cu
-    cxx/pycuampcor/cuda/cuCorrNormalizationSAT.cu
-    cxx/pycuampcor/cuda/cuCorrNormalizer.cpp
-    cxx/pycuampcor/cuda/cuCorrTimeDomain.cu
-    cxx/pycuampcor/cuda/cuDeramp.cu
-    cxx/pycuampcor/cuda/cuEstimateStats.cu
-    cxx/pycuampcor/cuda/cuOffset.cu
-    cxx/pycuampcor/cuda/cuOverSampler.cpp
-    cxx/pycuampcor/cuda/cuSincOverSampler.cu
-    cxx/pycuampcor/cuda/cudaError.cpp
-    cxx/pycuampcor/cuda/cudaUtil.cpp
-    cxx/pycuampcor/common/cuAmpcorProcessor.cpp
-    cxx/pycuampcor/common/cuAmpcorProcessorTwoPass.cpp
-    cxx/pycuampcor/common/cuAmpcorProcessorOnePass.cpp
-    )
+# source lists
+set(PYCUAMPCOR_CXX_DIR ${CMAKE_CURRENT_SOURCE_DIR}/cxx/pycuampcor)
+include(${PYCUAMPCOR_CXX_DIR}/common/Sources.cmake)
+include(${PYCUAMPCOR_CXX_DIR}/cuda/Sources.cmake)
+list(TRANSFORM PYCUAMPCOR_COMMON_SOURCES PREPEND ${PYCUAMPCOR_CXX_DIR}/common/)
+list(TRANSFORM PYCUAMPCOR_CUDA_SOURCES PREPEND ${PYCUAMPCOR_CXX_DIR}/cuda/)
 
-# set_property(TARGET pycuampcor PROPERTY CUDA_SEPARABLE_COMPILATION ON)
+# add a python extension module pycuampcor._<backend>, exposing class <pyclass>
+# the shared code in common/ and the bindings are compiled with the backend sources
+function(pycuampcor_add_backend backend pyclass)
+    string(TOUPPER ${backend} BACKEND)
+    set(target _${backend})
+    pybind11_add_module(${target}
+        ${CMAKE_CURRENT_SOURCE_DIR}/python/extensions/pycuampcor.cpp
+        ${PYCUAMPCOR_COMMON_SOURCES}
+        ${PYCUAMPCOR_${BACKEND}_SOURCES}
+        )
+    target_include_directories(${target} PRIVATE
+        ${PYCUAMPCOR_CXX_DIR}/common
+        ${PYCUAMPCOR_CXX_DIR}/${backend}
+        )
+    target_compile_definitions(${target} PRIVATE
+        PYCUAMPCOR_BACKEND=${backend}
+        PYCUAMPCOR_BACKEND_${BACKEND}
+        PYCUAMPCOR_MODULE=${target}
+        PYCUAMPCOR_CLASS=${pyclass}
+        )
+    if(PYCUAMPCOR_DOUBLE)
+        target_compile_definitions(${target} PRIVATE CUAMPCOR_DOUBLE)
+    endif()
+    list(APPEND PYCUAMPCOR_TARGETS ${target})
+    set(PYCUAMPCOR_TARGETS ${PYCUAMPCOR_TARGETS} PARENT_SCOPE)
+endfunction()
 
-target_include_directories(pycuampcor PRIVATE
-    cxx/pycuampcor/common
-    cxx/pycuampcor/cuda
-    )
+if(PYCUAMPCOR_WITH_CUDA)
+    pycuampcor_add_backend(cuda PyCuAmpcor)
+    target_link_libraries(_cuda PRIVATE CUDA::cudart CUDA::cufft)
+endif()
 
-target_compile_definitions(pycuampcor PRIVATE PYCUAMPCOR_BACKEND=cuda)
-
-target_link_libraries(pycuampcor PRIVATE
-    CUDA::cufft
-    )
-
-# Condition to check if using skbuild
-if (SKBUILD)
-    # Install package
-    install(TARGETS pycuampcor
-            LIBRARY DESTINATION pycuampcor)
+# installation
+if(SKBUILD)
+    # installed by scikit-build-core, which also packages python/packages/pycuampcor
+    set(PYCUAMPCOR_INSTALL_DIR pycuampcor)
 else()
-    # Install package
     if(NOT DEFINED PYCUAMPCOR_INSTALL_DIR)
         set(PYCUAMPCOR_INSTALL_DIR ${Python_SITEARCH}/pycuampcor)
     endif()
-
-    # Install compiled library
-    install(TARGETS pycuampcor
-            LIBRARY DESTINATION ${PYCUAMPCOR_INSTALL_DIR})
-
-    # Install __init__.py
-    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/python/packages/pycuampcor/__init__.py
-            DESTINATION ${PYCUAMPCOR_INSTALL_DIR})
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/python/packages/pycuampcor/
+            DESTINATION ${PYCUAMPCOR_INSTALL_DIR}
+            FILES_MATCHING PATTERN "*.py")
     message(STATUS "Installing pycuampcor to: ${PYCUAMPCOR_INSTALL_DIR}")
 endif()
 
-
-
-
-
-
-
+install(TARGETS ${PYCUAMPCOR_TARGETS}
+        LIBRARY DESTINATION ${PYCUAMPCOR_INSTALL_DIR})
