@@ -120,6 +120,20 @@ To run the python tests (after installation),
     pytest tests/python
 ```
 
+The GitHub Actions CI (*.github/workflows/tests.yml*) runs the tests of the CPU backend only, as the GitHub-hosted runners have no GPU (GPU runners are not free). The CUDA backend is tested locally, with the locally installed CUDA toolkit (found by CMake, e.g., in */usr/local/cuda*; the conda CUDA compiler/libraries are not needed):
+
+```bash
+    # C++ unit tests for both backends (test_cpu, test_cuda)
+    cmake -S . -B build -DPYCUAMPCOR_BUILD_TESTS=ON \
+      -DCMAKE_CUDA_ARCHITECTURES=native -DCMAKE_PREFIX_PATH=$CONDA_PREFIX
+    cmake --build build -j && ctest --test-dir build
+    # python tests, including the GPU and CPU/GPU consistency tests
+    pip install . -Ccmake.define.CMAKE_CUDA_ARCHITECTURES=native
+    pytest tests/python
+```
+
+The GPU tests are skipped if no GPU is available. If nvcc is not in the `PATH`, specify it with `-DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc` (or `-Ccmake.define.CMAKE_CUDA_COMPILER=...` for pip).
+
 If a change of the results is intended, regenerate the reference outputs with `python tests/python/make_golden.py` and commit them.
 
 ### 2.5 Installation with ISCE2
