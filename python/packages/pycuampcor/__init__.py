@@ -5,6 +5,7 @@ PyCPUAmpcor : the CPU (OpenMP) implementation, always available
 PyCuAmpcor  : the CUDA implementation, available if built with CUDA support
 """
 
+from ._version import __version__
 from ._cpu import PyCPUAmpcor
 
 try:

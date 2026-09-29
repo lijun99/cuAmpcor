@@ -11,7 +11,7 @@
 cmake_minimum_required(VERSION 3.18)
 
 # project name
-project(pycuampcor LANGUAGES CXX)
+project(pycuampcor VERSION 2.1.0 LANGUAGES CXX)
 
 # C++ Standard
 set(CMAKE_CXX_STANDARD 17)
@@ -131,3 +131,8 @@ endif()
 
 install(TARGETS ${PYCUAMPCOR_TARGETS}
         LIBRARY DESTINATION ${PYCUAMPCOR_INSTALL_DIR})
+
+# version file
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/_version.py "__version__ = \"${PROJECT_VERSION}\"\n")
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/_version.py
+        DESTINATION ${PYCUAMPCOR_INSTALL_DIR})
