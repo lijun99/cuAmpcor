@@ -2,8 +2,9 @@
  * @file  backend.h
  * @brief Backend hooks used by the shared (backend-agnostic) ampcor code: CUDA version
  *
- * The code in common/ is compiled once per backend. Each backend provides
- * a backend.h with the same interface.
+ * The code in common/ is compiled once per backend, in namespace
+ * pycuampcor::PYCUAMPCOR_BACKEND (defined by the build system, e.g., cuda).
+ * Each backend provides a backend.h with the same interface.
  */
 
 #ifndef __PYCUAMPCOR_BACKEND_H
@@ -11,6 +12,8 @@
 
 #include <cuda_runtime.h>
 #include <cstddef>
+
+namespace pycuampcor::cuda {
 
 class cuAmpcorParameter;
 
@@ -31,6 +34,8 @@ void backendSynchronize();
 /// copy a 2D tile from host memory (e.g., mmap) to the backend memory
 void backendCopyFromHost2D(void *dst, size_t dpitch, const void *src, size_t spitch,
     size_t widthInBytes, size_t height, stream_t stream);
+
+} // namespace
 
 #endif //__PYCUAMPCOR_BACKEND_H
 // end of file

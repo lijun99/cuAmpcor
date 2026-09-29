@@ -9,6 +9,7 @@ PYBIND11_MODULE(pycuampcor, m)
 {
     m.doc() = "Python module controller for underlying CUDA-Ampcor code";
 
+    using namespace pycuampcor::PYCUAMPCOR_BACKEND;
     using str = std::string;
     using cls = cuAmpcorController;
 
@@ -118,7 +119,7 @@ PYBIND11_MODULE(pycuampcor, m)
         },
         "Returns the number of SMs (streaming multiprocessors) on the given device.")
 
-        .def("device_list", &::gpuDeviceList,
+        .def("device_list", &gpuDeviceList,
         "List all available cuda devices")
 
     ;

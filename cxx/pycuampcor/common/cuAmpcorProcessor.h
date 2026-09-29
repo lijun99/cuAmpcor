@@ -19,6 +19,8 @@
 #include "cuCorrNormalizer.h"
 #include <memory>
 
+namespace pycuampcor::PYCUAMPCOR_BACKEND {
+
 
 /**
  * cuAmpcor batched processor (virtual class)
@@ -72,5 +74,7 @@ protected:
     void getRelativeOffset(int *rStartPixel, const int *oStartPixel, int diff);
 
 };
+
+} // namespace
 
 #endif //__CUAMPCORPROCESSOR_H

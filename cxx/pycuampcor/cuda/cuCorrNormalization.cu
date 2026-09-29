@@ -22,6 +22,8 @@
 #include "cuAmpcorUtil.h"
 #include <stdio.h>
 
+namespace pycuampcor::cuda {
+
  // sum reduction within a block
  // the following implementation is compatible for sm_20 and above
  // newer architectures may support faster implementations, such as warp shuffle, cooperative groups
@@ -461,3 +463,6 @@ template void cuCorrNormalizeFixed<1024>(cuArrays<real_type> *correlation,
         cudaStream_t stream);
 
 // end of file
+
+
+} // namespace

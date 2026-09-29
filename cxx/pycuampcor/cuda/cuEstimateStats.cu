@@ -17,6 +17,8 @@
 #include <cmath>
 #include <limits>
 
+namespace pycuampcor::cuda {
+
 // cuda kernel for cuEstimateSnr
 __global__ void cudaKernel_estimateSnr(const real_type* corrSum, const real_type* maxval, real_type* snrValue, const int size, const int nImages)
 {
@@ -160,3 +162,6 @@ void cuEstimateVariance(cuArrays<real_type> *corrBatchRaw, cuArrays<int2> *maxlo
     getLastCudaError("cudaKernel_estimateVar error\n");
 }
 //end of file
+
+
+} // namespace

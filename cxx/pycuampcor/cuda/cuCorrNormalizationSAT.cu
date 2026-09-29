@@ -13,6 +13,8 @@
 // my declarations
 #include "cuAmpcorUtil.h"
 
+namespace pycuampcor::cuda {
+
 
 // alias for cuda cooperative groups
 namespace cg = cooperative_groups;
@@ -268,3 +270,5 @@ void cuCorrNormalizeSAT(cuArrays<real_type> *correlation, cuArrays<real_type> *r
         secondary->height, secondary->width);
     getLastCudaError("cuCorrNormalizeSAT_kernel kernel error");
 }
+
+} // namespace

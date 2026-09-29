@@ -18,6 +18,8 @@
 #include <memory>
 #include <vector>
 
+namespace pycuampcor::PYCUAMPCOR_BACKEND {
+
 // constructor
 cuAmpcorController::cuAmpcorController()
 {
@@ -197,3 +199,6 @@ void cuAmpcorController::runAmpcor()
 
 }
 // end of file
+
+
+} // namespace

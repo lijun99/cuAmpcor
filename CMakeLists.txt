@@ -79,6 +79,8 @@ target_include_directories(pycuampcor PRIVATE
     cxx/pycuampcor/cuda
     )
 
+target_compile_definitions(pycuampcor PRIVATE PYCUAMPCOR_BACKEND=cuda)
+
 target_link_libraries(pycuampcor PRIVATE
     CUDA::cufft
     )

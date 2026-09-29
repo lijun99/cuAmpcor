@@ -25,6 +25,8 @@
 #include "cudaUtil.h"
 #include "data_types.h"
 
+namespace pycuampcor::cuda {
+
 #ifndef PI
 #define PI 3.14159265359f
 #endif
@@ -61,6 +63,8 @@ class cuSincOverSamplerR2R
     // destructor
     ~cuSincOverSamplerR2R();
 };
+
+} // namespace
 
 #endif // _CUSINCOVERSAMPLER_H
 // end of file

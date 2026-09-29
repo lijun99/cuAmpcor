@@ -10,6 +10,8 @@
 #ifndef __CUDAUTIL_H
 #define __CUDAUTIL_H
 
+namespace pycuampcor::cuda {
+
 // for 2D FFT
 #define NRANK 2
 
@@ -60,6 +62,8 @@ void gpuDeviceList();
 
 // Get the number of StreamMultiprocessor
 int getSMCount(int devID=0);
+
+} // namespace
 
 #endif //__CUDAUTIL_H
 //end of file

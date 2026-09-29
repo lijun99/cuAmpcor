@@ -1,9 +1,13 @@
 #include "cudaUtil.h"
+#include "backend.h"
+#include "cuAmpcorParameter.h"
 
 #include <cuda_runtime.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "cudaError.h"
+
+namespace pycuampcor::cuda {
 
 int gpuDeviceInit(int devID)
 {
@@ -77,8 +81,6 @@ int getSMCount(int devID)
 }
 
 // backend hooks for the shared ampcor code
-#include "backend.h"
-#include "cuAmpcorParameter.h"
 
 int backendInit(cuAmpcorParameter *param)
 {
@@ -113,3 +115,6 @@ void backendCopyFromHost2D(void *dst, size_t dpitch, const void *src, size_t spi
     checkCudaErrors(cudaMemcpy2DAsync(dst, dpitch, src, spitch,
         widthInBytes, height, cudaMemcpyHostToDevice, stream));
 }
+
+
+} // namespace

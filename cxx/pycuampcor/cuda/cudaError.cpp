@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+namespace pycuampcor::cuda {
+
 #ifdef __DRIVER_TYPES_H__
 #ifndef DEVICE_RESET
 #define DEVICE_RESET cudaDeviceReset();
@@ -42,3 +44,6 @@ void __getLastCudaError(const char *errorMessage, const char *file, const int li
         exit(EXIT_FAILURE);
     }
 }
+
+
+} // namespace

@@ -4,6 +4,8 @@
 
 #include <stdexcept>
 
+namespace pycuampcor::PYCUAMPCOR_BACKEND {
+
 // Factory method implementation
 // create the batch processor for a given {workflow}
 std::unique_ptr<cuAmpcorProcessor> cuAmpcorProcessor::create(int workflow,
@@ -79,3 +81,6 @@ void cuAmpcorProcessor::getRelativeOffset(int *rStartPixel, const int *oStartPix
     }
 }
 
+
+
+} // namespace

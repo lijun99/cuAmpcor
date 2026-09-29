@@ -23,6 +23,8 @@
 #include <cmath>
 #include <limits>
 
+namespace pycuampcor::cuda {
+
 
 // cuda does not have a good support on volatile vector structure, e.g. complex type (float2 or double2)
 // we use regular 2xfloat/double type for shared memory (volatile) data
@@ -179,3 +181,5 @@ void cuDeramp(int method, cuArrays<real2_type> *images, const int axis, cudaStre
 }
 
 // end of file
+
+} // namespace

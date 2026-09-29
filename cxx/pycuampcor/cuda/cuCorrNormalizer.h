@@ -15,6 +15,8 @@
 #include "cuArrays.h"
 #include "data_types.h"
 
+namespace pycuampcor::cuda {
+
 /**
  * Abstract class interface for correlation surface normalization processor
  * with different implementations
@@ -51,6 +53,8 @@ public:
     ~cuNormalizeSAT();
     void execute(cuArrays<real_type> * correlation, cuArrays<real_type> *reference, cuArrays<real_type> *search, cudaStream_t stream) override;
 };
+
+} // namespace
 
 #endif
 // end of file

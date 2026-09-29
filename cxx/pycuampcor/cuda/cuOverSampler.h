@@ -15,6 +15,8 @@
 #include "data_types.h"
 #include <cufft.h>
 
+namespace pycuampcor::cuda {
+
 // FFT Oversampler for complex images
 class cuOverSamplerC2C
 {
@@ -55,6 +57,8 @@ public:
     ~cuOverSamplerR2R();
 };
 
+
+} // namespace
 
 #endif //__CUOVERSAMPLER_H
 // end of file

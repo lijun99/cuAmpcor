@@ -7,6 +7,8 @@
 #include "cuCorrNormalizer.h"
 #include "cuAmpcorUtil.h"
 
+namespace pycuampcor::cuda {
+
 cuNormalizeProcessor*
 newCuNormalizer(int secondaryNX, int secondaryNY, int count)
 {
@@ -73,3 +75,6 @@ template class cuNormalizeFixed<512>;
 template class cuNormalizeFixed<1024>;
 
 // end of file
+
+
+} // namespace

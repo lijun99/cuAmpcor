@@ -12,6 +12,8 @@
 #include "data_types.h"
 #include <cufft.h>
 
+namespace pycuampcor::cuda {
+
 class cuFreqCorrelator
 {
 private:
@@ -33,6 +35,8 @@ public:
     // executor
     void execute(cuArrays<real_type> *templates, cuArrays<real_type> *images, cuArrays<real_type> *results);
 };
+
+} // namespace
 
 #endif //__CUCORRFREQUENCY_H
 // end of file

@@ -13,6 +13,8 @@
 #include "cudaError.h"
 #include "cuAmpcorUtil.h"
 
+namespace pycuampcor::cuda {
+
 /**
  * cuSincOverSamplerR2R constructor
  * @param i_covs oversampling factor
@@ -253,3 +255,5 @@ void cuSincOverSamplerR2R::execute(cuArrays<real_type> *imagesIn, cuArrays<real_
 }
 
 // end of file
+
+} // namespace

@@ -16,6 +16,8 @@
 #include <iostream>
 #include <string>
 
+namespace pycuampcor::cuda {
+
 template <typename T>
 class cuArrays{
 
@@ -100,6 +102,8 @@ std::ostream& operator<<(std::ostream& os, const float3& p);
 std::ostream& operator<<(std::ostream& os, const double2& p);
 std::ostream& operator<<(std::ostream& os, const float3& p);
 std::ostream& operator<<(std::ostream& os, const int2& p);
+
+} // namespace
 
 #endif //__CUARRAYS_H
 //end of file

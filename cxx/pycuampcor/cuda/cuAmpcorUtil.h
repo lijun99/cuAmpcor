@@ -17,6 +17,8 @@
 #include "cudaUtil.h"
 #include "float2.h"
 
+namespace pycuampcor::cuda {
+
 
 //in cuArraysCopy.cu: various utilities for copy images file in gpu memory
 void cuArraysCopyToBatch(cuArrays<image_complex_type> *image1, cuArrays<complex_type> *image2, int strideH, int strideW, cudaStream_t stream);
@@ -104,6 +106,8 @@ void cuEstimateSnr(cuArrays<real_type> *corrSum, cuArrays<int> *corrValidCount, 
 
 // implemented in cuEstimateStats.cu
 void cuEstimateVariance(cuArrays<real_type> *corrBatchRaw, cuArrays<int2> *maxloc, cuArrays<real_type> *maxval, const int templateSize, const int distance, cuArrays<real3_type> *covValue, cudaStream_t stream);
+
+} // namespace
 
 #endif
 

@@ -12,6 +12,8 @@
 #include <string>
 #include "data_types.h" // for int2
 
+namespace pycuampcor::PYCUAMPCOR_BACKEND {
+
 /// Class container for all parameters
 ///
 /// @note
@@ -180,6 +182,8 @@ public:
     void _setupParameters_OnePass();
 
 };
+
+} // namespace
 
 #endif //__CUAMPCORPARAMETER_H
 //end of file

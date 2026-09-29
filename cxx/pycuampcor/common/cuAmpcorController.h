@@ -18,6 +18,8 @@
 // dependencies
 #include "cuAmpcorParameter.h"
 
+namespace pycuampcor::PYCUAMPCOR_BACKEND {
+
 class cuAmpcorController {
 public:
     cuAmpcorParameter *param;  ///< the parameter set
@@ -29,6 +31,8 @@ public:
     void runAmpcor();
     bool isDoublePrecision();
 };
+} // namespace
+
 #endif
 
 // end of file

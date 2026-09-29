@@ -13,6 +13,8 @@
 #include "cudaError.h"
 #include "cuAmpcorUtil.h"
 
+namespace pycuampcor::cuda {
+
 /**
  * Constructor for cuOversamplerC2C
  * @param input image size inNX x inNY
@@ -193,3 +195,5 @@ cuOverSamplerR2R::~cuOverSamplerR2R()
 }
 
 // end of file
+
+} // namespace

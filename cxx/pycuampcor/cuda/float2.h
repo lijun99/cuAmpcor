@@ -10,6 +10,8 @@
 #include <cuda_runtime.h>
 #include <math.h>
 
+namespace pycuampcor::cuda {
+
 inline __host__ __device__ void zero(float2 &a) { a.x = 0.0; a.y = 0.0; }
 
 // negative
@@ -244,6 +246,8 @@ inline __host__ __device__ double2 complexExp(double arg)
     return make_double2(cos(arg), sin(arg));
 }
 
+
+} // namespace
 
 #endif //__FLOAT2_H
 // end of file

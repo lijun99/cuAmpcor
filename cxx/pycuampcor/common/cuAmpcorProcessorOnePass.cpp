@@ -3,6 +3,8 @@
 #include "cuAmpcorUtil.h"
 #include <iostream>
 
+namespace pycuampcor::PYCUAMPCOR_BACKEND {
+
 /**
  * Run ampcor process for a batch of images (a chunk)
  * @param[in] idxDown_  index of the chunk along Down/Azimuth direction
@@ -549,3 +551,6 @@ cuAmpcorProcessorOnePass::~cuAmpcorProcessorOnePass()
 }
 
 // end of file
+
+
+} // namespace

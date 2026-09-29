@@ -9,6 +9,8 @@
 #include <iostream>
 #include <stdexcept>
 
+namespace pycuampcor::PYCUAMPCOR_BACKEND {
+
 SlcImage::SlcImage(const std::string& filepath, size_t img_height, size_t img_width, size_t pixel_size, size_t buffer_size)
     : width(img_width), height(img_height), pixel_size(pixel_size), fd(-1), mapped_data(nullptr),
       mapped_offset(0), mapped_size(0)
@@ -89,3 +91,6 @@ SlcImage::~SlcImage()
 }
   	  
 // end of file
+
+
+} // namespace

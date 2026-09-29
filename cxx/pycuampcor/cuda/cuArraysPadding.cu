@@ -6,6 +6,8 @@
 #include "cuAmpcorUtil.h"
 #include "float2.h"
 
+namespace pycuampcor::cuda {
+
 
 // cuda kernel for zero padding for FFT oversampling,
 // for both even and odd sequences
@@ -149,3 +151,6 @@ void cuArraysFFTPaddingMany(cuArrays<complex_type> *image1, cuArrays<complex_typ
 
 
 
+
+
+} // namespace

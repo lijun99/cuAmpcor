@@ -10,6 +10,8 @@
 
 #include "cuAmpcorProcessor.h"
 
+namespace pycuampcor::PYCUAMPCOR_BACKEND {
+
 
 /**
  * cuAmpcor processor for a chunk (a batch of windows)
@@ -84,5 +86,7 @@ public:
     void loadReferenceChunk();
     void loadSecondaryChunk();
 };
+
+} // namespace
 
 #endif //__CUAMPCORPROCESSOROnePass_H

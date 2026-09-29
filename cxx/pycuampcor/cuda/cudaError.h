@@ -12,6 +12,8 @@
 
 #include "debug.h"
 
+namespace pycuampcor::cuda {
+
 template<typename T >
 void check(T result, char const *const func, const char *const file, int const line);
 
@@ -28,5 +30,7 @@ void __getLastCudaError(const char *errorMessage, const char *file, const int li
 #define cufft_Error(val)  val
 #define getLastCudaError(val)
 #endif //CUDA_ERROR_CHECK
+
+} // namespace
 
 #endif //__CUDAERROR_CUH

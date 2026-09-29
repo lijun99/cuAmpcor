@@ -7,6 +7,8 @@
 // my module dependencies
 #include "cuAmpcorUtil.h"
 
+namespace pycuampcor::cuda {
+
 // find the max between two elements
 inline static __device__ void maxPairReduce(volatile real_type* maxval, volatile int* maxloc,
       size_t gid, size_t strideid)
@@ -306,3 +308,6 @@ void cuDetermineSecondaryExtractOffset(cuArrays<int2> *maxLoc, cuArrays<int2> *m
 // end of file
 
 
+
+
+} // namespace

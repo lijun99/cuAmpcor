@@ -8,6 +8,8 @@
 #include <iostream>
 #include <stdexcept>
 
+namespace pycuampcor::PYCUAMPCOR_BACKEND {
+
 
 #ifndef IDIVUP
 #define IDIVUP(i,j) ((i+j-1)/j)
@@ -455,3 +457,6 @@ cuAmpcorParameter::~cuAmpcorParameter()
     deallocateArrays();
 }
 // end of file
+
+
+} // namespace

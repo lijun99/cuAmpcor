@@ -7,6 +7,8 @@
 
 #include "cuAmpcorUtil.h"
 
+namespace pycuampcor::cuda {
+
 
 // cuda kernel for cuCorrTimeDomain
 template<const int nthreads, const int NPT>
@@ -200,3 +202,6 @@ void cuCorrTimeDomain(cuArrays<real_type> *templates,
 #endif
 }
 // end of file
+
+
+} // namespace

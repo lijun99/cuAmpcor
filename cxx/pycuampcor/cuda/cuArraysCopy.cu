@@ -27,6 +27,8 @@
 #include "float2.h"
 #include "data_types.h"
 
+namespace pycuampcor::cuda {
+
 // cuda kernel for cuArraysCopyToBatch
 __global__ void cuArraysCopyToBatch_kernel(const image_complex_type *imageIn, const int inNX, const int inNY,
     complex_type *imageOut, const int outNX, const int outNY,
@@ -671,3 +673,6 @@ void cuArraysAbs(cuArrays<complex_type> *image1, cuArrays<real_type> *image2, cu
 }
 
 // end of file
+
+
+} // namespace

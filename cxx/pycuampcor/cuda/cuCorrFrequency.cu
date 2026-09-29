@@ -6,6 +6,8 @@
 #include "cuCorrFrequency.h"
 #include "cuAmpcorUtil.h"
 
+namespace pycuampcor::cuda {
+
 /*
  * cuFreqCorrelator Constructor
  * @param imageNX height of each image
@@ -129,3 +131,6 @@ void cuArraysElementMultiplyConjugate(cuArrays<complex_type> *image1, cuArrays<c
     getLastCudaError("cuArraysElementMultiply error\n");
 } 
 //end of file
+
+
+} // namespace

@@ -13,6 +13,8 @@
 #include <fstream>
 #include <iostream>
 
+namespace pycuampcor::cuda {
+
 // allocate arrays in device memory
 template <typename T>
 void cuArrays<T>::allocate()
@@ -153,3 +155,6 @@ template class cuArrays<int2>;
 template class cuArrays<int>;
 
 // end of file
+
+
+} // namespace

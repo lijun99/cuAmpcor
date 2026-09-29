@@ -15,6 +15,8 @@
 #include <float.h>
 #include <cuda_runtime.h> // for vector types int2, float2, ...
 
+namespace pycuampcor::cuda {
+
 // disable this for single precision version
 // #define CUAMPCOR_DOUBLE
 
@@ -42,6 +44,8 @@
 
 #define image_complex_type float2
 #define image_real_type float
+
+} // namespace
 
 #endif //__CUAMPCOR_DATA_TYPES_H
 //end of file

@@ -9,6 +9,8 @@
 #include <mutex>
 #include "backend.h"
 
+namespace pycuampcor::PYCUAMPCOR_BACKEND {
+
 class SlcImage{
 public:
     // disable default constructor
@@ -37,5 +39,7 @@ private:
 
     void remapIfNeeded(size_t required_start, size_t required_end);
 };
+
+} // namespace
 
 #endif //__SLCIMAGE_H
