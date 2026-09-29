@@ -72,8 +72,7 @@ inline __host__ __device__ float2 operator*(float2 a, float2 b)
 }
 inline __host__ __device__ void operator*=(float2 &a, float2 b)
 {
-    a.x = a.x*b.x - a.y*b.y;
-    a.y = a.y*b.x + a.x*b.y;
+    a = make_float2(a.x*b.x - a.y*b.y, a.y*b.x + a.x*b.y);
 }
 inline __host__ __device__ float2 operator*(float2 a, float b)
 {
@@ -190,8 +189,7 @@ inline __host__ __device__ double2 operator*(double2 a, double2 b)
 }
 inline __host__ __device__ void operator*=(double2 &a, double2 b)
 {
-    a.x = a.x*b.x - a.y*b.y;
-    a.y = a.y*b.x + a.x*b.y;
+    a = make_double2(a.x*b.x - a.y*b.y, a.y*b.x + a.x*b.y);
 }
 inline __host__ __device__ double2 operator*(double2 a, double b)
 {
