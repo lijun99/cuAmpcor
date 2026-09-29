@@ -75,3 +75,41 @@ int getSMCount(int devID)
     // Return the SM (Streaming Multiprocessor) count
     return prop.multiProcessorCount;
 }
+
+// backend hooks for the shared ampcor code
+#include "backend.h"
+#include "cuAmpcorParameter.h"
+
+int backendInit(cuAmpcorParameter *param)
+{
+    return gpuDeviceInit(param->deviceID);
+}
+
+int backendNumWorkers(const cuAmpcorParameter *param)
+{
+    return param->nStreams;
+}
+
+stream_t backendCreateStream()
+{
+    cudaStream_t stream;
+    checkCudaErrors(cudaStreamCreate(&stream));
+    return stream;
+}
+
+void backendDestroyStream(stream_t stream)
+{
+    checkCudaErrors(cudaStreamDestroy(stream));
+}
+
+void backendSynchronize()
+{
+    checkCudaErrors(cudaDeviceSynchronize());
+}
+
+void backendCopyFromHost2D(void *dst, size_t dpitch, const void *src, size_t spitch,
+    size_t widthInBytes, size_t height, stream_t stream)
+{
+    checkCudaErrors(cudaMemcpy2DAsync(dst, dpitch, src, spitch,
+        widthInBytes, height, cudaMemcpyHostToDevice, stream));
+}

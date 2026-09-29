@@ -11,7 +11,7 @@ std::unique_ptr<cuAmpcorProcessor> cuAmpcorProcessor::create(int workflow,
     SlcImage *reference_, SlcImage *secondary_,
     cuArrays<real2_type> *offsetImage_, cuArrays<real_type> *snrImage_,
     cuArrays<real3_type> *covImage_, cuArrays<real_type> *peakValueImage_,
-    cudaStream_t stream_)
+    stream_t stream_)
 {
     if (workflow == 0) {
         return std::unique_ptr<cuAmpcorProcessor>(new cuAmpcorProcessorTwoPass(
@@ -31,7 +31,7 @@ cuAmpcorProcessor::cuAmpcorProcessor(cuAmpcorParameter *param_,
         SlcImage *reference_, SlcImage *secondary_,
         cuArrays<real2_type> *offsetImage_, cuArrays<real_type> *snrImage_,
         cuArrays<real3_type> *covImage_, cuArrays<real_type> *peakValueImage_,
-        cudaStream_t stream_)
+        stream_t stream_)
     : param(param_), referenceImage(reference_), secondaryImage(secondary_),
     offsetImage(offsetImage_), snrImage(snrImage_), covImage(covImage_),
     peakValueImage(peakValueImage_), stream(stream_)

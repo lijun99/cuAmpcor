@@ -8,6 +8,7 @@
 #ifndef __CUAMPCORPROCESSOR_H
 #define __CUAMPCORPROCESSOR_H
 
+#include "backend.h"
 #include "SlcImage.h"
 #include "data_types.h"
 #include "cuArrays.h"
@@ -42,7 +43,7 @@ protected:
     cuArrays<real3_type> *covImage;    ///< cov image
     cuArrays<real_type> *peakValueImage;     ///< peak value image
 
-    cudaStream_t stream;  ///< CUDA stream to use
+    stream_t stream;  ///< stream to use (CUDA stream or dummy for CPU)
 
 
 public:
@@ -51,7 +52,7 @@ public:
         SlcImage *reference_, SlcImage *secondary_,
         cuArrays<real2_type> *offsetImage_, cuArrays<real_type> *snrImage_,
         cuArrays<real3_type> *covImage_, cuArrays<real_type> *peakValueImage_,
-        cudaStream_t stream_);
+        stream_t stream_);
     virtual ~cuAmpcorProcessor() = default;
 
     // Factory method (virtual constructor)
@@ -60,7 +61,7 @@ public:
         SlcImage *reference_, SlcImage *secondary_,
         cuArrays<real2_type> *offsetImage_, cuArrays<real_type> *snrImage_,
         cuArrays<real3_type> *covImage_, cuArrays<real_type> *peakValueImage_,
-        cudaStream_t stream_);
+        stream_t stream_);
 
     // workflow specific methods
     virtual void run(int, int) = 0;

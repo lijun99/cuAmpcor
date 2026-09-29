@@ -6,7 +6,8 @@
 #define __SLCIMAGE_H
 
 #include <string>
-#include <cuda_runtime.h>
+#include <mutex>
+#include "backend.h"
 
 class SlcImage{
 public:
@@ -15,7 +16,7 @@ public:
     // constructor
     SlcImage(const std::string& fn, size_t image_height, size_t image_width, size_t pixel_size, size_t buffersize);
     // interface
-    void loadToDevice(void* dArray, size_t h_offset, size_t w_offset, size_t h_tile, size_t w_tile, cudaStream_t stream);
+    void loadToDevice(void* dArray, size_t h_offset, size_t w_offset, size_t h_tile, size_t w_tile, stream_t stream);
     // destructor
     ~SlcImage();
 
@@ -31,6 +32,8 @@ private:
     size_t mapped_offset;
     size_t mapped_size;
     size_t max_map_size;
+
+    std::mutex mutex;  ///< serialize remapping/loading among workers
 
     void remapIfNeeded(size_t required_start, size_t required_end);
 };

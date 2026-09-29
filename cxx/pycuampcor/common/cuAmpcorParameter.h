@@ -10,7 +10,7 @@
 #define __CUAMPCORPARAMETER_H
 
 #include <string>
-#include <cuda_runtime.h> // for int2
+#include "data_types.h" // for int2
 
 /// Class container for all parameters
 ///

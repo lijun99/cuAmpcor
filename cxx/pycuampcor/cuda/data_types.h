@@ -13,6 +13,7 @@
 #define __CUAMPCOR_DATA_TYPES_H
 
 #include <float.h>
+#include <cuda_runtime.h> // for vector types int2, float2, ...
 
 // disable this for single precision version
 // #define CUAMPCOR_DOUBLE

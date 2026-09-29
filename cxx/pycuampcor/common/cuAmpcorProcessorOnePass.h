@@ -74,7 +74,7 @@ public:
         SlcImage *reference_, SlcImage *secondary_,
         cuArrays<real2_type> *offsetImage_, cuArrays<real_type> *snrImage_,
         cuArrays<real3_type> *covImage_, cuArrays<real_type> *peakValueImage_,
-        cudaStream_t stream_);
+        stream_t stream_);
     // destructor
     ~cuAmpcorProcessorOnePass() override;
 

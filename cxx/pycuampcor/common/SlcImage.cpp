@@ -5,10 +5,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/mman.h>
-#include <cuComplex.h>
 #include <assert.h>
-#include <cublas_v2.h>
-#include "cudaError.h"
 #include <iostream>
 #include <stdexcept>
 
@@ -55,31 +52,30 @@ void SlcImage::remapIfNeeded(size_t required_start, size_t required_end)
 }
 
 
-/// load a tile of data h_tile x w_tile from CPU (mmap) to GPU
+/// load a tile of data h_tile x w_tile from CPU (mmap) to the device (GPU) or work (CPU) memory
 /// @param dArray pointer for array in device memory
 /// @param h_offset Down/Height offset
 /// @param w_offset Across/Width offset
 /// @param h_tile Down/Height tile size
 /// @param w_tile Across/Width tile size
-/// @param stream CUDA stream for copying
-void SlcImage::loadToDevice(void *dArray, size_t h_offset, size_t w_offset, size_t h_tile, size_t w_tile, cudaStream_t stream)
+/// @param stream CUDA stream for copying (not used for CPU)
+void SlcImage::loadToDevice(void *dArray, size_t h_offset, size_t w_offset, size_t h_tile, size_t w_tile, stream_t stream)
 {
     size_t tileStartAddress = (h_offset*width + w_offset)*pixel_size;
-    size_t tileLastAddress = tileStartAddress + (h_tile*width + w_tile)*pixel_size;
-     
+    size_t tileLastAddress = ((h_offset+h_tile-1)*width + w_offset + w_tile)*pixel_size;
+
+    // remapping changes the shared mapped region; serialize among workers
+    std::lock_guard<std::mutex> lock(mutex);
+
     remapIfNeeded(tileStartAddress, tileLastAddress);
-    
+
     char *startPtr = (char *)mapped_data ;
     startPtr += tileStartAddress - mapped_offset;
-    
-    // @note 
+
+    // @note
     // We assume down/across directions as rows/cols. Therefore, SLC mmap and device array both use row major.
-    // cuBlas assumes both source and target arrays are column major. 
-    // To use cublasSetMatrix, we need to switch w_tile/h_tile for rows/cols  
-    // checkCudaErrors(cublasSetMatrixAsync(w_tile, h_tile, pixelsize, startPtr, width, dArray, w_tile, stream)); 
-    
-    checkCudaErrors(cudaMemcpy2DAsync(dArray, w_tile*pixel_size, startPtr, width*pixel_size,
-                                      w_tile*pixel_size, h_tile, cudaMemcpyHostToDevice,stream));
+    backendCopyFromHost2D(dArray, w_tile*pixel_size, startPtr, width*pixel_size,
+        w_tile*pixel_size, h_tile, stream);
 }
 
 SlcImage::~SlcImage()

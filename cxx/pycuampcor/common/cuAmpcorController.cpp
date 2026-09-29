@@ -9,11 +9,14 @@
 // dependencies
 #include "SlcImage.h"
 #include "cuArrays.h"
-#include "cudaUtil.h"
 #include "cuAmpcorProcessor.h"
 #include "cuAmpcorUtil.h"
-#include <cuda_runtime.h>
+#include "backend.h"
+#include <algorithm>
+#include <cstdio>
 #include <iostream>
+#include <memory>
+#include <vector>
 
 // constructor
 cuAmpcorController::cuAmpcorController()
@@ -43,8 +46,8 @@ bool cuAmpcorController::isDoublePrecision()
  */
 void cuAmpcorController::runAmpcor()
 {
-    // set the gpu id
-    param->deviceID = gpuDeviceInit(param->deviceID);
+    // initialize the device (gpu id) or the cpu threads
+    param->deviceID = backendInit(param);
 
     // reference and secondary images
     // TODO: selecting band
@@ -95,21 +98,23 @@ void cuAmpcorController::runAmpcor()
 
 
 
-    // set up the cuda streams
-    cudaStream_t streams[param->nStreams];
-    std::unique_ptr<cuAmpcorProcessor> chunk[param->nStreams];
-    // iterate over cuda streams
-    for(int istream=0; istream < param->nStreams; istream++)
+    // set up the workers (cuda streams, or cpu threads)
+    const int nWorkers = backendNumWorkers(param);
+    std::vector<stream_t> streams(nWorkers);
+    std::vector<std::unique_ptr<cuAmpcorProcessor>> chunk(nWorkers);
+    // iterate over workers
+    for(int iworker=0; iworker < nWorkers; iworker++)
     {
         // create each stream
-        checkCudaErrors(cudaStreamCreate(&streams[istream]));
-        // create the chunk processor for each stream
-        chunk[istream]= cuAmpcorProcessor::create(param->workflow, param, referenceImage, secondaryImage,
-            offsetImageRun, snrImageRun, covImageRun, peakValueImageRun, streams[istream]);
+        streams[iworker] = backendCreateStream();
+        // create the chunk processor for each worker
+        chunk[iworker]= cuAmpcorProcessor::create(param->workflow, param, referenceImage, secondaryImage,
+            offsetImageRun, snrImageRun, covImageRun, peakValueImageRun, streams[iworker]);
     }
 
-    int nChunksDown = param->numberChunkDown;
-    int nChunksAcross = param->numberChunkAcross;
+    const int nChunksDown = param->numberChunkDown;
+    const int nChunksAcross = param->numberChunkAcross;
+    const int nChunks = nChunksDown*nChunksAcross;
 
     // report info
     std::cout << "Total number of windows (azimuth x range):  "
@@ -118,29 +123,23 @@ void cuAmpcorController::runAmpcor()
     std::cout << "to be processed in the number of chunks: "
         << nChunksDown << " x " << nChunksAcross  << std::endl;
 
-    // iterative over chunks down
-    int message_interval = std::max(nChunksDown/10, 1);
-    for(int i = 0; i<nChunksDown; i++)
+    // iterate over all chunks
+    // for GPU, chunks are assigned to cuda streams in turn (and the pragma is ignored);
+    // for CPU, chunks are processed in parallel by openmp threads
+    const int message_interval = std::max(nChunksDown/10, 1);
+    #pragma omp parallel for schedule(dynamic) num_threads(nWorkers)
+    for(int k = 0; k < nChunks; k++)
     {
-        if(i%message_interval == 0)
-            std::cout << "Processing chunks (" << i+1 <<", x) - (" << std::min(nChunksDown, i+message_interval )
-                << ", x) out of " << nChunksDown << std::endl;
-        // iterate over chunks across
-        for(int j=0; j<nChunksAcross; j+=param->nStreams)
-        {
-            // iterate over cuda streams to process chunks
-            for(int istream = 0; istream < param->nStreams; istream++)
-            {
-                int chunkIdxAcross = j+istream;
-                if(chunkIdxAcross < nChunksAcross) {
-                    chunk[istream]->run(i, chunkIdxAcross);
-                }
-            }
-        }
+        const int i = k / nChunksAcross;
+        const int j = k % nChunksAcross;
+        if(j == 0 && i%message_interval == 0)
+            printf("Processing chunks (%d, x) - (%d, x) out of %d\n",
+                i+1, std::min(nChunksDown, i+message_interval), nChunksDown);
+        chunk[backendWorkerId(k, nWorkers)]->run(i, j);
     }
 
-    // wait all streams are done
-    cudaDeviceSynchronize();
+    // wait all workers are done
+    backendSynchronize();
 
     // extraction of the run images to output images
     cuArraysCopyExtract(offsetImageRun, offsetImage, make_int2(0,0), streams[0]);
@@ -186,11 +185,11 @@ void cuAmpcorController::runAmpcor()
     delete covImageRun;
     delete peakValueImageRun;
 
-    for (int istream=0; istream < param->nStreams; istream++)
+    for (int iworker=0; iworker < nWorkers; iworker++)
     {
         // cufftplan etc are stream dependent, need to be deleted before stream is destroyed
-        chunk[istream].release();
-        checkCudaErrors(cudaStreamDestroy(streams[istream]));
+        chunk[iworker].reset();
+        backendDestroyStream(streams[iworker]);
     }
 
     delete referenceImage;
