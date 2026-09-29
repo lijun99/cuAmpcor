@@ -27,6 +27,7 @@ cuAmpcorParameter::cuAmpcorParameter()
     algorithm = 0; //0 freq; 1 time
     deviceID = 0;
     nStreams = 1;
+    nThreads = 0;
     derampMethod = 0;
     derampAxis = 2;
     workflow = 0;

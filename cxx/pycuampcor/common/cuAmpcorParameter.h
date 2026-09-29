@@ -37,6 +37,7 @@ public:
     int algorithm;      ///< Cross-correlation algorithm: 0=freq domain (default) 1=time domain
     int deviceID;       ///< Targeted GPU device ID: use -1 to auto select
     int nStreams;       ///< Number of streams to asynchonize data transfers and compute kernels
+    int nThreads;       ///< Number of CPU threads (CPU backend only; 0 for the OpenMP default)
     int derampMethod;   ///< Method for deramping 0=None, 1=average
     int derampAxis;     ///< Axis for deramping 0=down, 1=across, 2=both
     int workflow;       ///< Workflow 0: two passes, first pass without antialiasing oversampling, 1: one pass with antialiasing oversampling
