@@ -14,7 +14,7 @@ package:
 
 source:
   url: https://github.com/earthdef/cuAmpcor/archive/refs/tags/v{{ version }}.tar.gz
-  sha256: 0000000000000000000000000000000000000000000000000000000000000000
+  sha256: 00caf37f8e1e6d42a0b3ed0206f96e0d653ba14db0fa3398f0fb1ae7dc075c36
 
 build:
   number: {{ number }}
