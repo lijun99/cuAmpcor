@@ -1,13 +1,5 @@
 {% set name = "pycuampcor" %}
 {% set version = "2.1.0" %}
-{% set number = 0 %}
-
-# cuda builds get a higher build number so that they are preferred where the
-# __cuda virtual package (an NVIDIA driver) is available; cpu builds otherwise
-{% if cuda_compiler_version != "None" %}
-{% set number = number + 100 %}
-{% endif %}
-
 package:
   name: {{ name }}
   version: {{ version }}
@@ -16,11 +8,14 @@ source:
   path: ../..
 
 build:
-  number: {{ number }}
+  # cuda builds get a higher build number so that they are preferred where the
+  # __cuda virtual package (an NVIDIA driver) is available; cpu builds otherwise
+  number: 100  # [cuda_compiler_version != "None"]
+  number: 0  # [cuda_compiler_version == "None"]
   skip: true  # [win]
   skip: true  # [osx and cuda_compiler_version != "None"]
-  string: cuda{{ cuda_compiler_version | replace('.', '') }}_py{{ CONDA_PY }}h{{ PKG_HASH }}_{{ number }}  # [cuda_compiler_version != "None"]
-  string: cpu_py{{ CONDA_PY }}h{{ PKG_HASH }}_{{ number }}  # [cuda_compiler_version == "None"]
+  string: cuda{{ cuda_compiler_version | replace('.', '') }}_py{{ CONDA_PY }}h{{ PKG_HASH }}_{{ PKG_BUILDNUM }}  # [cuda_compiler_version != "None"]
+  string: cpu_py{{ CONDA_PY }}h{{ PKG_HASH }}_{{ PKG_BUILDNUM }}  # [cuda_compiler_version == "None"]
   script:
     - {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation -Ccmake.define.PYCUAMPCOR_CUDA=ON -Ccmake.define.CMAKE_CUDA_ARCHITECTURES=all-major  # [cuda_compiler_version != "None"]
     - {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation -Ccmake.define.PYCUAMPCOR_CUDA=OFF  # [cuda_compiler_version == "None"]
