@@ -72,6 +72,7 @@ static void sincInterpolation(const real_type *imageIn, const int inNX, const in
     for(int idxX = 0; idxX < i_int_size; idxX++) {
         // determine the output pixel indices
         int outx = idxX + i_startX + centerShift.x*factor;
+        if (outx < 0) outx += outNX;
         if (outx >= outNX) outx-=outNX;
         // index in input grids
         real_type r_xout = (real_type)outx/i_covs_;
@@ -84,6 +85,7 @@ static void sincInterpolation(const real_type *imageIn, const int inNX, const in
 
         for(int idxY = 0; idxY < i_int_size; idxY++) {
             int outy = idxY + i_startY +  centerShift.y*factor;
+            if (outy < 0) outy += outNY;
             if (outy >= outNY) outy-=outNY;
             real_type r_yout = (real_type)outy/i_covs_;
             int i_yout = int(r_yout);

@@ -31,10 +31,8 @@ def gpu_available():
 IMPLS = ["cpu"] + (["gpu"] if gpu_available() else [])
 
 
-@pytest.fixture(scope="module")
-def images(tmp_path_factory):
+def make_images(path, shift):
     """Create a reference/secondary image pair with a known shift."""
-    path = tmp_path_factory.mktemp("images")
     rng = np.random.default_rng(12345)
     noise = rng.standard_normal((N, N)) + 1j * rng.standard_normal((N, N))
     # band-limited (80% of the sampling rate) as SAR images are oversampled
@@ -43,7 +41,7 @@ def images(tmp_path_factory):
     band = (np.abs(ky) < 0.4) & (np.abs(kx) < 0.4)
     spectrum = np.fft.fft2(noise) * band
     ref = np.fft.ifft2(spectrum)
-    ramp = np.exp(-2j * np.pi * (ky * SHIFT[0] + kx * SHIFT[1]))
+    ramp = np.exp(-2j * np.pi * (ky * shift[0] + kx * shift[1]))
     sec = np.fft.ifft2(spectrum * ramp)
     # add some decorrelation noise
     sec += 0.3 * np.std(sec) * (rng.standard_normal((N, N))
@@ -53,6 +51,20 @@ def images(tmp_path_factory):
     ref.astype(np.complex64).tofile(ref_file)
     sec.astype(np.complex64).tofile(sec_file)
     return ref_file, sec_file
+
+
+@pytest.fixture(scope="module")
+def images(tmp_path_factory):
+    return make_images(tmp_path_factory.mktemp("images"), SHIFT)
+
+
+# offsets close to the edge of the (across) search range
+EDGE_SHIFT = (0.4, -9.3)
+
+
+@pytest.fixture(scope="module")
+def edge_images(tmp_path_factory):
+    return make_images(tmp_path_factory.mktemp("edge_images"), EDGE_SHIFT)
 
 
 def run_ampcor(impl, images, outdir, workflow=0, ovs_method=0, algorithm=0,
@@ -125,6 +137,15 @@ def test_known_shift(impl, workflow, ovs_method, images, tmp_path):
     assert np.all(np.abs(np.median(err, axis=(0, 1))) < 0.02)
     assert np.all(out["correlation_peak"] > 0.5)
     assert np.all(out["snr"] > 1)
+
+
+@pytest.mark.parametrize("impl", IMPLS)
+@pytest.mark.parametrize("ovs_method", [0, 1])
+def test_search_edge(impl, ovs_method, edge_images, tmp_path):
+    """Peaks close to the search range edge (the zoom-in window is shifted)."""
+    out = run_ampcor(impl, edge_images, str(tmp_path), ovs_method=ovs_method)
+    err = out["dense_offsets"] - np.array(EDGE_SHIFT)
+    assert np.all(np.abs(err) < 0.1)
 
 
 @pytest.mark.parametrize("impl", IMPLS)

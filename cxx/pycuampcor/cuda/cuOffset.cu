@@ -259,7 +259,8 @@ static inline __device__ int2 dev_adjustOffset(
     if(start<0)     // if exceeding the limit on the left
     {
         // set start at 0 and record the shift of center
-        shift = -start;
+        // (negative, the max location is on the left of the extracted center)
+        shift = start;
         start = 0;
     }
     else if(start > rbound ) // if exceeding the limit on the right

@@ -100,8 +100,10 @@ __device__ void cuSincInterpolation_kernel_common(const int nImages,
     if(idxImage >=nImages || idxX >= i_int_size || idxY >= i_int_size) return;
     // determine the output pixel indices
     int outx = idxX + i_startX + centerShift.x*factor;
+    if (outx < 0) outx += outNX;
     if (outx >= outNX) outx-=outNX;
     int outy = idxY + i_startY +  centerShift.y*factor;
+    if (outy < 0) outy += outNY;
     if (outy >= outNY) outy-=outNY;
     // flattened to 1d
     int idxOut = idxImage*outNX*outNY + outx*outNY + outy;

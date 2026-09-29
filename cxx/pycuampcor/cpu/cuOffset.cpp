@@ -123,7 +123,8 @@ static inline int2 adjustOffset(const int oldRange, const int newRange, const in
     if(start<0)     // if exceeding the limit on the left
     {
         // set start at 0 and record the shift of center
-        shift = -start;
+        // (negative, the max location is on the left of the extracted center)
+        shift = start;
         start = 0;
     }
     else if(start > rbound ) // if exceeding the limit on the right
