@@ -6,6 +6,7 @@
 # Options:
 #   PYCUAMPCOR_CUDA   AUTO (default, build the CUDA backend if a CUDA compiler is found), ON, OFF
 #   PYCUAMPCOR_DOUBLE use double precision for internal computations (default OFF)
+#   PYCUAMPCOR_BUILD_TESTS build the C++ unit tests, run with ctest (default OFF)
 
 # minimum cmake version to support CUDA and Python
 cmake_minimum_required(VERSION 3.18)
@@ -20,6 +21,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(PYCUAMPCOR_CUDA AUTO CACHE STRING "Build the CUDA backend (AUTO, ON, OFF)")
 set_property(CACHE PYCUAMPCOR_CUDA PROPERTY STRINGS AUTO ON OFF)
 option(PYCUAMPCOR_DOUBLE "Use double precision for internal computations" OFF)
+option(PYCUAMPCOR_BUILD_TESTS "Build the C++ unit tests (requires GoogleTest)" OFF)
 
 # CUDA backend
 if(PYCUAMPCOR_CUDA STREQUAL "AUTO")
@@ -77,42 +79,63 @@ list(TRANSFORM PYCUAMPCOR_COMMON_SOURCES PREPEND ${PYCUAMPCOR_CXX_DIR}/common/)
 list(TRANSFORM PYCUAMPCOR_CPU_SOURCES PREPEND ${PYCUAMPCOR_CXX_DIR}/cpu/)
 list(TRANSFORM PYCUAMPCOR_CUDA_SOURCES PREPEND ${PYCUAMPCOR_CXX_DIR}/cuda/)
 
-# add a python extension module pycuampcor._<backend>, exposing class <pyclass>
-# the shared code in common/ and the bindings are compiled with the backend sources
+# add a static library pycuampcor_<backend> with the backend sources and
+# the shared code in common/ (compiled once for each backend), and
+# a python extension module pycuampcor._<backend> exposing class <pyclass>
 function(pycuampcor_add_backend backend pyclass)
     string(TOUPPER ${backend} BACKEND)
-    set(target _${backend})
-    pybind11_add_module(${target}
-        ${CMAKE_CURRENT_SOURCE_DIR}/python/extensions/pycuampcor.cpp
+    set(lib pycuampcor_${backend})
+    add_library(${lib} STATIC
         ${PYCUAMPCOR_COMMON_SOURCES}
         ${PYCUAMPCOR_${BACKEND}_SOURCES}
         )
-    target_include_directories(${target} PRIVATE
+    set_target_properties(${lib} PROPERTIES
+        POSITION_INDEPENDENT_CODE ON
+        CXX_VISIBILITY_PRESET hidden
+        CUDA_VISIBILITY_PRESET hidden
+        )
+    target_include_directories(${lib} PUBLIC
         ${PYCUAMPCOR_CXX_DIR}/common
         ${PYCUAMPCOR_CXX_DIR}/${backend}
         )
-    target_compile_definitions(${target} PRIVATE
+    target_compile_definitions(${lib} PUBLIC
         PYCUAMPCOR_BACKEND=${backend}
         PYCUAMPCOR_BACKEND_${BACKEND}
+        )
+    if(PYCUAMPCOR_DOUBLE)
+        target_compile_definitions(${lib} PUBLIC CUAMPCOR_DOUBLE)
+    endif()
+
+    set(target _${backend})
+    pybind11_add_module(${target}
+        ${CMAKE_CURRENT_SOURCE_DIR}/python/extensions/pycuampcor.cpp
+        )
+    target_compile_definitions(${target} PRIVATE
         PYCUAMPCOR_MODULE=${target}
         PYCUAMPCOR_CLASS=${pyclass}
         )
-    if(PYCUAMPCOR_DOUBLE)
-        target_compile_definitions(${target} PRIVATE CUAMPCOR_DOUBLE)
-    endif()
+    target_link_libraries(${target} PRIVATE ${lib})
     list(APPEND PYCUAMPCOR_TARGETS ${target})
     set(PYCUAMPCOR_TARGETS ${PYCUAMPCOR_TARGETS} PARENT_SCOPE)
+    list(APPEND PYCUAMPCOR_BACKENDS ${backend})
+    set(PYCUAMPCOR_BACKENDS ${PYCUAMPCOR_BACKENDS} PARENT_SCOPE)
 endfunction()
 
 pycuampcor_add_backend(cpu PyCPUAmpcor)
-target_link_libraries(_cpu PRIVATE ${PYCUAMPCOR_FFTW_TARGET})
+target_link_libraries(pycuampcor_cpu PUBLIC ${PYCUAMPCOR_FFTW_TARGET})
 if(OpenMP_CXX_FOUND)
-    target_link_libraries(_cpu PRIVATE OpenMP::OpenMP_CXX)
+    target_link_libraries(pycuampcor_cpu PUBLIC OpenMP::OpenMP_CXX)
 endif()
 
 if(PYCUAMPCOR_WITH_CUDA)
     pycuampcor_add_backend(cuda PyCuAmpcor)
-    target_link_libraries(_cuda PRIVATE CUDA::cudart CUDA::cufft)
+    target_link_libraries(pycuampcor_cuda PUBLIC CUDA::cudart CUDA::cufft)
+endif()
+
+# C++ unit tests (with GoogleTest)
+if(PYCUAMPCOR_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests/cxx)
 endif()
 
 # installation
