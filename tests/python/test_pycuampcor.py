@@ -68,7 +68,7 @@ def edge_images(tmp_path_factory):
 
 
 def run_ampcor(impl, images, outdir, workflow=0, ovs_method=0, algorithm=0,
-               start=None, n_windows=None, workers=0):
+               start=None, n_windows=None, workers=0, mmap_size=None):
     """Run ampcor and return the outputs as a dict of numpy arrays."""
     cls = pycuampcor.PyCuAmpcor if impl == "gpu" else pycuampcor.PyCPUAmpcor
     ampcor = cls()
@@ -100,6 +100,8 @@ def run_ampcor(impl, images, outdir, workflow=0, ovs_method=0, algorithm=0,
     ampcor.corrSurfaceZoomInWindow = 8
     ampcor.corrSurfaceOverSamplingMethod = ovs_method
     ampcor.corrSurfaceOverSamplingFactor = 64
+    if mmap_size is not None:
+        ampcor.mmapSize = mmap_size
     if workers:
         if impl == "gpu":
             ampcor.nStreams = workers
@@ -215,3 +217,11 @@ def test_errors(images, tmp_path):
     ampcor.setConstantGrossOffset(0, 0)
     with pytest.raises(RuntimeError):
         ampcor.runAmpcor()
+
+
+@pytest.mark.parametrize("impl", IMPLS)
+def test_errors_in_processing(impl, images, tmp_path):
+    """Errors raised while processing chunks (in parallel) are propagated."""
+    # zero mmap buffer size: loading any image tile fails
+    with pytest.raises(RuntimeError, match="mmap"):
+        run_ampcor(impl, images, str(tmp_path), workers=4, mmap_size=0)
