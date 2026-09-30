@@ -6,7 +6,8 @@
 #include "test_util.h"
 #include "SlcImage.h"
 
-#include <filesystem>
+#include <cstdio>
+#include <cstdlib>
 #include <fstream>
 #include <stdexcept>
 #include <unistd.h>
@@ -25,7 +26,8 @@ protected:
         if (IsSkipped()) return;
         auto name = std::string("pycuampcor_test_") + ::testing::UnitTest::GetInstance()->current_test_info()->name()
             + "_" + std::to_string(::getpid()) + ".slc";
-        filename = (std::filesystem::temp_directory_path() / name).string();
+        const char *tmpdir = std::getenv("TMPDIR");
+        filename = std::string(tmpdir && *tmpdir ? tmpdir : "/tmp") + "/" + name;
         values.resize(H*W);
         for (int i = 0; i < H*W; i++) { values[i].x = i; values[i].y = -0.5*i; }
         std::ofstream(filename, std::ios::binary).write((const char *)values.data(), H*W*sizeof(image_complex_type));
@@ -33,7 +35,7 @@ protected:
 
     void TearDown() override
     {
-        if (!filename.empty()) std::filesystem::remove(filename);
+        if (!filename.empty()) std::remove(filename.c_str());
         BackendTest::TearDown();
     }
 };

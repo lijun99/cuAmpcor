@@ -20,13 +20,13 @@ namespace pycuampcor::cpu {
 // alignment for work arrays, suitable for SIMD instructions used by fftw
 static constexpr size_t alignment = 64;
 
-// allocate aligned memory
+// allocate aligned memory (posix_memalign is available on all POSIX platforms,
+// while std::aligned_alloc requires macOS >= 10.15)
 static void * alignedAlloc(size_t bytes)
 {
-    // aligned_alloc requires the size to be a multiple of the alignment
-    size_t alignedBytes = std::max((bytes + alignment - 1)/alignment*alignment, alignment);
-    void *ptr = std::aligned_alloc(alignment, alignedBytes);
-    if(ptr == nullptr) throw std::bad_alloc();
+    void *ptr = nullptr;
+    if (posix_memalign(&ptr, alignment, std::max(bytes, alignment)) != 0)
+        throw std::bad_alloc();
     return ptr;
 }
 
