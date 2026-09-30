@@ -68,8 +68,9 @@ void gpuDeviceList()
 
 int getSMCount(int devID)
 {
-    // Get the ID of the currently active CUDA device
-    checkCudaErrors(cudaGetDevice(&devID));
+    // use the currently active CUDA device if devID < 0
+    if (devID < 0)
+        checkCudaErrors(cudaGetDevice(&devID));
 
     // Retrieve device properties
     cudaDeviceProp prop;
