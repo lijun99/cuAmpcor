@@ -32,6 +32,14 @@ int backendNumWorkers(const cuAmpcorParameter *param)
 #endif
 }
 
+void backendDefaultChunkSize(const cuAmpcorParameter *, int &down, int &across)
+{
+    // each thread processes a chunk, its windows one after another; one window per chunk
+    // keeps the work in cache and balances the load among threads
+    down = 1;
+    across = 1;
+}
+
 int backendWorkerId(int, int)
 {
 #ifdef _OPENMP

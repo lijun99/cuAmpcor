@@ -114,8 +114,8 @@ public:
     int numberWindows; 				///< numberWindowDown*numberWindowAcross
 
     // number of chips/windows in a batch/chunk
-    int numberWindowDownInChunk;    ///< number of windows processed in a chunk (down)
-    int numberWindowAcrossInChunk;  ///< number of windows processed in a chunk (across)
+    int numberWindowDownInChunk;    ///< number of windows processed in a chunk (down); 0 = automatic
+    int numberWindowAcrossInChunk;  ///< number of windows processed in a chunk (across); 0 = automatic
     int numberWindowsInChunk; 		///< numberWindowDownInChunk*numberWindowAcrossInChunk
     int numberChunkDown;            ///< number of chunks (down)
     int numberChunkAcross;          ///< number of chunks (across)

@@ -24,6 +24,8 @@ using stream_t = cudaStream_t;
 int backendInit(cuAmpcorParameter *param);
 /// number of concurrent chunk processors (cuda streams)
 int backendNumWorkers(const cuAmpcorParameter *param);
+/// default number of windows in a chunk (down, across), used if numberWindow{Down,Across}InChunk = 0
+void backendDefaultChunkSize(const cuAmpcorParameter *param, int &down, int &across);
 /// the chunk processor to run the k-th chunk
 inline int backendWorkerId(int k, int nWorkers) { return k % nWorkers; }
 /// create/destroy a stream for a worker

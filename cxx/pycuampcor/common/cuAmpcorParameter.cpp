@@ -4,6 +4,7 @@
  */
 
 #include "cuAmpcorParameter.h"
+#include "backend.h"
 #include <stdio.h>
 #include <algorithm>
 #include <iostream>
@@ -61,8 +62,8 @@ cuAmpcorParameter::cuAmpcorParameter()
     peakValueImageName = "peakValue.bip";
     numberWindowDown =  1;
     numberWindowAcross = 1;
-    numberWindowDownInChunk = 1;
-    numberWindowAcrossInChunk = 1 ;
+    numberWindowDownInChunk = 0; // automatic, see setupParameters()
+    numberWindowAcrossInChunk = 0;
 
     referenceStartPixelDown0 = 0;
     referenceStartPixelAcross0 = 0;
@@ -100,6 +101,17 @@ void cuAmpcorParameter::setupParameters()
     if(numberWindows <=0) {
         throw std::invalid_argument("Incorrect number of windows! ("
             + std::to_string(numberWindowDown) + ", " + std::to_string(numberWindowAcross) + ")");
+    }
+
+    // automatic (0 or negative) numbers of windows in a chunk: the backend default,
+    // limited by the numbers of windows
+    if(numberWindowDownInChunk <= 0 || numberWindowAcrossInChunk <= 0) {
+        int down, across;
+        backendDefaultChunkSize(this, down, across);
+        if(numberWindowDownInChunk <= 0)
+            numberWindowDownInChunk = std::min(down, numberWindowDown);
+        if(numberWindowAcrossInChunk <= 0)
+            numberWindowAcrossInChunk = std::min(across, numberWindowAcross);
     }
 
     numberChunkDown = IDIVUP(numberWindowDown, numberWindowDownInChunk);

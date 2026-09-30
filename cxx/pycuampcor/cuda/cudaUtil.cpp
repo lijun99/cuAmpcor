@@ -5,6 +5,7 @@
 #include <cuda_runtime.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <algorithm>
 #include <stdexcept>
 #include <string>
 #include "cudaError.h"
@@ -90,6 +91,15 @@ int backendInit(cuAmpcorParameter *param)
 int backendNumWorkers(const cuAmpcorParameter *param)
 {
     return param->nStreams;
+}
+
+void backendDefaultChunkSize(const cuAmpcorParameter *param, int &down, int &across)
+{
+    // windows in a chunk are processed in parallel; 2x the number of SMs keeps the GPU busy
+    // (benchmarked on V100 and RTX PRO 6000 Blackwell), stacked down (SM/4) to share more rows
+    const int sms = getSMCount(param->deviceID);
+    down = std::max(sms / 4, 1);
+    across = 8;
 }
 
 stream_t backendCreateStream()

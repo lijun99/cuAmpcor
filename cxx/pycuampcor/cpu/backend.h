@@ -26,6 +26,8 @@ struct stream_t {};
 int backendInit(cuAmpcorParameter *param);
 /// number of concurrent chunk processors (cpu threads)
 int backendNumWorkers(const cuAmpcorParameter *param);
+/// default number of windows in a chunk (down, across), used if numberWindow{Down,Across}InChunk = 0
+void backendDefaultChunkSize(const cuAmpcorParameter *param, int &down, int &across);
 /// the chunk processor to run the k-th chunk: the current openmp thread
 int backendWorkerId(int k, int nWorkers);
 /// create/destroy a stream for a worker

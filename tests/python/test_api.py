@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 import pycuampcor
-from conftest import make_images, needs_gpu, new_ampcor, run_ampcor
+from conftest import configure_ampcor, make_images, needs_gpu, new_ampcor, run_ampcor
 
 N = 384
 SHAPE = (N, N)
@@ -37,7 +37,7 @@ INT_PARAMS = {
     "windowSizeHeight": (48, 64), "windowSizeWidth": (40, 64),
     "mergeGrossOffset": (1, 0),
     "rawDataOversamplingFactor": (3, 2), "corrStatWindowSize": (11, 21),
-    "numberWindowDownInChunk": (2, 1), "numberWindowAcrossInChunk": (8, 1),
+    "numberWindowDownInChunk": (2, 0), "numberWindowAcrossInChunk": (8, 0),
     "useMmap": (0, 1), "mmapSize": (4, 1),
     "halfSearchRangeDown": (7, 20), "halfSearchRangeAcross": (9, 20),
     "referenceStartPixelDownStatic": (15, 0), "referenceStartPixelAcrossStatic": (16, 0),
@@ -156,6 +156,24 @@ def test_image_errors(impl, images, tmp_path):
     # with zero mmap buffer size, loading any image tile fails
     with pytest.raises(RuntimeError, match="mmap"):
         run_ampcor(impl, images, SHAPE, tmp_path, mmapSize=0, nThreads=4)
+
+
+def test_auto_chunk_size(impl, images, tmp_path):
+    """numberWindow*InChunk = 0: chosen by the backend in setupParams, limited by the numbers of windows"""
+    n_windows = (9, 30)
+    ampcor, _ = configure_ampcor(impl, images, SHAPE, tmp_path, n_windows=n_windows,
+                                 numberWindowDownInChunk=0, numberWindowAcrossInChunk=0)
+    if impl == "cpu":
+        expected = (1, 1)
+    else:
+        sms = pycuampcor.PyCuAmpcor.get_sm_count(ampcor.deviceID)
+        expected = (min(max(sms // 4, 1), n_windows[0]), min(8, n_windows[1]))
+    assert (ampcor.numberWindowDownInChunk, ampcor.numberWindowAcrossInChunk) == expected
+    # same results as with an explicit chunk size
+    auto = run_ampcor(impl, images, SHAPE, tmp_path / "auto", n_windows=n_windows,
+                      numberWindowDownInChunk=0, numberWindowAcrossInChunk=0)
+    explicit = run_ampcor(impl, images, SHAPE, tmp_path / "explicit", n_windows=n_windows)
+    np.testing.assert_allclose(auto["dense_offsets"], explicit["dense_offsets"], atol=0.05)
 
 
 @needs_gpu

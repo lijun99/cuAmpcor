@@ -5,7 +5,9 @@
 
 #include "test_util.h"
 #include "cuAmpcorParameter.h"
+#include "backend.h"
 
+#include <algorithm>
 #include <stdexcept>
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND::test {
@@ -21,6 +23,8 @@ static void setWindows(cuAmpcorParameter &p)
     p.corrSurfaceOverSamplingFactor = 16;
     p.numberWindowDown = 3;
     p.numberWindowAcross = 4;
+    p.numberWindowDownInChunk = 1;
+    p.numberWindowAcrossInChunk = 1;
 }
 
 TEST(ParameterTest, TwoPassSizes)
@@ -110,6 +114,34 @@ TEST(ParameterTest, SetupChecks)
     setWindows(empty);
     empty.numberWindowDown = 0;
     EXPECT_THROW(empty.setupParameters(), std::invalid_argument);
+}
+
+// automatic numbers of windows in a chunk (0), limited by the numbers of windows
+TEST(ParameterTest, AutoChunkSize)
+{
+    cuAmpcorParameter p;
+    setWindows(p);
+    p.numberWindowDown = 1000;
+    p.numberWindowAcross = 2;
+    p.numberWindowDownInChunk = 0;
+    p.numberWindowAcrossInChunk = 0;
+    p.setupParameters();
+    int down, across;
+    backendDefaultChunkSize(&p, down, across);
+    EXPECT_GE(down, 1);
+    EXPECT_GE(across, 1);
+    EXPECT_EQ(p.numberWindowDownInChunk, std::min(down, 1000));
+    EXPECT_EQ(p.numberWindowAcrossInChunk, std::min(across, 2));
+    EXPECT_EQ(p.numberChunkDown, (1000 + p.numberWindowDownInChunk - 1) / p.numberWindowDownInChunk);
+
+    // explicit values are kept
+    cuAmpcorParameter q;
+    setWindows(q);
+    q.numberWindowDownInChunk = 2;
+    q.numberWindowAcrossInChunk = 3;
+    q.setupParameters();
+    EXPECT_EQ(q.numberWindowDownInChunk, 2);
+    EXPECT_EQ(q.numberWindowAcrossInChunk, 3);
 }
 
 // the starting pixels of windows and chunks (to load from the images)

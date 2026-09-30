@@ -338,11 +338,15 @@ Note also PyCuAmpcor parameters refer to the names used by the PyCuAmpcor Python
 | nThreads             | (CPU only) The number of CPU threads to be used, 0 (default) for the OpenMP default (e.g., set by the OMP_NUM_THREADS environmental variable)                  |
 | useMmap              | Whether to use memory map cached file I/O, recommended=1, supported by GDAL vrt driver (needs >=3.1.0) and GeoTIFF                                              |
 | mmapSize             | The cache size used for memory map, in units of GB. The larger the better, but not exceed 1/4 the total physical memory.                                        |
-| numberWindowDownInChunk | The number of windows processed in a batch/chunk, along lines                                                                                                   |
-| numberWindowAcrossInChunk | The number of windows processed in a batch/chunk, along columns                                                                                                 |
+| numberWindowDownInChunk | The number of windows processed in a batch/chunk, along lines; 0 (default) for automatic                                                                         |
+| numberWindowAcrossInChunk | The number of windows processed in a batch/chunk, along columns; 0 (default) for automatic                                                                    |
 
-Many windows are processed together to maximize the usage of GPU cores; which is called as a Chunk. The total number of windows in a chunk is limited by the GPU memory. We recommend
-numberWindowDownInChunk=1, numberWindowAcrossInChunk=10, for a window size=64.
+Many windows are processed together to maximize the usage of GPU cores; which is called as a Chunk. The total number of windows in a chunk is limited by the GPU memory.
+By default (0), `setupParams()` chooses the chunk size for the backend, limited by the numbers of windows:
+for GPU, 2x the number of SMs (streaming multiprocessors), as (SM/4) x 8 windows (down x across), which was
+found to be the fastest (within a few percent) on V100 and RTX PRO 6000 Blackwell GPUs; the number of windows
+matters more than the shape of the chunk. For CPU, each OpenMP thread processes a chunk (its windows one after
+another), and the default is one window per chunk.
 
 
 **Search Parameters**
