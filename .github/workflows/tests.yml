@@ -8,10 +8,23 @@ jobs:
   # CPU backend: C++ unit tests and python tests
   # (GitHub-hosted runners have no GPU; test the CUDA backend locally)
   cpu:
-    runs-on: ubuntu-latest
+    name: cpu (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest       # linux-64
+          - os: ubuntu-24.04-arm    # linux-aarch64
+          - os: macos-15-intel      # osx-64
+            extra: llvm-openmp
+          - os: macos-15            # osx-arm64
+            extra: llvm-openmp
     defaults:
       run:
         shell: bash -el {0}
+    env:
+      OMP_NUM_THREADS: 4
     steps:
       - uses: actions/checkout@v4
       - uses: conda-incubator/setup-miniconda@v3
@@ -21,7 +34,7 @@ jobs:
       - name: Install dependencies
         run: >
           conda install -y -c conda-forge python=3.12 cmake ninja cxx-compiler fftw pybind11 gtest
-          scikit-build-core pip numpy pytest
+          scikit-build-core pip numpy pytest ${{ matrix.extra }}
       - name: C++ unit tests
         run: |
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DPYCUAMPCOR_CUDA=OFF \
