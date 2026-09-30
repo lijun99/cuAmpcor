@@ -5,6 +5,7 @@
 
 #include "cuAmpcorParameter.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <iostream>
 #include <stdexcept>
 #include <string>

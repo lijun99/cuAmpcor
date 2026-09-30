@@ -10,6 +10,7 @@
 #include "float2.h"
 #include "data_types.h"
 #include <cuda_runtime.h>
+#include <cstdlib>
 #include <fstream>
 #include <iostream>
 
