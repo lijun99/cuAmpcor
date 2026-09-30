@@ -67,10 +67,10 @@ def make_images(path, shape, shift, noise=0.3, seed=12345, dtype=np.complex64, b
     return ref_file, sec_file
 
 
-def run_ampcor(impl, images, shape, outdir, n_windows=None, start=None,
-               gross_offset=(0, 0), **params):
+def configure_ampcor(impl, images, shape, outdir, n_windows=None, start=None,
+                     gross_offset=(0, 0), **params):
     """
-    Run ampcor with the default test parameters, updated with `params`
+    Configure ampcor (ready to run) with the default test parameters, updated with `params`
 
     Parameters
     ----------
@@ -87,7 +87,7 @@ def run_ampcor(impl, images, shape, outdir, n_windows=None, start=None,
 
     Returns
     -------
-    dict of output arrays with shape (down, across, bands)
+    the ampcor object, and the number of windows (down, across)
     """
     ampcor = new_ampcor(impl)
     p = dict(windowSizeHeight=32, windowSizeWidth=64,
@@ -128,6 +128,18 @@ def run_ampcor(impl, images, shape, outdir, n_windows=None, start=None,
     else:
         ampcor.setVaryingGrossOffset([int(v) for v in gross_offset[0]],
                                      [int(v) for v in gross_offset[1]])
+    return ampcor, n_windows
+
+
+def run_ampcor(impl, images, shape, outdir, **kwargs):
+    """
+    Run ampcor with the default test parameters (see configure_ampcor)
+
+    Returns
+    -------
+    dict of output arrays with shape (down, across, bands)
+    """
+    ampcor, n_windows = configure_ampcor(impl, images, shape, outdir, **kwargs)
     ampcor.runAmpcor()
     return read_outputs(outdir, n_windows, ampcor.isDoublePrecision())
 
