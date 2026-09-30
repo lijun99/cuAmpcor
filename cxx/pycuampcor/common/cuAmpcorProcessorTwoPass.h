@@ -30,9 +30,6 @@ private:
     cuArrays<real_type> * r_referenceBatchOverSampled, * r_secondaryBatchOverSampled;
     cuArrays<real_type> * r_corrBatchRaw, * r_corrBatchZoomIn, * r_corrBatchZoomInOverSampled, * r_corrBatchZoomInAdjust;
 
-    // offset data
-    cuArrays<int> *ChunkOffsetDown, *ChunkOffsetAcross;
-
     // oversampling processors for complex images
     cuOverSamplerC2C *referenceBatchOverSampler, *secondaryBatchOverSampler;
 
@@ -68,18 +65,14 @@ private:
 public:
     // constructor
     cuAmpcorProcessorTwoPass(cuAmpcorParameter *param_,
-        SlcImage *reference_, SlcImage *secondary_,
         cuArrays<complex_type> *offsetImage_, cuArrays<real_type> *snrImage_,
         cuArrays<real3_type> *covImage_, cuArrays<real_type> *peakValueImage_,
         stream_t stream_);
     // destructor
     ~cuAmpcorProcessorTwoPass() override;
 
-    // local methods
-    void loadReferenceChunk();
-    void loadSecondaryChunk();
     // run the given chunk
-    void run(int, int) override;
+    void run(int, int, const cuAmpcorChunk &) override;
 };
 
 

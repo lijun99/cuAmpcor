@@ -17,6 +17,7 @@
 
 // dependencies
 #include "cuAmpcorParameter.h"
+#include <vector>
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND {
 
@@ -29,6 +30,9 @@ public:
     ~cuAmpcorController();
     // run interface
     void runAmpcor();
+    // run several layers (parameter sets) sharing the images and the chunk partition,
+    // loading each chunk once for all layers
+    static void runAmpcorLayers(const std::vector<cuAmpcorController *> &layers);
     bool isDoublePrecision();
 };
 } // namespace

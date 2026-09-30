@@ -21,8 +21,6 @@ class cuAmpcorProcessorOnePass : public cuAmpcorProcessor {
 private:
 
     // local variables and workers
-    // offset data
-    cuArrays<int> *ChunkOffsetDown, *ChunkOffsetAcross;
 
     // windows raw (not oversampled) data, complex and real
     cuArrays<complex_type> * c_referenceBatchRaw, * c_secondaryBatchRaw;
@@ -67,7 +65,6 @@ private:
 public:
     // constructor
     cuAmpcorProcessorOnePass(cuAmpcorParameter *param_,
-        SlcImage *reference_, SlcImage *secondary_,
         cuArrays<real2_type> *offsetImage_, cuArrays<real_type> *snrImage_,
         cuArrays<real3_type> *covImage_, cuArrays<real_type> *peakValueImage_,
         stream_t stream_);
@@ -75,10 +72,7 @@ public:
     ~cuAmpcorProcessorOnePass() override;
 
     // run the given chunk
-    void run(int, int) override;
-
-    void loadReferenceChunk();
-    void loadSecondaryChunk();
+    void run(int, int, const cuAmpcorChunk &) override;
 };
 
 } // namespace

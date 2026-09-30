@@ -1,40 +1,27 @@
 #include "cuAmpcorProcessor.h"
 #include "cuAmpcorProcessorTwoPass.h"
 #include "cuAmpcorProcessorOnePass.h"
+#include "cuAmpcorUtil.h"
 
-#include <algorithm>
 #include <stdexcept>
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND {
-
-namespace {
-// allocate a buffer to load image chunks
-// (chunks entirely outside the image have zero size and are never loaded)
-template <typename T>
-std::unique_ptr<cuArrays<T>> newChunkBuffer(int height, int width)
-{
-    auto buffer = std::make_unique<cuArrays<T>>(std::max(height, 1), std::max(width, 1));
-    buffer->allocate();
-    return buffer;
-}
-} // namespace
 
 // Factory method implementation
 // create the batch processor for a given {workflow}
 std::unique_ptr<cuAmpcorProcessor> cuAmpcorProcessor::create(int workflow,
     cuAmpcorParameter *param_,
-    SlcImage *reference_, SlcImage *secondary_,
     cuArrays<real2_type> *offsetImage_, cuArrays<real_type> *snrImage_,
     cuArrays<real3_type> *covImage_, cuArrays<real_type> *peakValueImage_,
     stream_t stream_)
 {
     if (workflow == 0) {
         return std::unique_ptr<cuAmpcorProcessor>(new cuAmpcorProcessorTwoPass(
-            param_, reference_, secondary_, offsetImage_,
+            param_, offsetImage_,
             snrImage_, covImage_, peakValueImage_, stream_));
     } else if (workflow == 1) {
         return std::unique_ptr<cuAmpcorProcessor>(new cuAmpcorProcessorOnePass(
-            param_, reference_, secondary_, offsetImage_,
+            param_, offsetImage_,
             snrImage_, covImage_, peakValueImage_, stream_));
     } else {
         throw std::invalid_argument("Unsupported workflow");
@@ -43,24 +30,19 @@ std::unique_ptr<cuAmpcorProcessor> cuAmpcorProcessor::create(int workflow,
 
 // constructor
 cuAmpcorProcessor::cuAmpcorProcessor(cuAmpcorParameter *param_,
-        SlcImage *reference_, SlcImage *secondary_,
         cuArrays<real2_type> *offsetImage_, cuArrays<real_type> *snrImage_,
         cuArrays<real3_type> *covImage_, cuArrays<real_type> *peakValueImage_,
         stream_t stream_)
-    : param(param_), referenceImage(reference_), secondaryImage(secondary_),
+    : param(param_),
     offsetImage(offsetImage_), snrImage(snrImage_), covImage(covImage_),
     peakValueImage(peakValueImage_), stream(stream_)
 {
-    // allocating/freeing device memory per chunk synchronizes the device and
-    // stalls the other streams; allocate the chunk buffers once instead
-    if(param->referenceImageDataType == 2)
-        c_referenceChunkRaw = newChunkBuffer<image_complex_type>(param->maxReferenceChunkHeight, param->maxReferenceChunkWidth);
-    else
-        r_referenceChunkRaw = newChunkBuffer<image_real_type>(param->maxReferenceChunkHeight, param->maxReferenceChunkWidth);
-    if(param->secondaryImageDataType == 2)
-        c_secondaryChunkRaw = newChunkBuffer<image_complex_type>(param->maxSecondaryChunkHeight, param->maxSecondaryChunkWidth);
-    else
-        r_secondaryChunkRaw = newChunkBuffer<image_real_type>(param->maxSecondaryChunkHeight, param->maxSecondaryChunkWidth);
+    ChunkOffsetDown = std::make_unique<cuArrays<int>>(param->numberWindowDownInChunk, param->numberWindowAcrossInChunk);
+    ChunkOffsetDown->allocate();
+    ChunkOffsetDown->allocateHost();
+    ChunkOffsetAcross = std::make_unique<cuArrays<int>>(param->numberWindowDownInChunk, param->numberWindowAcrossInChunk);
+    ChunkOffsetAcross->allocate();
+    ChunkOffsetAcross->allocateHost();
 }
 
 /// set chunk index
@@ -105,5 +87,46 @@ void cuAmpcorProcessor::getRelativeOffset(int *rStartPixel, const std::vector<in
 }
 
 
+
+/// copy the windows of the current chunk from a loaded chunk to a batch format (nImages, height, width)
+/// @param[in] chunk the loaded chunk (of the reference or secondary image)
+/// @param[in] startDown, startAcross starting pixels of all windows in the image
+/// @param[out] batch the batch of windows
+void cuAmpcorProcessor::copyToBatch(const cuAmpcorLoadedChunk &chunk,
+    const std::vector<int> &startDown, const std::vector<int> &startAcross,
+    cuArrays<complex_type> *batch)
+{
+    // check whether all pixels are outside the original image range
+    if (chunk.empty()) {
+        // yes, simply set the image to 0
+        batch->setZero(stream);
+        return;
+    }
+
+    // use cpu to compute the starting positions for each window relative to the chunk
+    getRelativeOffset(ChunkOffsetDown->hostData, startDown, chunk.startDown);
+    // copy the positions to gpu
+    ChunkOffsetDown->copyToDevice(stream);
+    // same for the across direction
+    getRelativeOffset(ChunkOffsetAcross->hostData, startAcross, chunk.startAcross);
+    ChunkOffsetAcross->copyToDevice(stream);
+
+    // windows outside the chunk (image) are padded with zeros
+    if (chunk.complexData) {
+        // complex image (e.g., SLC)
+        // if derampMethod = 0 (no deramp), take amplitudes; otherwise, copy complex data
+        if (param->derampMethod == 0)
+            cuArraysCopyToBatchAbsWithOffset(chunk.complexData, chunk.height, chunk.width,
+                batch, ChunkOffsetDown->devData, ChunkOffsetAcross->devData, stream);
+        else
+            cuArraysCopyToBatchWithOffset(chunk.complexData, chunk.height, chunk.width,
+                batch, ChunkOffsetDown->devData, ChunkOffsetAcross->devData, stream);
+    }
+    else {
+        // real image (e.g., TIFF), copied to complex
+        cuArraysCopyToBatchWithOffsetR2C(chunk.realData, chunk.height, chunk.width,
+            batch, ChunkOffsetDown->devData, ChunkOffsetAcross->devData, stream);
+    }
+}
 
 } // namespace

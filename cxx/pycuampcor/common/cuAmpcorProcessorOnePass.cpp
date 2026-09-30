@@ -10,13 +10,13 @@ namespace pycuampcor::PYCUAMPCOR_BACKEND {
  * @param[in] idxDown_  index of the chunk along Down/Azimuth direction
  * @param[in] idxAcross_ index of the chunk along Across/Range direction
  */
-void cuAmpcorProcessorOnePass::run(int idxDown_, int idxAcross_)
+void cuAmpcorProcessorOnePass::run(int idxDown_, int idxAcross_, const cuAmpcorChunk &chunk)
 {
     // set chunk index
     setIndex(idxDown_, idxAcross_);
 
-    // load reference image chunk
-    loadReferenceChunk();
+    // copy the reference windows from the loaded chunk
+    copyToBatch(chunk.reference, param->referenceStartPixelDown, param->referenceStartPixelAcross, c_referenceBatchRaw);
 
 #ifdef CUAMPCOR_DEBUG
     // dump the raw reference image(s)
@@ -55,8 +55,8 @@ void cuAmpcorProcessorOnePass::run(int idxDown_, int idxAcross_)
     r_referenceBatchOverSampled->outputToFile("r_referenceBatchOverSampledSubMean",stream);
 #endif
 
-    // load secondary image chunk to c_secondaryBatchRaw
-    loadSecondaryChunk();
+    // copy the secondary windows from the loaded chunk
+    copyToBatch(chunk.secondary, param->secondaryStartPixelDown, param->secondaryStartPixelAcross, c_secondaryBatchRaw);
 
 #ifdef CUAMPCOR_DEBUG
     // dump the raw reference image(s)
@@ -193,19 +193,12 @@ void cuAmpcorProcessorOnePass::run(int idxDown_, int idxAcross_)
 
 
 /// constructor
-cuAmpcorProcessorOnePass::cuAmpcorProcessorOnePass(cuAmpcorParameter *param_, SlcImage *reference_, SlcImage *secondary_,
+cuAmpcorProcessorOnePass::cuAmpcorProcessorOnePass(cuAmpcorParameter *param_,
     cuArrays<real2_type> *offsetImage_, cuArrays<real_type> *snrImage_, cuArrays<real3_type> *covImage_, cuArrays<real_type> *peakValueImage_,
     stream_t stream_)
-    : cuAmpcorProcessor(param_, reference_, secondary_, offsetImage_, snrImage_, covImage_, peakValueImage_, stream_)
+    : cuAmpcorProcessor(param_, offsetImage_, snrImage_, covImage_, peakValueImage_, stream_)
 {
 
-    // allocate the SLC image read buffer
-    ChunkOffsetDown = new cuArrays<int> (param->numberWindowDownInChunk, param->numberWindowAcrossInChunk);
-    ChunkOffsetDown->allocate();
-    ChunkOffsetDown->allocateHost();
-    ChunkOffsetAcross = new cuArrays<int> (param->numberWindowDownInChunk, param->numberWindowAcrossInChunk);
-    ChunkOffsetAcross->allocate();
-    ChunkOffsetAcross->allocateHost();
 
     c_referenceBatchRaw = new cuArrays<complex_type> (
         param->windowSizeHeightRawEnlarged, param->windowSizeWidthRawEnlarged,
@@ -334,156 +327,6 @@ cuAmpcorProcessorOnePass::cuAmpcorProcessorOnePass(cuAmpcorParameter *param_, Sl
 #endif
 }
 
-void cuAmpcorProcessorOnePass::loadReferenceChunk()
-{
-    // we first load the whole chunk of image from cpu to a gpu buffer c(r)_referenceChunkRaw
-    // then copy to a batch of windows with (nImages, height, width) (leading dimension on the right)
-
-    // get the chunk size to be loaded to gpu
-    int startDown = param->referenceChunkStartPixelDown[idxChunk]; //start pixel down (along height)
-    int startAcross = param->referenceChunkStartPixelAcross[idxChunk]; // start pixel across (along width)
-    int height =  param->referenceChunkHeight[idxChunk]; // number of pixels along height
-    int width = param->referenceChunkWidth[idxChunk];  // number of pixels along width
-
-#ifdef CUAMPCOR_DEBUG
-    std::cout << "loading reference chunk ...\n "
-              << "    index: " << idxChunk << " "
-              << "starting pixel: (" << startDown << ", " << startAcross << ") "
-              << "size : (" << height << ", " << width << ")"
-              << "\n";
-#endif
-
-
-    // check whether all pixels are outside the original image range
-    if (height ==0 || width ==0)
-    {
-        // yes, simply set the image to 0
-        c_referenceBatchRaw->setZero(stream);
-    }
-    else
-    {
-        // use cpu to compute the starting positions for each window
-        getRelativeOffset(ChunkOffsetDown->hostData, param->referenceStartPixelDown, param->referenceChunkStartPixelDown[idxChunk]);
-        // copy the positions to gpu
-        ChunkOffsetDown->copyToDevice(stream);
-        // same for the across direction
-        getRelativeOffset(ChunkOffsetAcross->hostData, param->referenceStartPixelAcross, param->referenceChunkStartPixelAcross[idxChunk]);
-        ChunkOffsetAcross->copyToDevice(stream);
-
-#ifdef CUAMPCOR_DEBUG
-        std::cout << "loading reference windows from chunk debug ... \n";
-        auto * startPixelDownToChunk = ChunkOffsetDown->hostData;
-        auto * startPixelAcrossToChunk = ChunkOffsetAcross->hostData;
-
-        for(int i=0; i<param->numberWindowDownInChunk; ++i) {
-            int iDown = i;
-            if(i>=nWindowsDown) iDown = nWindowsDown-1;
-            for(int j=0; j<param->numberWindowAcrossInChunk; ++j){
-                int iAcross = j;
-                if(j>=nWindowsAcross) iAcross = nWindowsAcross-1;
-                int idxInChunk = iDown*param->numberWindowAcrossInChunk+iAcross;
-                int idxInAll = (iDown+idxChunkDown*param->numberWindowDownInChunk)*param->numberWindowAcross
-                    + idxChunkAcross*param->numberWindowAcrossInChunk+iAcross;
-                std::cout << "Window index in chuck: (" << iDown << ", " << iAcross << ") \n";
-                std::cout << "    Staring pixel location from raw: (" <<  param->referenceStartPixelDown[idxInAll] << ", "
-                                                                      <<  param->referenceStartPixelAcross[idxInAll] <<")\n";
-                std::cout << "    Staring pixel location from chunk: (" <<  startPixelDownToChunk[idxInChunk] << ", "
-                                                                        <<  startPixelAcrossToChunk[idxInChunk] <<")\n";
-
-            }
-        }
-#endif
-
-        // check whether the image is complex (e.g., SLC) or real( e.g. TIFF)
-        if(param->referenceImageDataType==2)
-        {
-            // load the data from cpu
-            referenceImage->loadToDevice((void *)c_referenceChunkRaw->devData, startDown, startAcross, height, width, stream);
-
-            //copy the chunk to a batch format (nImages, height, width)
-            // if derampMethod = 0 (no deramp), take amplitudes; otherwise, copy complex data
-            if(param->derampMethod == 0) {
-                cuArraysCopyToBatchAbsWithOffset(c_referenceChunkRaw.get(),
-                    param->referenceChunkHeight[idxChunk], param->referenceChunkWidth[idxChunk],
-                    c_referenceBatchRaw, ChunkOffsetDown->devData, ChunkOffsetAcross->devData, stream);
-            }
-            else {
-                cuArraysCopyToBatchWithOffset(c_referenceChunkRaw.get(),
-                    param->referenceChunkHeight[idxChunk], param->referenceChunkWidth[idxChunk],
-                    c_referenceBatchRaw, ChunkOffsetDown->devData, ChunkOffsetAcross->devData, stream);
-            }
-        }
-        // if the image is real
-        else {
-            // load the data from cpu
-            referenceImage->loadToDevice((void *)r_referenceChunkRaw->devData, startDown, startAcross, height, width, stream);
-
-            // copy the chunk (real) to a batch format (complex)
-            cuArraysCopyToBatchWithOffsetR2C(r_referenceChunkRaw.get(),
-                    param->referenceChunkHeight[idxChunk], param->referenceChunkWidth[idxChunk],
-                    c_referenceBatchRaw, ChunkOffsetDown->devData, ChunkOffsetAcross->devData, stream);
-        } // end of if complex
-    } // end of if all pixels out of range
-}
-
-void cuAmpcorProcessorOnePass::loadSecondaryChunk()
-{
-    // get the chunk size to be loaded to gpu
-    int height =  param->secondaryChunkHeight[idxChunk]; // number of pixels along height
-    int width = param->secondaryChunkWidth[idxChunk]; // number of pixels along width
-
-    // check whether all pixels are outside the original image range
-    if (height ==0 || width ==0)
-    {
-        // yes, simply set the image to 0
-        c_secondaryBatchRaw->setZero(stream);
-    }
-    else
-    {
-        //copy to a batch format (nImages, height, width)
-        getRelativeOffset(ChunkOffsetDown->hostData, param->secondaryStartPixelDown, param->secondaryChunkStartPixelDown[idxChunk]);
-        ChunkOffsetDown->copyToDevice(stream);
-        getRelativeOffset(ChunkOffsetAcross->hostData, param->secondaryStartPixelAcross, param->secondaryChunkStartPixelAcross[idxChunk]);
-        ChunkOffsetAcross->copyToDevice(stream);
-
-        if(param->secondaryImageDataType==2)
-        {
-            //load a chunk from mmap to gpu
-            secondaryImage->loadToDevice(c_secondaryChunkRaw->devData,
-                param->secondaryChunkStartPixelDown[idxChunk],
-                param->secondaryChunkStartPixelAcross[idxChunk],
-                param->secondaryChunkHeight[idxChunk],
-                param->secondaryChunkWidth[idxChunk],
-                stream);
-
-            if(param->derampMethod == 0) {
-                cuArraysCopyToBatchAbsWithOffset(c_secondaryChunkRaw.get(),
-                    param->secondaryChunkHeight[idxChunk], param->secondaryChunkWidth[idxChunk],
-                    c_secondaryBatchRaw, ChunkOffsetDown->devData, ChunkOffsetAcross->devData, stream);
-            }
-            else {
-               cuArraysCopyToBatchWithOffset(c_secondaryChunkRaw.get(),
-                    param->secondaryChunkHeight[idxChunk], param->secondaryChunkWidth[idxChunk],
-                    c_secondaryBatchRaw, ChunkOffsetDown->devData, ChunkOffsetAcross->devData, stream);
-            }
-        }
-        else { //real image
-            //load a chunk from mmap to gpu
-            secondaryImage->loadToDevice(r_secondaryChunkRaw->devData,
-                param->secondaryChunkStartPixelDown[idxChunk],
-                param->secondaryChunkStartPixelAcross[idxChunk],
-                param->secondaryChunkHeight[idxChunk],
-                param->secondaryChunkWidth[idxChunk],
-                stream);
-
-            // convert to the batch format
-            cuArraysCopyToBatchWithOffsetR2C(r_secondaryChunkRaw.get(),
-                param->secondaryChunkHeight[idxChunk], param->secondaryChunkWidth[idxChunk],
-                c_secondaryBatchRaw, ChunkOffsetDown->devData, ChunkOffsetAcross->devData, stream);
-        }
-    }
-}
-
 // destructor
 cuAmpcorProcessorOnePass::~cuAmpcorProcessorOnePass()
 {
@@ -499,8 +342,6 @@ cuAmpcorProcessorOnePass::~cuAmpcorProcessorOnePass()
         delete cuCorrFreqDomain_OverSampled;
     }
 
-    delete ChunkOffsetDown ;
-    delete ChunkOffsetAcross ;
     delete c_referenceBatchRaw;
     delete c_secondaryBatchRaw;
     delete c_referenceBatchOverSampled;

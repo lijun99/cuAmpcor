@@ -17,6 +17,7 @@
 #include "cuSincOverSampler.h"
 #include "cuCorrFrequency.h"
 #include "cuCorrNormalizer.h"
+#include "cuAmpcorChunkLoader.h"
 #include <memory>
 #include <vector>
 
@@ -39,8 +40,6 @@ protected:
 
 
     cuAmpcorParameter *param;   ///< reference to the (global) parameters
-    SlcImage *referenceImage;  ///< reference image object
-    SlcImage *secondaryImage;  ///< secondary image object
     cuArrays<real2_type> *offsetImage; ///< output offsets image
     cuArrays<real_type> *snrImage;     ///< snr image
     cuArrays<real3_type> *covImage;    ///< cov image
@@ -48,17 +47,12 @@ protected:
 
     stream_t stream;  ///< stream to use (CUDA stream or dummy for CPU)
 
-    // buffers to load image chunks from files (complex or real, by image data type),
-    // allocated once for the largest chunk; image_complex/real_type use the original
-    // image type, converted to complex_type when copied to the batches of windows
-    std::unique_ptr<cuArrays<image_complex_type>> c_referenceChunkRaw, c_secondaryChunkRaw;
-    std::unique_ptr<cuArrays<image_real_type>> r_referenceChunkRaw, r_secondaryChunkRaw;
-
+    // starting pixels of windows relative to the loaded chunk
+    std::unique_ptr<cuArrays<int>> ChunkOffsetDown, ChunkOffsetAcross;
 
 public:
     // default constructor and destructor
     cuAmpcorProcessor(cuAmpcorParameter *param_,
-        SlcImage *reference_, SlcImage *secondary_,
         cuArrays<real2_type> *offsetImage_, cuArrays<real_type> *snrImage_,
         cuArrays<real3_type> *covImage_, cuArrays<real_type> *peakValueImage_,
         stream_t stream_);
@@ -67,18 +61,23 @@ public:
     // Factory method (virtual constructor)
     static std::unique_ptr<cuAmpcorProcessor> create(int workflow,
         cuAmpcorParameter *param_,
-        SlcImage *reference_, SlcImage *secondary_,
         cuArrays<real2_type> *offsetImage_, cuArrays<real_type> *snrImage_,
         cuArrays<real3_type> *covImage_, cuArrays<real_type> *peakValueImage_,
         stream_t stream_);
 
     // workflow specific methods
-    virtual void run(int, int) = 0;
+    // process the chunk (idxDown, idxAcross), loaded by a chunk loader
+    virtual void run(int idxDown, int idxAcross, const cuAmpcorChunk &chunk) = 0;
 
 protected:
     // shared methods
     void setIndex(int idxDown_, int idxAcross_);
     void getRelativeOffset(int *rStartPixel, const std::vector<int> &oStartPixel, int diff);
+    // copy the windows starting at {startDown, startAcross} (in the image) from a loaded chunk to a batch
+    // (complex images are copied as amplitudes if derampMethod == 0)
+    void copyToBatch(const cuAmpcorLoadedChunk &chunk,
+        const std::vector<int> &startDown, const std::vector<int> &startAcross,
+        cuArrays<complex_type> *batch);
 
 };
 

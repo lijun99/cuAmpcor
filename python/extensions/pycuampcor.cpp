@@ -88,6 +88,14 @@ PYBIND11_MODULE(PYCUAMPCOR_MODULE, m)
         .DEF_PARAM_RENAME(int, corrSurfaceZoomInWindow, zoomWindowSize)
 
         .DEF_METHOD(runAmpcor)
+        .def_static("runAmpcorLayers", [](const std::vector<cls*> &layers) {
+            cls::runAmpcorLayers(layers);
+        },
+        "Run several layers (e.g., different window sizes) with the same images and\n"
+        "numbers of windows (and windows per chunk), loading each chunk once for all layers.\n"
+        "Each layer is configured (setupParams, gross offsets) as for runAmpcor;\n"
+        "the device and the number of streams/threads are taken from the first layer.",
+        pybind11::arg("layers"))
 
         .DEF_METHOD(isDoublePrecision)
 
