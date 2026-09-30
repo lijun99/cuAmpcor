@@ -163,3 +163,6 @@ def test_gpu_device_errors(images, tmp_path):
     with pytest.raises(RuntimeError, match="not a valid GPU device"):
         run_ampcor("gpu", images, SHAPE, tmp_path, deviceID=99, n_windows=(2, 2))
     assert pycuampcor.PyCuAmpcor.get_sm_count(0) > 0
+    # static, callable from the class or an instance
+    pycuampcor.PyCuAmpcor.device_list()
+    pycuampcor.PyCuAmpcor().device_list()

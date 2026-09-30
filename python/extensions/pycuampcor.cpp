@@ -127,7 +127,7 @@ PYBIND11_MODULE(PYCUAMPCOR_MODULE, m)
         },
         "Returns the number of SMs (streaming multiprocessors) on the given device.")
 
-        .def("device_list", &gpuDeviceList,
+        .def_static("device_list", &gpuDeviceList,
         "List all available cuda devices")
 
 #endif
