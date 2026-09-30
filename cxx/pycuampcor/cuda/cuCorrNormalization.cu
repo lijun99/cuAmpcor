@@ -40,18 +40,24 @@ __device__ real_type sumReduceBlock(real_type sum, volatile real_type *shmem)
     if (Nthreads >= 512) { if (tid < 256) { shmem[tid] += shmem[tid + 256]; } __syncthreads(); }
     if (Nthreads >= 256) { if (tid < 128) { shmem[tid] += shmem[tid + 128]; } __syncthreads(); }
     if (Nthreads >= 128) { if (tid <  64) { shmem[tid] += shmem[tid +  64]; } __syncthreads(); }
+    // reduction within a warp; lanes of a warp are not executed in lockstep (since Volta),
+    // __syncwarp separates the reads and writes of each step
     if (tid < 32)
     {
-        shmem[tid] += shmem[tid + 32];
-        shmem[tid] += shmem[tid + 16];
-        shmem[tid] += shmem[tid +  8];
-        shmem[tid] += shmem[tid +  4];
-        shmem[tid] += shmem[tid +  2];
-        shmem[tid] += shmem[tid +  1];
+        real_type v = shmem[tid];
+        for (int offset = 32; offset > 0; offset /= 2) {
+            v += shmem[tid + offset];
+            __syncwarp();
+            shmem[tid] = v;
+            __syncwarp();
+        }
     }
 
     __syncthreads();
-    return shmem[0];
+    const real_type result = shmem[0];
+    // all threads have to read the result before shmem is reused (e.g., by another reduction)
+    __syncthreads();
+    return result;
 }
 
 // cuda kernel to subtract mean value from the images
@@ -273,6 +279,8 @@ __device__ real2_type partialSums(const real_type v, volatile real_type* shmem, 
     inclusive_prefix_sum<Nthreads2>(v*v, shMem2);
     const real_type Sum  = shMem [tid-1 + stride] - shMem [tid-1];
     const real_type Sum2 = shMem2[tid-1 + stride] - shMem2[tid-1];
+    // all threads have to read the sums before shmem is reused (by the next call)
+    __syncthreads();
     return make_real2(Sum, Sum2);
 }
 
