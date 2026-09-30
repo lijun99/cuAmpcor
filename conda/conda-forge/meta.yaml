@@ -39,6 +39,7 @@ requirements:
     - scikit-build-core >=0.10
     - pybind11
     - fftw
+    - libgomp  # [linux]
     - llvm-openmp  # [osx]
     - cuda-version {{ cuda_compiler_version }}  # [cuda_compiler_version != "None"]
     - cuda-cudart-dev  # [cuda_compiler_version != "None"]
