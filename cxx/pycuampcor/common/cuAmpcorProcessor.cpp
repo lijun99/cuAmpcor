@@ -65,7 +65,7 @@ void cuAmpcorProcessor::setIndex(int idxDown_, int idxAcross_)
 /// obtain the starting pixels for each chip
 /// @param[in] oStartPixel start pixel locations for all chips
 /// @param[out] rstartPixel  start pixel locations for chips within the chunk
-void cuAmpcorProcessor::getRelativeOffset(int *rStartPixel, const int *oStartPixel, int diff)
+void cuAmpcorProcessor::getRelativeOffset(int *rStartPixel, const std::vector<int> &oStartPixel, int diff)
 {
     for(int i=0; i<param->numberWindowDownInChunk; ++i) {
         int iDown = i;

@@ -5,7 +5,7 @@
 
 #include "cuAmpcorParameter.h"
 #include <stdio.h>
-#include <stdlib.h>
+#include <algorithm>
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -215,33 +215,25 @@ void cuAmpcorParameter::_setupParameters_OnePass()
 
 void cuAmpcorParameter::allocateArrays()
 {
-    // release arrays from previous setups, if any
-    deallocateArrays();
+    // (re)size arrays, discarding values from previous setups, if any
     chunkStartPixelsSet = false;
 
-    int arraySize = numberWindows*sizeof(int);
-    grossOffsetDown = (int *)malloc(arraySize);
-    grossOffsetAcross = (int *)malloc(arraySize);
-    referenceStartPixelDown = (int *)malloc(arraySize);
-    referenceStartPixelAcross =  (int *)malloc(arraySize);
-    secondaryStartPixelDown = (int *)malloc(arraySize);
-    secondaryStartPixelAcross =  (int *)malloc(arraySize);
+    for (auto *array : {&grossOffsetDown, &grossOffsetAcross,
+                        &referenceStartPixelDown, &referenceStartPixelAcross,
+                        &secondaryStartPixelDown, &secondaryStartPixelAcross})
+        array->assign(numberWindows, 0);
 
-    int arraySizeChunk = numberChunks*sizeof(int);
-    referenceChunkStartPixelDown = (int *)malloc(arraySizeChunk);
-    referenceChunkStartPixelAcross = (int *)malloc(arraySizeChunk);
-    secondaryChunkStartPixelDown = (int *)malloc(arraySizeChunk);
-    secondaryChunkStartPixelAcross = (int *)malloc(arraySizeChunk);
-    referenceChunkHeight = (int *)malloc(arraySizeChunk);
-    referenceChunkWidth = (int *)malloc(arraySizeChunk);
-    secondaryChunkHeight = (int *)malloc(arraySizeChunk);
-    secondaryChunkWidth = (int *)malloc(arraySizeChunk);
+    for (auto *array : {&referenceChunkStartPixelDown, &referenceChunkStartPixelAcross,
+                        &secondaryChunkStartPixelDown, &secondaryChunkStartPixelAcross,
+                        &referenceChunkHeight, &referenceChunkWidth,
+                        &secondaryChunkHeight, &secondaryChunkWidth})
+        array->assign(numberChunks, 0);
 }
 
 /// check whether the arrays for windows/chunks are allocated (by setupParameters)
 void cuAmpcorParameter::checkArraysAllocated() const
 {
-    if (grossOffsetDown == nullptr)
+    if (grossOffsetDown.empty())
         throw std::logic_error("Parameters are not set up; call setupParams() first");
 }
 
@@ -254,24 +246,6 @@ void cuAmpcorParameter::checkReadyToRun() const
             "or setVaryingGrossOffset() after setupParams()");
 }
 
-void cuAmpcorParameter::deallocateArrays()
-{
-    free(referenceStartPixelDown); referenceStartPixelDown = nullptr;
-    free(referenceStartPixelAcross); referenceStartPixelAcross = nullptr;
-    free(secondaryStartPixelDown); secondaryStartPixelDown = nullptr;
-    free(secondaryStartPixelAcross); secondaryStartPixelAcross = nullptr;
-    free(grossOffsetDown); grossOffsetDown = nullptr;
-    free(grossOffsetAcross); grossOffsetAcross = nullptr;
-    free(referenceChunkStartPixelDown); referenceChunkStartPixelDown = nullptr;
-    free(referenceChunkStartPixelAcross); referenceChunkStartPixelAcross = nullptr;
-    free(secondaryChunkStartPixelDown); secondaryChunkStartPixelDown = nullptr;
-    free(secondaryChunkStartPixelAcross); secondaryChunkStartPixelAcross = nullptr;
-    free(referenceChunkHeight); referenceChunkHeight = nullptr;
-    free(referenceChunkWidth); referenceChunkWidth = nullptr;
-    free(secondaryChunkHeight); secondaryChunkHeight = nullptr;
-    free(secondaryChunkWidth); secondaryChunkWidth = nullptr;
-}
-
 
 // ****************
 // make reference window the same as secondary for oversampling
@@ -280,7 +254,7 @@ void cuAmpcorParameter::deallocateArrays()
 /// Set starting pixels for reference and secondary windows from arrays
 /// set also gross offsets between reference and secondary windows
 ///
-void cuAmpcorParameter::setStartPixels(int *mStartD, int *mStartA, int *gOffsetD, int *gOffsetA)
+void cuAmpcorParameter::setStartPixels(const int *mStartD, const int *mStartA, const int *gOffsetD, const int *gOffsetA)
 {
     checkArraysAllocated();
     for(int i=0; i<numberWindows; i++)
@@ -296,7 +270,7 @@ void cuAmpcorParameter::setStartPixels(int *mStartD, int *mStartA, int *gOffsetD
 }
 
 /// set starting pixels for each window with a varying gross offset
-void cuAmpcorParameter::setStartPixels(int mStartD, int mStartA, int *gOffsetD, int *gOffsetA)
+void cuAmpcorParameter::setStartPixels(int mStartD, int mStartA, const int *gOffsetD, const int *gOffsetA)
 {
     checkArraysAllocated();
     for(int row=0; row<numberWindowDown; row++)
@@ -485,10 +459,6 @@ void cuAmpcorParameter::checkPixelInImageRange()
 }
 
 
-cuAmpcorParameter::~cuAmpcorParameter()
-{
-    deallocateArrays();
-}
 // end of file
 
 

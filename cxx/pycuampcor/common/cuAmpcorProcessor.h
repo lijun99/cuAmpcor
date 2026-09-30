@@ -18,6 +18,7 @@
 #include "cuCorrFrequency.h"
 #include "cuCorrNormalizer.h"
 #include <memory>
+#include <vector>
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND {
 
@@ -71,7 +72,7 @@ public:
 protected:
     // shared methods
     void setIndex(int idxDown_, int idxAcross_);
-    void getRelativeOffset(int *rStartPixel, const int *oStartPixel, int diff);
+    void getRelativeOffset(int *rStartPixel, const std::vector<int> &oStartPixel, int diff);
 
 };
 

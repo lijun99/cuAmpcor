@@ -181,6 +181,18 @@ TEST(ParameterTest, WindowAndChunkPixels)
     // the last chunk across: windows 6-7 start at 146, 162, entirely outside
     EXPECT_EQ(p.referenceChunkWidth[3], 0);
     EXPECT_EQ(p.secondaryChunkWidth[3], 0);
+
+    // copies own their arrays
+    cuAmpcorParameter q = p;
+    q.setStartPixels(0, 0, 0, 0);
+    EXPECT_EQ(p.referenceStartPixelAcross[1], startA + 16);
+    EXPECT_EQ(q.referenceStartPixelAcross[1], 16);
+
+    // setting up again resizes the arrays to the new number of windows/chunks
+    p.numberWindowAcross = 3;
+    p.setupParameters();
+    EXPECT_EQ(p.referenceStartPixelDown.size(), 4u*3u);
+    EXPECT_EQ(p.referenceChunkHeight.size(), 2u*2u);
 }
 
 } // namespace
