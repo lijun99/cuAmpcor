@@ -2,9 +2,22 @@
 #include "cuAmpcorProcessorTwoPass.h"
 #include "cuAmpcorProcessorOnePass.h"
 
+#include <algorithm>
 #include <stdexcept>
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND {
+
+namespace {
+// allocate a buffer to load image chunks
+// (chunks entirely outside the image have zero size and are never loaded)
+template <typename T>
+std::unique_ptr<cuArrays<T>> newChunkBuffer(int height, int width)
+{
+    auto buffer = std::make_unique<cuArrays<T>>(std::max(height, 1), std::max(width, 1));
+    buffer->allocate();
+    return buffer;
+}
+} // namespace
 
 // Factory method implementation
 // create the batch processor for a given {workflow}
@@ -38,6 +51,16 @@ cuAmpcorProcessor::cuAmpcorProcessor(cuAmpcorParameter *param_,
     offsetImage(offsetImage_), snrImage(snrImage_), covImage(covImage_),
     peakValueImage(peakValueImage_), stream(stream_)
 {
+    // allocating/freeing device memory per chunk synchronizes the device and
+    // stalls the other streams; allocate the chunk buffers once instead
+    if(param->referenceImageDataType == 2)
+        c_referenceChunkRaw = newChunkBuffer<image_complex_type>(param->maxReferenceChunkHeight, param->maxReferenceChunkWidth);
+    else
+        r_referenceChunkRaw = newChunkBuffer<image_real_type>(param->maxReferenceChunkHeight, param->maxReferenceChunkWidth);
+    if(param->secondaryImageDataType == 2)
+        c_secondaryChunkRaw = newChunkBuffer<image_complex_type>(param->maxSecondaryChunkHeight, param->maxSecondaryChunkWidth);
+    else
+        r_secondaryChunkRaw = newChunkBuffer<image_real_type>(param->maxSecondaryChunkHeight, param->maxSecondaryChunkWidth);
 }
 
 /// set chunk index

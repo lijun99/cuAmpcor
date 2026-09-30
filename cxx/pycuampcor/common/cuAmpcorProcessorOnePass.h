@@ -21,13 +21,7 @@ class cuAmpcorProcessorOnePass : public cuAmpcorProcessor {
 private:
 
     // local variables and workers
-    // gpu buffer to load images from file
-    // image_complex_type uses original image type,
-    //    convert to complex_type when copied to c_referenceBatchRaw
-    cuArrays<image_complex_type> * c_referenceChunkRaw, * c_secondaryChunkRaw;
-    cuArrays<image_real_type> * r_referenceChunkRaw, * r_secondaryChunkRaw;
-
-        // offset data
+    // offset data
     cuArrays<int> *ChunkOffsetDown, *ChunkOffsetAcross;
 
     // windows raw (not oversampled) data, complex and real

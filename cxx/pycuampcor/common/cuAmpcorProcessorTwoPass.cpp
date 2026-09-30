@@ -243,7 +243,6 @@ void cuAmpcorProcessorTwoPass::run(int idxDown_, int idxAcross_)
 
 void cuAmpcorProcessorTwoPass::loadReferenceChunk()
 {
-
     // we first load the whole chunk of image from cpu to a gpu buffer c(r)_referenceChunkRaw
     // then copy to a batch of windows with (nImages, height, width) (leading dimension on the right)
 
@@ -272,44 +271,31 @@ void cuAmpcorProcessorTwoPass::loadReferenceChunk()
         // check whether the image is complex (e.g., SLC) or real( e.g. TIFF)
         if(param->referenceImageDataType==2)
         {
-            // allocate a gpu buffer to load data from cpu/file
-            // try allocate/deallocate the buffer on the fly to save gpu memory 07/09/19
-
-            c_referenceChunkRaw = new cuArrays<image_complex_type> (param->maxReferenceChunkHeight, param->maxReferenceChunkWidth);
-            c_referenceChunkRaw->allocate();
-
             // load the data from cpu
             referenceImage->loadToDevice((void *)c_referenceChunkRaw->devData, startDown, startAcross, height, width, stream);
 
             //copy the chunk to a batch format (nImages, height, width)
             // if derampMethod = 0 (no deramp), take amplitudes; otherwise, copy complex data
             if(param->derampMethod == 0) {
-                cuArraysCopyToBatchAbsWithOffset(c_referenceChunkRaw,
+                cuArraysCopyToBatchAbsWithOffset(c_referenceChunkRaw.get(),
                     param->referenceChunkHeight[idxChunk], param->referenceChunkWidth[idxChunk],
                     c_referenceBatchRaw, ChunkOffsetDown->devData, ChunkOffsetAcross->devData, stream);
             }
             else {
-                cuArraysCopyToBatchWithOffset(c_referenceChunkRaw,
+                cuArraysCopyToBatchWithOffset(c_referenceChunkRaw.get(),
                     param->referenceChunkHeight[idxChunk], param->referenceChunkWidth[idxChunk],
                     c_referenceBatchRaw, ChunkOffsetDown->devData, ChunkOffsetAcross->devData, stream);
             }
-            // deallocate the gpu buffer
-            delete c_referenceChunkRaw;
         }
         // if the image is real
         else {
-            r_referenceChunkRaw = new cuArrays<image_real_type> (param->maxReferenceChunkHeight, param->maxReferenceChunkWidth);
-            r_referenceChunkRaw->allocate();
-
             // load the data from cpu
             referenceImage->loadToDevice((void *)r_referenceChunkRaw->devData, startDown, startAcross, height, width, stream);
 
             // copy the chunk (real) to a batch format (complex)
-            cuArraysCopyToBatchWithOffsetR2C(r_referenceChunkRaw,
+            cuArraysCopyToBatchWithOffsetR2C(r_referenceChunkRaw.get(),
                     param->referenceChunkHeight[idxChunk], param->referenceChunkWidth[idxChunk],
                     c_referenceBatchRaw, ChunkOffsetDown->devData, ChunkOffsetAcross->devData, stream);
-            // deallocate the gpu buffer
-            delete r_referenceChunkRaw;
         } // end of if complex
     } // end of if all pixels out of range
 }
@@ -336,9 +322,6 @@ void cuAmpcorProcessorTwoPass::loadSecondaryChunk()
 
         if(param->secondaryImageDataType==2)
         {
-            c_secondaryChunkRaw = new cuArrays<image_complex_type> (param->maxSecondaryChunkHeight, param->maxSecondaryChunkWidth);
-            c_secondaryChunkRaw->allocate();
-
             //load a chunk from mmap to gpu
             secondaryImage->loadToDevice(c_secondaryChunkRaw->devData,
                 param->secondaryChunkStartPixelDown[idxChunk],
@@ -348,22 +331,17 @@ void cuAmpcorProcessorTwoPass::loadSecondaryChunk()
                 stream);
 
             if(param->derampMethod == 0) {
-                cuArraysCopyToBatchAbsWithOffset(c_secondaryChunkRaw,
+                cuArraysCopyToBatchAbsWithOffset(c_secondaryChunkRaw.get(),
                     param->secondaryChunkHeight[idxChunk], param->secondaryChunkWidth[idxChunk],
                     c_secondaryBatchRaw, ChunkOffsetDown->devData, ChunkOffsetAcross->devData, stream);
             }
             else {
-               cuArraysCopyToBatchWithOffset(c_secondaryChunkRaw,
+               cuArraysCopyToBatchWithOffset(c_secondaryChunkRaw.get(),
                     param->secondaryChunkHeight[idxChunk], param->secondaryChunkWidth[idxChunk],
                     c_secondaryBatchRaw, ChunkOffsetDown->devData, ChunkOffsetAcross->devData, stream);
             }
-            delete c_secondaryChunkRaw;
         }
         else { //real image
-            //allocate the gpu buffer
-            r_secondaryChunkRaw = new cuArrays<image_real_type> (param->maxSecondaryChunkHeight, param->maxSecondaryChunkWidth);
-            r_secondaryChunkRaw->allocate();
-
             //load a chunk from mmap to gpu
             secondaryImage->loadToDevice(r_secondaryChunkRaw->devData,
                 param->secondaryChunkStartPixelDown[idxChunk],
@@ -373,10 +351,9 @@ void cuAmpcorProcessorTwoPass::loadSecondaryChunk()
                 stream);
 
             // convert to the batch format
-            cuArraysCopyToBatchWithOffsetR2C(r_secondaryChunkRaw,
+            cuArraysCopyToBatchWithOffsetR2C(r_secondaryChunkRaw.get(),
                 param->secondaryChunkHeight[idxChunk], param->secondaryChunkWidth[idxChunk],
                 c_secondaryBatchRaw, ChunkOffsetDown->devData, ChunkOffsetAcross->devData, stream);
-            delete r_secondaryChunkRaw;
         }
     }
 }

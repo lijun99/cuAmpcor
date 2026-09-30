@@ -20,9 +20,6 @@ class cuAmpcorProcessorTwoPass : public cuAmpcorProcessor{
 private:
 
     // local variables and workers
-    // gpu buffer to load images from file
-    cuArrays<image_complex_type> * c_referenceChunkRaw, * c_secondaryChunkRaw;
-    cuArrays<image_real_type> * r_referenceChunkRaw, * r_secondaryChunkRaw;
 
     // windows raw (not oversampled) data, complex and real
     cuArrays<complex_type> * c_referenceBatchRaw, * c_secondaryBatchRaw, * c_secondaryBatchZoomIn;

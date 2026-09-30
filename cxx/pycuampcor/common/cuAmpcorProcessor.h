@@ -48,6 +48,12 @@ protected:
 
     stream_t stream;  ///< stream to use (CUDA stream or dummy for CPU)
 
+    // buffers to load image chunks from files (complex or real, by image data type),
+    // allocated once for the largest chunk; image_complex/real_type use the original
+    // image type, converted to complex_type when copied to the batches of windows
+    std::unique_ptr<cuArrays<image_complex_type>> c_referenceChunkRaw, c_secondaryChunkRaw;
+    std::unique_ptr<cuArrays<image_real_type>> r_referenceChunkRaw, r_secondaryChunkRaw;
+
 
 public:
     // default constructor and destructor
