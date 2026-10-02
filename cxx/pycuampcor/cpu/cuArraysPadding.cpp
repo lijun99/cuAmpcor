@@ -12,10 +12,11 @@ namespace pycuampcor::cpu {
  * @param[in] image1 input images
  * @param[out] image2 output images
  * @note To keep the band center at (0,0), move quads to corners and pad zeros in the middle
- * @note for both even and odd sequences, siding Nyquist frequency for even length with negative frequency
- * for even N - positive f[0, ..., N/2-1],
+ * @note for both even and odd sequences, siding the Nyquist frequency (N/2) for even length with the
+ *       positive frequencies, as the isce3 (v1) pycuampcor (see the CUDA backend for details)
+ * for even N - positive f[0, ..., N/2-1], f[N/2],
  *              zeros 0...0,
- *              negative f[N/2], f[N/2+1, ..., N-1]
+ *              negative f[N/2+1, ..., N-1]
  * for odd N - positive f[0, ..., (N-1)/2],
  *             zeros 0...0,
  *             negative f [(N+1)/2, ..., N-1]
@@ -30,10 +31,10 @@ void cuArraysFFTPaddingMany(cuArrays<complex_type> *image1, cuArrays<complex_typ
     for(int imageIdx = 0; imageIdx < image1->count; imageIdx++)
         for(int x1 = 0; x1 < height1; x1++) {
             // determine the quadrants
-            // divup the length to be consistent with both even and odd lengths
-            const int x2 = (x1 < (height1+1)/2) ? x1 : height2 - height1 + x1;
+            // positive frequencies (including the Nyquist frequency for even lengths) up to index N/2
+            const int x2 = (x1 <= height1/2) ? x1 : height2 - height1 + x1;
             for(int y1 = 0; y1 < width1; y1++) {
-                const int y2 = (y1 < (width1+1)/2) ? y1 : width2 - width1 + y1;
+                const int y2 = (y1 <= width1/2) ? y1 : width2 - width1 + y1;
                 image2->devData[IDX2R(x2, y2, width2)+imageIdx*size2]
                     = image1->devData[IDX2R(x1, y1, width1)+imageIdx*size1]*factor;
             }

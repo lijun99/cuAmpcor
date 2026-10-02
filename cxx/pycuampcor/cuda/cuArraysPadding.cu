@@ -13,13 +13,15 @@ namespace pycuampcor::cuda {
 // for both even and odd sequences
 // @param[in] image1 input images
 // @param[in,out] image2 output images - memset to 0 in prior
-// @note siding Nyquist frequency for even length with negative frequency (as numpy/FFTW frequencies);
-//       splitting it between the positive and negative frequencies makes no difference for real signals
-//       (the real part is taken after the inverse transform), and the Nyquist component of oversampled,
-//       deramped SLCs is negligible
-// for even N - positive f[0, ..., N/2-1],
+// @note siding the Nyquist frequency (N/2) for even length with the positive frequencies,
+//       as the isce3 (v1) pycuampcor, so that the results agree with the isce3 products.
+//       The Nyquist component is ambiguous (positive or negative); for real signals the side makes no
+//       difference (the real part is taken after the inverse transform), but for small complex windows
+//       it holds noticeable energy (spectral leakage), and the side shifts the sub-pixel peak by up to
+//       an oversampled grid spacing in some windows (with the same accuracy for either side).
+// for even N - positive f[0, ..., N/2-1], f[N/2],
 //              zeros 0...0,
-//              negative f[N/2], f[N/2+1, ..., N-1]
+//              negative f[N/2+1, ..., N-1]
 // for odd N - positive f[0, ..., (N-1)/2],
 //             zeros 0...0,
 //             negative f [(N+1)/2, ..., N-1]
@@ -37,9 +39,9 @@ __global__ void cuArraysPaddingMany_kernel(
         return;
 
     // determine the quadrants
-    // divup the length to be consistent with both even and odd lengths
-    int x2 = (x1 < (height1+1)/2) ? x1 : height2 - height1 + x1;
-    int y2 = (y1 < (width1+1)/2) ? y1 : width2 - width1 + y1;
+    // positive frequencies (including the Nyquist frequency for even lengths) up to index N/2
+    int x2 = (x1 <= height1/2) ? x1 : height2 - height1 + x1;
+    int y2 = (y1 <= width1/2) ? y1 : width2 - width1 + y1;
     image2[IDX2R(x2, y2, width2)+imageIdx*size2]
             = image1[IDX2R(x1, y1, width1)+imageIdx*size1]*factor;
     return;

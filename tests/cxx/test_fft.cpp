@@ -57,6 +57,25 @@ TEST_F(FFTTest, OverSamplerC2C)
     }
 }
 
+// the Nyquist frequency of even lengths is sided with the positive frequencies (as the isce3 v1 pycuampcor):
+// (-1)^x is interpolated as exp(+i pi x), for both even dimensions, and the odd dimension is exact
+TEST_F(FFTTest, OverSamplerNyquistPositive)
+{
+    const int nx = 8, ny = 7, ratio = 2;
+    // Nyquist along x (kx = nx/2); a regular frequency along the odd y
+    auto v = exponential(nx, ny, nx/2, 2);
+    auto in = makeFrom(v, nx, ny, 1, 1);
+    auto out = make<complex_type>(nx*ratio, ny*ratio, 1, 1);
+    cuOverSamplerC2C oversampler(nx, ny, nx*ratio, ny*ratio, 1, stream);
+    oversampler.execute(in.get(), out.get());
+    auto r = download(*out);
+    auto ref = exponential(nx*ratio, ny*ratio, nx/2, 2);
+    for (size_t i = 0; i < ref.size(); i++) {
+        EXPECT_NEAR(r[i].x, ref[i].x, 100*tol);
+        EXPECT_NEAR(r[i].y, ref[i].y, 100*tol);
+    }
+}
+
 TEST_F(FFTTest, OverSamplerR2R)
 {
     const int nx = 12, ny = 10, ratio = 4;
