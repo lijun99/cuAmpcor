@@ -37,6 +37,17 @@ void backendSynchronize();
 void backendCopyFromHost2D(void *dst, size_t dpitch, const void *src, size_t spitch,
     size_t widthInBytes, size_t height, stream_t stream);
 
+/// page-locked host memory to stage tiles, copied asynchronously to the device
+void *backendAllocStaging(size_t bytes);
+void backendFreeStaging(void *ptr);
+/// an event marking the completion of the work queued on a stream
+using event_t = cudaEvent_t;
+event_t backendCreateEvent();
+void backendDestroyEvent(event_t event);
+void backendRecordEvent(event_t event, stream_t stream);
+/// wait (on the host) for the event
+void backendWaitEvent(event_t event);
+
 } // namespace
 
 #endif //__PYCUAMPCOR_BACKEND_H

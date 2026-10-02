@@ -72,6 +72,17 @@ cuAmpcorChunkLoader::Source::Source(const cuAmpcorChunkFootprint &footprint_, in
         realBuffer = std::make_unique<cuArrays<image_real_type>>(height, width);
         realBuffer->allocate();
     }
+    // page-locked host memory for the largest chunk, so that copies to the device are asynchronous
+    staging = backendAllocStaging(static_cast<size_t>(height) * width * image->pixelSize());
+    stagingDone = backendCreateEvent();
+}
+
+cuAmpcorChunkLoader::Source::~Source()
+{
+    // the last copy from the staging memory must be done before it is freed
+    backendWaitEvent(stagingDone);
+    backendDestroyEvent(stagingDone);
+    backendFreeStaging(staging);
 }
 
 void cuAmpcorChunkLoader::Source::load(int idxChunk, cuAmpcorLoadedChunk &chunk, stream_t stream)
@@ -84,7 +95,19 @@ void cuAmpcorChunkLoader::Source::load(int idxChunk, cuAmpcorLoadedChunk &chunk,
     chunk.width = footprint.width[idxChunk];
     if (chunk.empty()) return;
     void *buffer = complexBuffer ? (void *)complexBuffer->devData : (void *)realBuffer->devData;
-    image->loadToDevice(buffer, chunk.startDown, chunk.startAcross, chunk.height, chunk.width, stream);
+    if (staging) {
+        // reuse the staging memory once its previous copy is done, then copy asynchronously,
+        // so the worker can go on queuing its work (and the other workers can load) during the copy
+        backendWaitEvent(stagingDone);
+        image->loadToHost(staging, chunk.startDown, chunk.startAcross, chunk.height, chunk.width);
+        const size_t pitch = static_cast<size_t>(chunk.width) * image->pixelSize();
+        backendCopyFromHost2D(buffer, pitch, staging, pitch, pitch, chunk.height, stream);
+        backendRecordEvent(stagingDone, stream);
+    }
+    else {
+        // the work memory is host memory (CPU backend)
+        image->loadToHost(buffer, chunk.startDown, chunk.startAcross, chunk.height, chunk.width);
+    }
 }
 
 cuAmpcorChunkLoader::cuAmpcorChunkLoader(

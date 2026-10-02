@@ -17,9 +17,17 @@ class SlcImage {
 public:
     virtual ~SlcImage() = default;
 
-    /// load a tile of h_tile x w_tile pixels starting at (h_offset, w_offset), row major
-    virtual void loadToDevice(void* dArray, size_t h_offset, size_t w_offset,
-                              size_t h_tile, size_t w_tile, stream_t stream) = 0;
+    /// the size of a pixel (as loaded) in bytes
+    virtual size_t pixelSize() const = 0;
+
+    /// load a tile of h_tile x w_tile pixels starting at (h_offset, w_offset) to host memory,
+    /// row major with a pitch of w_tile pixels
+    virtual void loadToHost(void* host, size_t h_offset, size_t w_offset,
+                            size_t h_tile, size_t w_tile) = 0;
+
+    /// load a tile to the device (GPU) or work (CPU) memory, through a pageable host buffer
+    void loadToDevice(void* dArray, size_t h_offset, size_t w_offset,
+                      size_t h_tile, size_t w_tile, stream_t stream);
 
     /// open an image of image_height x image_width pixels of pixel_size bytes
     /// @param fn the image name: a raw binary file (row major), or a 2D dataset in an HDF5 file
@@ -45,7 +53,8 @@ public:
     // constructor
     MmapSlcImage(const std::string& fn, size_t image_height, size_t image_width, size_t pixel_size, size_t buffersize);
     // interface
-    void loadToDevice(void* dArray, size_t h_offset, size_t w_offset, size_t h_tile, size_t w_tile, stream_t stream) override;
+    void loadToHost(void* host, size_t h_offset, size_t w_offset, size_t h_tile, size_t w_tile) override;
+    size_t pixelSize() const override { return pixel_size; }
     // destructor
     ~MmapSlcImage() override;
 

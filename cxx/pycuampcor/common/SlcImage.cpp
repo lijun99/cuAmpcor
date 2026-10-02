@@ -10,7 +10,9 @@
 #include <sys/mman.h>
 #include <assert.h>
 #include <iostream>
+#include <cstring>
 #include <stdexcept>
+#include <vector>
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND {
 
@@ -45,6 +47,18 @@ bool SlcImage::parseHdf5Name(const std::string& name, std::string& file, std::st
         throw std::invalid_argument("Invalid HDF5 image name " + name + "; no dataset is given");
     dataset = "/" + dataset.substr(first);
     return true;
+}
+
+void SlcImage::loadToDevice(void *dArray, size_t h_offset, size_t w_offset, size_t h_tile, size_t w_tile,
+                            stream_t stream)
+{
+    // the tile in host memory (reused by each thread); the copy from pageable memory
+    // returns once the host buffer can be reused
+    thread_local std::vector<char> host;
+    host.resize(h_tile * w_tile * pixelSize());
+    loadToHost(host.data(), h_offset, w_offset, h_tile, w_tile);
+    backendCopyFromHost2D(dArray, w_tile * pixelSize(), host.data(), w_tile * pixelSize(),
+                          w_tile * pixelSize(), h_tile, stream);
 }
 
 bool SlcImage::hasHdf5()
@@ -137,8 +151,7 @@ void MmapSlcImage::remapIfNeeded(size_t required_start, size_t required_end)
 /// @param w_offset Across/Width offset
 /// @param h_tile Down/Height tile size
 /// @param w_tile Across/Width tile size
-/// @param stream CUDA stream for copying (not used for CPU)
-void MmapSlcImage::loadToDevice(void *dArray, size_t h_offset, size_t w_offset, size_t h_tile, size_t w_tile, stream_t stream)
+void MmapSlcImage::loadToHost(void *host, size_t h_offset, size_t w_offset, size_t h_tile, size_t w_tile)
 {
     size_t tileStartAddress = (h_offset*width + w_offset)*pixel_size;
     size_t tileLastAddress = ((h_offset+h_tile-1)*width + w_offset + w_tile)*pixel_size;
@@ -152,9 +165,9 @@ void MmapSlcImage::loadToDevice(void *dArray, size_t h_offset, size_t w_offset, 
     startPtr += tileStartAddress - mapped_offset;
 
     // @note
-    // We assume down/across directions as rows/cols. Therefore, SLC mmap and device array both use row major.
-    backendCopyFromHost2D(dArray, w_tile*pixel_size, startPtr, width*pixel_size,
-        w_tile*pixel_size, h_tile, stream);
+    // We assume down/across directions as rows/cols. Therefore, SLC mmap and host tile both use row major.
+    for (size_t i = 0; i < h_tile; i++)
+        std::memcpy((char *)host + i*w_tile*pixel_size, startPtr + i*width*pixel_size, w_tile*pixel_size);
 }
 
 MmapSlcImage::~MmapSlcImage()

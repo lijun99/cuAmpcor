@@ -39,6 +39,17 @@ inline void backendSynchronize() {}
 void backendCopyFromHost2D(void *dst, size_t dpitch, const void *src, size_t spitch,
     size_t widthInBytes, size_t height, stream_t stream);
 
+/// host memory to stage tiles before copying them (asynchronously) to the backend memory;
+/// nullptr for the CPU backend: tiles are loaded to the work memory directly
+inline void *backendAllocStaging(size_t) { return nullptr; }
+inline void backendFreeStaging(void *) {}
+/// an event marking the completion of the work queued on a stream (no-op for the CPU backend)
+struct event_t {};
+inline event_t backendCreateEvent() { return event_t{}; }
+inline void backendDestroyEvent(event_t) {}
+inline void backendRecordEvent(event_t, stream_t) {}
+inline void backendWaitEvent(event_t) {}
+
 } // namespace
 
 #endif //__PYCUAMPCOR_BACKEND_H

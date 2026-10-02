@@ -126,5 +126,39 @@ void backendCopyFromHost2D(void *dst, size_t dpitch, const void *src, size_t spi
         widthInBytes, height, cudaMemcpyHostToDevice, stream));
 }
 
+void *backendAllocStaging(size_t bytes)
+{
+    void *ptr = nullptr;
+    checkCudaErrors(cudaMallocHost(&ptr, bytes));
+    return ptr;
+}
+
+void backendFreeStaging(void *ptr)
+{
+    if (ptr) checkCudaErrors(cudaFreeHost(ptr));
+}
+
+event_t backendCreateEvent()
+{
+    cudaEvent_t event;
+    checkCudaErrors(cudaEventCreateWithFlags(&event, cudaEventDisableTiming));
+    return event;
+}
+
+void backendDestroyEvent(event_t event)
+{
+    checkCudaErrors(cudaEventDestroy(event));
+}
+
+void backendRecordEvent(event_t event, stream_t stream)
+{
+    checkCudaErrors(cudaEventRecord(event, stream));
+}
+
+void backendWaitEvent(event_t event)
+{
+    checkCudaErrors(cudaEventSynchronize(event));
+}
+
 
 } // namespace

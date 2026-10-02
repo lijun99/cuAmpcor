@@ -374,23 +374,16 @@ void Hdf5SlcImage::loadLibrary(char* host, size_t h_offset, size_t w_offset, siz
         throw std::runtime_error("Failed to read a tile from " + filename);
 }
 
-/// load a tile of h_tile x w_tile pixels to the device (GPU) or work (CPU) memory
-void Hdf5SlcImage::loadToDevice(void* dArray, size_t h_offset, size_t w_offset,
-                                size_t h_tile, size_t w_tile, stream_t stream)
+/// load a tile of h_tile x w_tile pixels to host memory
+void Hdf5SlcImage::loadToHost(void* host, size_t h_offset, size_t w_offset, size_t h_tile, size_t w_tile)
 {
     if (h_tile == 0 || w_tile == 0) return;
     if (h_offset + h_tile > height || w_offset + w_tile > width)
         throw std::runtime_error("The requested tile exceeds the image " + filename);
-    // the tile in host memory (reused by each thread)
-    thread_local std::vector<char> host;
-    host.resize(h_tile * w_tile * pixel_size);
     if (direct)
-        loadDirect(host.data(), h_offset, w_offset, h_tile, w_tile);
+        loadDirect(static_cast<char *>(host), h_offset, w_offset, h_tile, w_tile);
     else
-        loadLibrary(host.data(), h_offset, w_offset, h_tile, w_tile);
-    // the copy from pageable memory returns once the host buffer can be reused
-    backendCopyFromHost2D(dArray, w_tile * pixel_size, host.data(), w_tile * pixel_size,
-                          w_tile * pixel_size, h_tile, stream);
+        loadLibrary(static_cast<char *>(host), h_offset, w_offset, h_tile, w_tile);
 }
 
 } // namespace

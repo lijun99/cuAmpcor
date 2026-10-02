@@ -32,8 +32,9 @@ public:
                  size_t image_height, size_t image_width, size_t pixel_size, size_t buffer_size);
     ~Hdf5SlcImage() override;
 
-    void loadToDevice(void* dArray, size_t h_offset, size_t w_offset,
-                      size_t h_tile, size_t w_tile, stream_t stream) override;
+    void loadToHost(void* host, size_t h_offset, size_t w_offset,
+                    size_t h_tile, size_t w_tile) override;
+    size_t pixelSize() const override { return pixel_size; }
 
     /// whether the chunks are read and decoded directly (true) or by the HDF5 library (false)
     bool directRead() const { return direct; }
