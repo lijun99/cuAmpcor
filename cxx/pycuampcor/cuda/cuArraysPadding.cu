@@ -13,15 +13,16 @@ namespace pycuampcor::cuda {
 // for both even and odd sequences
 // @param[in] image1 input images
 // @param[in,out] image2 output images - memset to 0 in prior
-// @note siding the Nyquist frequency (N/2) for even length with the positive frequencies,
-//       as the isce3 (v1) pycuampcor, so that the results agree with the isce3 products.
-//       The Nyquist component is ambiguous (positive or negative); for real signals the side makes no
-//       difference (the real part is taken after the inverse transform), but for small complex windows
-//       it holds noticeable energy (spectral leakage), and the side shifts the sub-pixel peak by up to
-//       an oversampled grid spacing in some windows (with the same accuracy for either side).
-// for even N - positive f[0, ..., N/2-1], f[N/2],
+// @note the index N/2 (Nyquist) for even length is placed with the negative-index half. The oversamplers
+//       transform with exp(+i) to the frequency domain and exp(-i) back (as the isce3 v1 pycuampcor),
+//       so that index is the positive Nyquist frequency, and the results agree with the isce3 products
+//       (bitwise, with the same transform directions). The Nyquist component is ambiguous; for real
+//       signals its side makes no difference, but small complex windows hold noticeable energy there
+//       (spectral leakage), and the side shifts the sub-pixel peak by up to an oversampled grid spacing
+//       in some windows (with the same accuracy for either side).
+// for even N - f[0, ..., N/2-1],
 //              zeros 0...0,
-//              negative f[N/2+1, ..., N-1]
+//              f[N/2], f[N/2+1, ..., N-1]
 // for odd N - positive f[0, ..., (N-1)/2],
 //             zeros 0...0,
 //             negative f [(N+1)/2, ..., N-1]
@@ -39,9 +40,9 @@ __global__ void cuArraysPaddingMany_kernel(
         return;
 
     // determine the quadrants
-    // positive frequencies (including the Nyquist frequency for even lengths) up to index N/2
-    int x2 = (x1 <= height1/2) ? x1 : height2 - height1 + x1;
-    int y2 = (y1 <= width1/2) ? y1 : width2 - width1 + y1;
+    // divup the length to be consistent with both even and odd lengths
+    int x2 = (x1 < (height1+1)/2) ? x1 : height2 - height1 + x1;
+    int y2 = (y1 < (width1+1)/2) ? y1 : width2 - width1 + y1;
     image2[IDX2R(x2, y2, width2)+imageIdx*size2]
             = image1[IDX2R(x1, y1, width1)+imageIdx*size1]*factor;
     return;

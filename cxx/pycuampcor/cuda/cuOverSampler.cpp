@@ -79,11 +79,12 @@ void cuOverSamplerC2C::setStream(cudaStream_t stream_)
  */
 void cuOverSamplerC2C::execute(cuArrays<complex_type> *imagesIn, cuArrays<complex_type> *imagesOut)
 {
-    // FFT to frequency domain
+    // FFT to frequency domain, with exp(+i) and back with exp(-i) as the isce3 (v1) pycuampcor:
+    // the Nyquist frequency of even lengths is then positive (see cuArraysFFTPaddingMany)
  #ifdef CUAMPCOR_DOUBLE
-    cufft_Error(cufftExecZ2Z(forwardPlan, imagesIn->devData, workIn->devData, CUFFT_FORWARD));
+    cufft_Error(cufftExecZ2Z(forwardPlan, imagesIn->devData, workIn->devData, CUFFT_INVERSE));
  #else
-    cufft_Error(cufftExecC2C(forwardPlan, imagesIn->devData, workIn->devData, CUFFT_FORWARD));
+    cufft_Error(cufftExecC2C(forwardPlan, imagesIn->devData, workIn->devData, CUFFT_INVERSE));
  #endif
 
     // padding zeros in the middle
@@ -91,9 +92,9 @@ void cuOverSamplerC2C::execute(cuArrays<complex_type> *imagesIn, cuArrays<comple
 
     // iFFT back to time domain
 #ifdef CUAMPCOR_DOUBLE
-    cufft_Error(cufftExecZ2Z(backwardPlan, workOut->devData, imagesOut->devData, CUFFT_INVERSE));
+    cufft_Error(cufftExecZ2Z(backwardPlan, workOut->devData, imagesOut->devData, CUFFT_FORWARD));
 #else
-    cufft_Error(cufftExecC2C(backwardPlan, workOut->devData, imagesOut->devData, CUFFT_INVERSE));
+    cufft_Error(cufftExecC2C(backwardPlan, workOut->devData, imagesOut->devData, CUFFT_FORWARD));
 #endif
 }
 
@@ -168,18 +169,19 @@ void cuOverSamplerR2R::execute(cuArrays<real_type> *imagesIn, cuArrays<real_type
 
     cuArraysCopyPadded(imagesIn, workSizeIn, stream);
 
+    // exp(+i) to the frequency domain and exp(-i) back, as cuOverSamplerC2C
 #ifdef CUAMPCOR_DOUBLE
-    cufft_Error(cufftExecZ2Z(forwardPlan, workSizeIn->devData, workSizeIn->devData, CUFFT_FORWARD));
+    cufft_Error(cufftExecZ2Z(forwardPlan, workSizeIn->devData, workSizeIn->devData, CUFFT_INVERSE));
 #else
-    cufft_Error(cufftExecC2C(forwardPlan, workSizeIn->devData, workSizeIn->devData, CUFFT_FORWARD));
+    cufft_Error(cufftExecC2C(forwardPlan, workSizeIn->devData, workSizeIn->devData, CUFFT_INVERSE));
 #endif
 
     cuArraysFFTPaddingMany(workSizeIn, workSizeOut, stream);
 
 #ifdef CUAMPCOR_DOUBLE
-    cufft_Error(cufftExecZ2Z(backwardPlan, workSizeOut->devData, workSizeOut->devData, CUFFT_INVERSE));
+    cufft_Error(cufftExecZ2Z(backwardPlan, workSizeOut->devData, workSizeOut->devData, CUFFT_FORWARD));
 #else
-    cufft_Error(cufftExecC2C(backwardPlan, workSizeOut->devData, workSizeOut->devData, CUFFT_INVERSE));
+    cufft_Error(cufftExecC2C(backwardPlan, workSizeOut->devData, workSizeOut->devData, CUFFT_FORWARD));
 #endif
 
     cuArraysCopyExtract(workSizeOut, imagesOut, make_int2(0,0), stream);

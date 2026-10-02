@@ -43,8 +43,10 @@ cuOverSamplerC2C::cuOverSamplerC2C(int inNX, int inNY, int outNX, int outNY, int
     cuArrays<complex_type> planOut(outNX, outNY, nImages);
     planOut.allocate();
     std::lock_guard<std::mutex> lock(fftwPlannerMutex());
-    forwardPlan = planMany2D(inNX, inNY, nImages, planIn.devData, workIn->devData, FFTW_FORWARD);
-    backwardPlan = planMany2D(outNX, outNY, nImages, workOut->devData, planOut.devData, FFTW_BACKWARD);
+    // exp(+i) to the frequency domain and exp(-i) back, as the isce3 (v1) pycuampcor:
+    // the Nyquist frequency of even lengths is then positive (see cuArraysFFTPaddingMany)
+    forwardPlan = planMany2D(inNX, inNY, nImages, planIn.devData, workIn->devData, FFTW_BACKWARD);
+    backwardPlan = planMany2D(outNX, outNY, nImages, workOut->devData, planOut.devData, FFTW_FORWARD);
 }
 
 /**
@@ -103,8 +105,10 @@ cuOverSamplerR2R::cuOverSamplerR2R(int inNX, int inNY, int outNX, int outNY, int
 
     // set up fft plans (in-place)
     std::lock_guard<std::mutex> lock(fftwPlannerMutex());
-    forwardPlan = planMany2D(inNX, inNY, nImages, workSizeIn->devData, workSizeIn->devData, FFTW_FORWARD);
-    backwardPlan = planMany2D(outNX, outNY, nImages, workSizeOut->devData, workSizeOut->devData, FFTW_BACKWARD);
+    // exp(+i) to the frequency domain and exp(-i) back, as the isce3 (v1) pycuampcor:
+    // the Nyquist frequency of even lengths is then positive (see cuArraysFFTPaddingMany)
+    forwardPlan = planMany2D(inNX, inNY, nImages, workSizeIn->devData, workSizeIn->devData, FFTW_BACKWARD);
+    backwardPlan = planMany2D(outNX, outNY, nImages, workSizeOut->devData, workSizeOut->devData, FFTW_FORWARD);
 }
 
 void cuOverSamplerR2R::setStream(stream_t stream_)
