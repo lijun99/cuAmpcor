@@ -71,7 +71,7 @@ The recipe for conda-forge (building from a tagged release, with the variants de
     pip install .
 ```
 
-The CUDA implementation is built if a CUDA compiler (nvcc) is found. The build requires a C++17 compiler, CMake >= 3.18, pybind11, FFTW (single precision), and optionally OpenMP and CUDA >= 11. CMake options can be passed with `-C`, e.g.,
+The CUDA implementation is built if a CUDA compiler (nvcc) is found. The build requires a C++17 compiler, CMake >= 3.18, pybind11, FFTW (single precision), and optionally OpenMP, CUDA >= 11, and HDF5 (>= 1.14 for the fast reading of compressed datasets) with zlib to read images from HDF5 files. CMake options can be passed with `-C`, e.g.,
 
 ```bash
     # CPU only
@@ -93,6 +93,7 @@ The CUDA implementation is built if a CUDA compiler (nvcc) is found. The build r
 CMake options:
 
 * `PYCUAMPCOR_CUDA`: AUTO (default, build the CUDA implementation if a CUDA compiler is found), ON, or OFF;
+* `PYCUAMPCOR_HDF5`: AUTO (default, read images from HDF5 datasets if HDF5 and zlib are found), ON, or OFF;
 * `PYCUAMPCOR_DOUBLE`: use double precision for internal computations (default OFF);
 * `PYCUAMPCOR_INSTALL_DIR`: the directory to install the python package (default, `site-packages/pycuampcor` of the python in use);
 * `CMAKE_CUDA_ARCHITECTURES`: the targeted GPU architectures, e.g., `native` to detect the GPU(s) on the system, or `60` for P100, `70` for V100, `80` for A100.
@@ -107,7 +108,9 @@ The tests are organized as
 * *tests/python*: tests of the python package,
     * *test_synthetic.py*: accuracy and robustness with synthetic images of known sub-pixel shifts, for both workflows and correlation surface oversampling methods, and CPU/GPU consistency;
     * *test_regression.py*: regression tests with the *ovs128-rho0.8* data (from isce3), against the isce3 outputs and against reference outputs of this package (*tests/data/ampcor/ovs128-rho0.8/golden*);
-    * *test_api.py*: parameters, gross offsets, real images, and error handling.
+    * *test_api.py*: parameters, gross offsets, real images, and error handling;
+    * *test_layers.py*: several layers (window sizes) run together with `runAmpcorLayers`, identical to separate runs;
+    * *test_hdf5.py*: images read from HDF5 datasets (compressed or not, chunked or contiguous), identical to the same images in raw files.
 
 To build and run the C++ unit tests,
 
@@ -284,11 +287,11 @@ usage: plotOffsets.py [-h] [--plot_3d] [--plot_velocity] [--velocity_grid VELOCI
                       [--range RANGE] [--pixel_unit_azimuth PIXEL_UNIT_AZIMUTH]
                       [--pixel_unit_range PIXEL_UNIT_RANGE] [--vmin_azimuth VMIN_AZIMUTH]
                       [--vmax_azimuth VMAX_AZIMUTH] [--vmin_range VMIN_RANGE]
-                      [--vmax_range VMAX_RANGE]
-                      vrt_file
+                      [--vmax_range VMAX_RANGE] [--cmap CMAP]
+                      offset_file
 ```
 
-A simple example to plot the offset fields in a color map with range (-10, 10) is 
+The offset file is any GDAL-readable two-band raster, e.g., a VRT, or an ENVI file given by its data file (*.bip*) or its header (*.hdr*). A simple example to plot the offset fields in a color map with range (-10, 10) is 
 
 ```commandline
 python3 plotOffsets.py offset.bip.vrt --range 10
@@ -316,6 +319,8 @@ If you prefer to plot the offsets in 3D or overlay the velocity vectors (quiver)
 | peakValueImageName        | The output file name for the normalized correlation surface peak values |
 
 PyCuAmpcor reads images as raw binary files (e.g., ENVI format, or the data file of a GDAL VRT raw raster) with memory map, and image heights/widths are required as inputs. Single-precision complex (referenceImageDataType/secondaryImageDataType=2, default) or real (=1) data are supported. Multi-band is not currently supported, but can be added if desired.
+
+If built with HDF5 (`pycuampcor.has_hdf5`), images may also be 2D datasets in HDF5 files, named as in GDAL, `HDF5:<file>:<dataset>` (or `HDF5:"<file>":<dataset>` if the file name contains ':'), e.g., `HDF5:rslc.h5:/science/LSAR/RSLC/swaths/frequencyA/HH`. The dataset must be float32 (real) or complex64 (a compound of two float32, as written by h5py and the NISAR products), with the given height and width. Chunked datasets compressed with deflate (gzip), with or without shuffle, as the NISAR products, or uncompressed, are read without the HDF5 library: the chunks are located once, read and decoded in parallel, and kept in a cache of `mmapSize` GB shared by the workers (CUDA streams or CPU threads). Other datasets (contiguous, other filters, or files with a user block) are read with the HDF5 library. The image is read directly from the HDF5 file, without an intermediate raw copy.
 
 The offset output is arranged in BIP format, with each pixel (azimuth offset, range offset). In addition to a static gross offset (i.e., a constant for all search windows), PyCuAmpcor supports varying gross offsets as inputs (e.g., for glaciers, users can compute the gross offsets with the velocity model for different locations and use them as inputs for PyCuAmpcor.
 
