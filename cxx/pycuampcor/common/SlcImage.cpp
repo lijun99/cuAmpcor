@@ -1,4 +1,7 @@
 #include "SlcImage.h"
+#ifdef PYCUAMPCOR_WITH_HDF5
+#include "Hdf5SlcImage.h"
+#endif
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -11,9 +14,59 @@
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND {
 
+bool SlcImage::parseHdf5Name(const std::string& name, std::string& file, std::string& dataset)
+{
+    const std::string prefix = "HDF5:";
+    if (name.compare(0, prefix.size(), prefix) != 0)
+        return false;
+    const std::string rest = name.substr(prefix.size());
+    size_t sep;
+    if (!rest.empty() && rest[0] == '"') {
+        // quoted file name
+        const size_t quote = rest.find('"', 1);
+        if (quote == std::string::npos || quote + 1 >= rest.size() || rest[quote + 1] != ':')
+            throw std::invalid_argument("Invalid HDF5 image name " + name + "; expect HDF5:\"<file>\":<dataset>");
+        file = rest.substr(1, quote - 1);
+        sep = quote + 1;
+    }
+    else {
+        // the dataset is an absolute path (from the last ":/"), or else after the last ':'
+        sep = rest.rfind(":/");
+        if (sep == std::string::npos)
+            sep = rest.rfind(':');
+        if (sep == std::string::npos || sep == 0)
+            throw std::invalid_argument("Invalid HDF5 image name " + name + "; expect HDF5:<file>:<dataset>");
+        file = rest.substr(0, sep);
+    }
+    dataset = rest.substr(sep + 1);
+    // as an absolute path with a single leading '/'
+    const size_t first = dataset.find_first_not_of('/');
+    if (first == std::string::npos)
+        throw std::invalid_argument("Invalid HDF5 image name " + name + "; no dataset is given");
+    dataset = "/" + dataset.substr(first);
+    return true;
+}
+
+bool SlcImage::hasHdf5()
+{
+#ifdef PYCUAMPCOR_WITH_HDF5
+    return true;
+#else
+    return false;
+#endif
+}
+
 std::unique_ptr<SlcImage> SlcImage::open(const std::string& filepath, size_t img_height, size_t img_width,
                                          size_t pixel_size, size_t buffer_size)
 {
+    std::string file, dataset;
+    if (parseHdf5Name(filepath, file, dataset)) {
+#ifdef PYCUAMPCOR_WITH_HDF5
+        return std::make_unique<Hdf5SlcImage>(file, dataset, img_height, img_width, pixel_size, buffer_size);
+#else
+        throw std::runtime_error("Cannot read " + filepath + ": pycuampcor is built without HDF5 support");
+#endif
+    }
     return std::make_unique<MmapSlcImage>(filepath, img_height, img_width, pixel_size, buffer_size);
 }
 

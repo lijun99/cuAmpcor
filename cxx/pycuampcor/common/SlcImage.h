@@ -1,6 +1,6 @@
 // -*- c++ -*-
 // file slcimage.h
-// image sources (tile loaders) for slc images: a raw binary file (mmap)
+// image sources (tile loaders) for slc images: a raw binary file (mmap) or an HDF5 dataset
 
 #ifndef __SLCIMAGE_H
 #define __SLCIMAGE_H
@@ -21,11 +21,20 @@ public:
     virtual void loadToDevice(void* dArray, size_t h_offset, size_t w_offset,
                               size_t h_tile, size_t w_tile, stream_t stream) = 0;
 
-    /// open an image file of image_height x image_width pixels of pixel_size bytes
-    /// @param fn the file name, a raw binary file (row major)
+    /// open an image of image_height x image_width pixels of pixel_size bytes
+    /// @param fn the image name: a raw binary file (row major), or a 2D dataset in an HDF5 file
+    ///     as HDF5:<file>:<dataset> (as in GDAL; the file may be quoted, HDF5:"<file>":<dataset>)
     /// @param buffer_size the host memory buffer for reading the image, in GB
+    ///     (the mmap window for a raw file, the cache of decoded chunks for HDF5)
     static std::unique_ptr<SlcImage> open(const std::string& fn, size_t image_height, size_t image_width,
                                           size_t pixel_size, size_t buffer_size);
+
+    /// split an image name HDF5:<file>:<dataset> into the file and the dataset
+    /// @return false if the name is not of an HDF5 dataset
+    static bool parseHdf5Name(const std::string& name, std::string& file, std::string& dataset);
+
+    /// whether HDF5 datasets are supported (built with HDF5)
+    static bool hasHdf5();
 };
 
 /// a raw binary image file, memory mapped in a window of up to buffer_size GB

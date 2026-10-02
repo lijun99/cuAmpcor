@@ -3,6 +3,7 @@
 
 #include "cuAmpcorController.h"
 #include "cuAmpcorParameter.h"
+#include "SlcImage.h"
 #ifdef PYCUAMPCOR_BACKEND_CUDA
 #include "cudaUtil.h"
 #endif
@@ -14,6 +15,9 @@ PYBIND11_MODULE(PYCUAMPCOR_MODULE, m)
     using namespace pycuampcor::PYCUAMPCOR_BACKEND;
     using str = std::string;
     using cls = cuAmpcorController;
+
+    // whether images can be read from HDF5 datasets (HDF5:<file>:<dataset>)
+    m.attr("has_hdf5") = SlcImage::hasHdf5();
 
     pybind11::class_<cls>(m, PYBIND11_TOSTRING(PYCUAMPCOR_CLASS))
         .def(pybind11::init<>())
