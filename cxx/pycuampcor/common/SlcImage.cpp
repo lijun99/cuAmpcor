@@ -70,11 +70,18 @@ bool SlcImage::hasHdf5()
 #endif
 }
 
-std::unique_ptr<SlcImage> SlcImage::open(const std::string& filepath, size_t img_height, size_t img_width,
+std::unique_ptr<SlcImage> SlcImage::open(const std::string& filepath, const std::string& reader,
+                                         size_t img_height, size_t img_width,
                                          size_t pixel_size, size_t buffer_size)
 {
+    if (reader != "auto" && reader != "raw" && reader != "hdf5")
+        throw std::invalid_argument("Unknown image reader " + reader + " for " + filepath
+            + "; expect auto, raw or hdf5");
     std::string file, dataset;
-    if (parseHdf5Name(filepath, file, dataset)) {
+    if (reader == "hdf5" || (reader == "auto" && parseHdf5Name(filepath, file, dataset))) {
+        // the HDF5: prefix is optional with the hdf5 reader
+        if (reader == "hdf5" && !parseHdf5Name(filepath, file, dataset))
+            parseHdf5Name("HDF5:" + filepath, file, dataset);
 #ifdef PYCUAMPCOR_WITH_HDF5
         return std::make_unique<Hdf5SlcImage>(file, dataset, img_height, img_width, pixel_size, buffer_size);
 #else

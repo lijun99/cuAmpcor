@@ -169,6 +169,26 @@ def test_hdf5_name_forms(impl, form, images, raw_results, tmp_path):
     assert_same(out, raw_results(impl))
 
 
+def test_reader_option(impl, images, raw_results, tmp_path):
+    """The image reader chosen explicitly: hdf5 without the HDF5: prefix, raw for a raw file"""
+    names = []
+    for k, f in zip(("ref", "sec"), images):
+        path = tmp_path / f"{k}.h5"
+        write_h5(path, read_raw(f), chunks=(64, 96), compression="gzip", shuffle=True)
+        names.append(f"{path}:{DATASET}")
+    out = run_ampcor(impl, tuple(names), SHAPE, tmp_path / "h5",
+                     referenceImageReader="hdf5", secondaryImageReader="hdf5")
+    assert_same(out, raw_results(impl))
+    # the reference from HDF5, the secondary from the raw file
+    out = run_ampcor(impl, (names[0], images[1]), SHAPE, tmp_path / "mixed",
+                     referenceImageReader="hdf5", secondaryImageReader="raw")
+    assert_same(out, raw_results(impl))
+    ampcor, _ = configure_ampcor(impl, images, SHAPE, tmp_path / "out", referenceImageReader="gdal")
+    assert ampcor.referenceImageReader == "gdal" and ampcor.secondaryImageReader == "auto"
+    with pytest.raises(ValueError, match="Unknown image reader gdal"):
+        ampcor.runAmpcor()
+
+
 def test_hdf5_errors(impl, images, tmp_path):
     ref, sec = (read_raw(f) for f in images)
     good = write_h5(tmp_path / "ref.h5", ref)

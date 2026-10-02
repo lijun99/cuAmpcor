@@ -128,10 +128,12 @@ void checkLayers(const std::vector<cuAmpcorParameter *> &params)
     for (const auto *p : params) {
         p->checkReadyToRun();
         if (p->referenceImageName != p0->referenceImageName
+            || p->referenceImageReader != p0->referenceImageReader
             || p->referenceImageHeight != p0->referenceImageHeight
             || p->referenceImageWidth != p0->referenceImageWidth
             || p->referenceImageDataType != p0->referenceImageDataType
             || p->secondaryImageName != p0->secondaryImageName
+            || p->secondaryImageReader != p0->secondaryImageReader
             || p->secondaryImageHeight != p0->secondaryImageHeight
             || p->secondaryImageWidth != p0->secondaryImageWidth
             || p->secondaryImageDataType != p0->secondaryImageDataType)
@@ -184,11 +186,11 @@ void cuAmpcorController::runAmpcorLayers(const std::vector<cuAmpcorController *>
         mmapSizeInGB = std::max(mmapSizeInGB, p->mmapSizeInGB);
     // TODO: selecting band
     std::cout << "Opening reference image " << param->referenceImageName << "...\n";
-    auto referenceImage = SlcImage::open(param->referenceImageName,
+    auto referenceImage = SlcImage::open(param->referenceImageName, param->referenceImageReader,
         param->referenceImageHeight, param->referenceImageWidth,
         param->referenceImageDataType*sizeof(float), mmapSizeInGB);
     std::cout << "Opening secondary image " << param->secondaryImageName << "...\n";
-    auto secondaryImage = SlcImage::open(param->secondaryImageName,
+    auto secondaryImage = SlcImage::open(param->secondaryImageName, param->secondaryImageReader,
         param->secondaryImageHeight, param->secondaryImageWidth,
         param->secondaryImageDataType*sizeof(float), mmapSizeInGB);
 

@@ -48,10 +48,12 @@ cuAmpcorParameter::cuAmpcorParameter()
     corrSurfaceOverSamplingMethod = 0;
 
     referenceImageName = "reference.slc";
+    referenceImageReader = "auto"; // by the name: HDF5:<file>:<dataset> or a raw file
     referenceImageWidth = 1000;
     referenceImageHeight = 1000;
     referenceImageDataType = 2; // complex
     secondaryImageName = "secondary.slc";
+    secondaryImageReader = "auto";
     secondaryImageWidth = 1000;
     secondaryImageHeight = 1000;
     secondaryImageDataType = 2; // complex

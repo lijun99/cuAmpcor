@@ -32,9 +32,13 @@ public:
     /// open an image of image_height x image_width pixels of pixel_size bytes
     /// @param fn the image name: a raw binary file (row major), or a 2D dataset in an HDF5 file
     ///     as HDF5:<file>:<dataset> (as in GDAL; the file may be quoted, HDF5:"<file>":<dataset>)
+    /// @param reader how to read the image: "raw" (a raw binary file), "hdf5" (an HDF5 dataset;
+    ///     the HDF5: prefix of the name is optional), or "auto" (hdf5 if the name starts with HDF5:,
+    ///     raw otherwise)
     /// @param buffer_size the host memory buffer for reading the image, in GB
     ///     (the mmap window for a raw file, the cache of decoded chunks for HDF5)
-    static std::unique_ptr<SlcImage> open(const std::string& fn, size_t image_height, size_t image_width,
+    static std::unique_ptr<SlcImage> open(const std::string& fn, const std::string& reader,
+                                          size_t image_height, size_t image_width,
                                           size_t pixel_size, size_t buffer_size);
 
     /// split an image name HDF5:<file>:<dataset> into the file and the dataset

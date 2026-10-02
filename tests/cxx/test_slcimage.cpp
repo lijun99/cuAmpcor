@@ -69,6 +69,25 @@ TEST_F(SlcImageTest, Errors)
     EXPECT_THROW(image.loadToDevice(buffer->devData, 0, 0, 2, 2, stream), std::runtime_error);
 }
 
+TEST_F(SlcImageTest, Reader)
+{
+    // a raw file, by the name or explicitly
+    for (const char *reader : {"auto", "raw"}) {
+        auto image = SlcImage::open(filename, reader, H, W, sizeof(image_complex_type), 1);
+        auto buffer = make<image_complex_type>(2, 3);
+        image->loadToDevice(buffer->devData, 5, 7, 2, 3, stream);
+        auto r = download(*buffer);
+        EXPECT_EQ(r[4].x, values[6*W + 8].x) << reader;
+    }
+    // a raw file read as an HDF5 dataset
+    EXPECT_THROW(SlcImage::open(filename, "hdf5", H, W, sizeof(image_complex_type), 1), std::exception);
+    // a raw file named as an HDF5 dataset
+    EXPECT_THROW(SlcImage::open("HDF5:" + filename + ":/HH", "raw", H, W, sizeof(image_complex_type), 1),
+                 std::runtime_error);
+    // an unknown reader
+    EXPECT_THROW(SlcImage::open(filename, "gdal", H, W, sizeof(image_complex_type), 1), std::invalid_argument);
+}
+
 TEST(SlcImageName, ParseHdf5)
 {
     std::string file, dataset;

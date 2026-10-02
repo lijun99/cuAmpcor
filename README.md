@@ -307,9 +307,11 @@ If you prefer to plot the offsets in 3D or overlay the velocity vectors (quiver)
 | PyCuAmpcor                | Notes                                                                   |
 |:--------------------------|:------------------------------------------------------------------------|
 | referenceImageName        | The file name of the reference/template image                           |
+| referenceImageReader      | How to read the reference image: auto (default), raw or hdf5            |
 | referenceImageHeight      | The height of the reference image                                       |
 | referenceImageWidth       | The width of the reference image                                        |
 | secondaryImageName        | The file name of the secondary/search image                             |
+| secondaryImageReader      | How to read the secondary image: auto (default), raw or hdf5            |
 | secondaryImageHeight      | The height of the secondary image                                       |
 | secondaryImageWidth       | The width of the secondary image                                        |
 | grossOffsetImageName      | The output file name for gross offsets                                  |
@@ -321,6 +323,8 @@ If you prefer to plot the offsets in 3D or overlay the velocity vectors (quiver)
 PyCuAmpcor reads images as raw binary files (e.g., ENVI format, or the data file of a GDAL VRT raw raster) with memory map, and image heights/widths are required as inputs. Single-precision complex (referenceImageDataType/secondaryImageDataType=2, default) or real (=1) data are supported. Multi-band is not currently supported, but can be added if desired.
 
 If built with HDF5 (`pycuampcor.has_hdf5`), images may also be 2D datasets in HDF5 files, named as in GDAL, `HDF5:<file>:<dataset>` (or `HDF5:"<file>":<dataset>` if the file name contains ':'), e.g., `HDF5:rslc.h5:/science/LSAR/RSLC/swaths/frequencyA/HH`. The dataset must be float32 (real) or complex64 (a compound of two float32, as written by h5py and the NISAR products), with the given height and width. Chunked datasets compressed with deflate (gzip), with or without shuffle, as the NISAR products, or uncompressed, are read without the HDF5 library: the chunks are located once, read and decoded in parallel, and kept in a cache of `mmapSize` GB shared by the workers (CUDA streams or CPU threads). Other datasets (contiguous, other filters, or files with a user block) are read with the HDF5 library. The image is read directly from the HDF5 file, without an intermediate raw copy.
+
+The reader of each image is chosen by `referenceImageReader`/`secondaryImageReader`: `auto` (default) reads names starting with `HDF5:` as HDF5 datasets and other names as raw binary files; `raw` and `hdf5` choose the reader explicitly (with `hdf5`, the `HDF5:` prefix of the name is optional, e.g., `rslc.h5:/science/LSAR/RSLC/swaths/frequencyA/HH`).
 
 The offset output is arranged in BIP format, with each pixel (azimuth offset, range offset). In addition to a static gross offset (i.e., a constant for all search windows), PyCuAmpcor supports varying gross offsets as inputs (e.g., for glaciers, users can compute the gross offsets with the velocity model for different locations and use them as inputs for PyCuAmpcor.
 

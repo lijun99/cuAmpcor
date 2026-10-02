@@ -5,7 +5,8 @@ PyCPUAmpcor : the CPU (OpenMP) implementation, always available
 PyCuAmpcor  : the CUDA implementation, available if built with CUDA support
 
 Images are raw binary files, or 2D datasets in HDF5 files named as HDF5:<file>:<dataset>
-if built with HDF5 support (has_hdf5).
+if built with HDF5 support (has_hdf5). The reader of each image is chosen by its name
+(referenceImageReader/secondaryImageReader = "auto", default) or set to "raw" or "hdf5".
 """
 
 from ._version import __version__
