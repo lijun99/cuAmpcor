@@ -1,11 +1,31 @@
+import glob
+import os
+import sys
+
 from osgeo import gdal
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import argparse
 
-# Function to open a GDAL VRT file and read two bands of data
-def read_vrt(file_path):
+gdal.UseExceptions()
+
+# Find the data file of an ENVI header (GDAL opens ENVI datasets by the data file, not the .hdr)
+# X.bip.hdr -> X.bip, or X.hdr -> X.<ext>
+def envi_data_file(header_path):
+    stem = header_path[:-len('.hdr')]
+    if os.path.isfile(stem):
+        return stem
+    candidates = [f for f in glob.glob(glob.escape(stem) + '.*')
+                  if not f.endswith(('.hdr', '.aux.xml', '.vrt'))]
+    if len(candidates) != 1:
+        raise FileNotFoundError(f"Could not find a unique data file for the ENVI header {header_path}")
+    return candidates[0]
+
+# Function to open a GDAL-readable offset file (VRT, ENVI .bip, or .hdr) and read two bands
+def read_offset_file(file_path):
+    if file_path.endswith('.hdr'):
+        file_path = envi_data_file(file_path)
     dataset = gdal.Open(file_path)
     if dataset is None:
         raise FileNotFoundError(f"Could not open {file_path}")
@@ -39,21 +59,21 @@ def plot_color_maps(azimuth_data, range_data, vmin_azimuth=None, vmax_azimuth=No
 # Function to plot 3D surface plots for Azimuth Offset and Range Offset
 def plot_3d_surfaces(azimuth_data, range_data, vmin_azimuth=None, vmax_azimuth=None, vmin_range=None, vmax_range=None, cmap="viridis"):
 
-	# exclude points out of the plot range
+    # exclude points out of the plot range
     azimuth_data = np.where((azimuth_data < vmin_azimuth) | (azimuth_data > vmax_azimuth), np.nan, azimuth_data)
     range_data = np.where((range_data < vmin_range) | (range_data > vmax_range), np.nan, range_data)
-	
+
     y = np.arange(azimuth_data.shape[1])
     x = np.arange(azimuth_data.shape[0])
     x, y = np.meshgrid(x, y)
-    
+
     ratio = azimuth_data.shape[1]/azimuth_data.shape[0]
     if ratio >1 :
         box_aspect = (1/ratio, 1, 1)
     else:
-        box_aspect = (1, ratio, 1)	
-    print(ratio, box_aspect)    
-   
+        box_aspect = (1, ratio, 1)
+    print(ratio, box_aspect)
+
 
     fig = plt.figure(figsize=(14, 7))
 
@@ -77,44 +97,45 @@ def plot_3d_surfaces(azimuth_data, range_data, vmin_azimuth=None, vmax_azimuth=N
 
     plt.tight_layout()
     plt.show()
-    
-    
-# Function to plot 3D surface plots for Azimuth Offset and Range Offset
+
+
+# Function to plot the offset magnitude with the offset vector field
 def plot_velocity(azimuth_data, range_data, grid=20, vmin_azimuth=None, vmax_azimuth=None, vmin_range=None, vmax_range=None, cmap="viridis"):
-	
-	# exclude points out of the plot range
+
+    # exclude points out of the plot range
     azimuth_data = np.where((azimuth_data < vmin_azimuth) | (azimuth_data > vmax_azimuth), np.nan, azimuth_data)
     range_data = np.where((range_data < vmin_range) | (range_data > vmax_range), np.nan, range_data)
 
-	# velocity  
+    # velocity
     velocity = np.sqrt(np.square(azimuth_data)+np.square(range_data))
-	
-	
-    height, width = azimuth_data.shape 
-	
+
+
+    height, width = azimuth_data.shape
+
     y, x = np.mgrid[0:height:grid, 0:width:grid]
-    
+
     u = azimuth_data[::grid, ::grid]
     v = range_data[::grid, ::grid]
-    
+
     ratio = azimuth_data.shape[1] / azimuth_data.shape[0]
-    
+
     fig = plt.figure(figsize=(7, 14))
 
-    # Plot the Azimuth Offset 3D surface
+    # Plot the offset magnitude and the offset vectors
+    # (x: range/column, y: azimuth/row; angles='xy' follows the image's downward row axis)
     ax1 = fig.add_subplot(111)
     ax1.set_title("Offset vector Plot")
-    vmap = ax1.imshow(velocity, cmap=cmap, vmin=vmin_azimuth, vmax=vmax_azimuth)
+    vmap = ax1.imshow(velocity, cmap=cmap, vmin=0, vmax=np.nanmax(velocity))
     plt.colorbar(vmap, ax=ax1)
-    ax1.quiver(x, y, u, v, color='r')
+    ax1.quiver(x, y, v, u, color='r', angles='xy')
 
     plt.tight_layout()
-    plt.show()    
+    plt.show()
 
 # Main program
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Plot Azimuth Offset and Range Offset from a VRT file - cmap, 3d surface, or velocity map.")
-    parser.add_argument("vrt_file", type=str, help="Path to the offset VRT file")
+    parser = argparse.ArgumentParser(description="Plot Azimuth Offset and Range Offset from an offset file (VRT, ENVI .bip, or .hdr) - cmap, 3d surface, or velocity map.")
+    parser.add_argument("offset_file", type=str, help="Path to the offset file (.vrt, .bip, or .hdr)")
     parser.add_argument("--plot_3d", action="store_true", help="3D surface plot for both offsets")
     parser.add_argument("--plot_velocity", action="store_true", help="Velocity map for the offsets")
     parser.add_argument("--velocity_grid", type=int, default=50, help="The velocity field sparsity")
@@ -130,31 +151,28 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # read offset file in vrt 
     try:
-        # Read the VRT file
-        azimuth_data, range_data = read_vrt(args.vrt_file)
-    
+        azimuth_data, range_data = read_offset_file(args.offset_file)
     except Exception as e:
-        print(f"Error: {e}")
-    
+        sys.exit(f"Error: {e}")
+
     # scale the offsets with pixel size
-    if args.pixel_unit_azimuth != 1:         
+    if args.pixel_unit_azimuth != 1:
         azimuth_data *= args.pixel_unit_azimuth
-    if args.pixel_unit_range != 1:     
+    if args.pixel_unit_range != 1:
         range_data *= args.pixel_unit_range
-    
-    # set the plot/colormap range 
+
+    # set the plot/colormap range
     if args.range is not None:
         vmin_azimuth = -args.range
         vmax_azimuth = args.range
         vmin_range = -args.range
         vmax_range = args.range
     else:
-        vmin_azimuth = args.vmin_azimuth if args.vmin_azimuth is not None else azimuth_data.min()
-        vmax_azimuth = args.vmax_azimuth if args.vmax_azimuth is not None else azimuth_data.max()
-        vmin_range = args.vmin_range if args.vmin_range is not None else range_data.min()
-        vmax_range = args.vmax_range if args.vmax_range is not None else range_data.max()
+        vmin_azimuth = args.vmin_azimuth if args.vmin_azimuth is not None else np.nanmin(azimuth_data)
+        vmax_azimuth = args.vmax_azimuth if args.vmax_azimuth is not None else np.nanmax(azimuth_data)
+        vmin_range = args.vmin_range if args.vmin_range is not None else np.nanmin(range_data)
+        vmax_range = args.vmax_range if args.vmax_range is not None else np.nanmax(range_data)
 
     # plot surface 3d when requested
     if args.plot_3d:
