@@ -1,6 +1,6 @@
 /**
  * @file test_slcimage.cpp
- * @brief Tests for loading image tiles with memory map
+ * @brief Tests for loading image tiles with memory map, and image names
  */
 
 #include "test_util.h"
@@ -67,6 +67,31 @@ TEST_F(SlcImageTest, Errors)
     MmapSlcImage image(filename, H, W, sizeof(image_complex_type), 0);
     auto buffer = make<image_complex_type>(2, 2);
     EXPECT_THROW(image.loadToDevice(buffer->devData, 0, 0, 2, 2, stream), std::runtime_error);
+}
+
+TEST(SlcImageName, ParseHdf5)
+{
+    std::string file, dataset;
+    // a raw file
+    EXPECT_FALSE(SlcImage::parseHdf5Name("reference.slc", file, dataset));
+    // as GDAL, and as built by isce3 (with a double slash)
+    EXPECT_TRUE(SlcImage::parseHdf5Name("HDF5:/data/rslc.h5:/science/LSAR/HH", file, dataset));
+    EXPECT_EQ(file, "/data/rslc.h5");
+    EXPECT_EQ(dataset, "/science/LSAR/HH");
+    EXPECT_TRUE(SlcImage::parseHdf5Name("HDF5:/data/rslc.h5://science/LSAR/HH", file, dataset));
+    EXPECT_EQ(file, "/data/rslc.h5");
+    EXPECT_EQ(dataset, "/science/LSAR/HH");
+    // a relative dataset path
+    EXPECT_TRUE(SlcImage::parseHdf5Name("HDF5:rslc.h5:HH", file, dataset));
+    EXPECT_EQ(file, "rslc.h5");
+    EXPECT_EQ(dataset, "/HH");
+    // a quoted file name with ':'
+    EXPECT_TRUE(SlcImage::parseHdf5Name("HDF5:\"/data/a:b.h5\":/HH", file, dataset));
+    EXPECT_EQ(file, "/data/a:b.h5");
+    EXPECT_EQ(dataset, "/HH");
+    // invalid names
+    for (const char *name : {"HDF5:rslc.h5", "HDF5:rslc.h5:/", "HDF5:\"rslc.h5:/HH", "HDF5::/HH"})
+        EXPECT_THROW(SlcImage::parseHdf5Name(name, file, dataset), std::invalid_argument) << name;
 }
 
 } // namespace
