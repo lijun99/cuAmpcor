@@ -39,6 +39,8 @@ inline void backendSynchronize() {}
 void backendCopyFromHost2D(void *dst, size_t dpitch, const void *src, size_t spitch,
     size_t widthInBytes, size_t height, stream_t stream);
 
+/// whether the work memory is host memory (tiles are loaded to it directly)
+constexpr bool backendWorkInHostMemory = true;
 /// host memory to stage tiles before copying them (asynchronously) to the backend memory;
 /// nullptr for the CPU backend: tiles are loaded to the work memory directly
 inline void *backendAllocStaging(size_t) { return nullptr; }

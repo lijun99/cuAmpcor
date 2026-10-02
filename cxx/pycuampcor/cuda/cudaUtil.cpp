@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <algorithm>
+#include <iostream>
 #include <stdexcept>
 #include <string>
 #include "cudaError.h"
@@ -129,7 +130,13 @@ void backendCopyFromHost2D(void *dst, size_t dpitch, const void *src, size_t spi
 void *backendAllocStaging(size_t bytes)
 {
     void *ptr = nullptr;
-    checkCudaErrors(cudaMallocHost(&ptr, bytes));
+    if (cudaMallocHost(&ptr, bytes) != cudaSuccess) {
+        // e.g., limited page-locked memory; clear the error and use pageable copies
+        cudaGetLastError();
+        std::cerr << "Warning: failed to allocate " << bytes << " bytes of page-locked memory;"
+                  << " using pageable memory to load the images" << std::endl;
+        return nullptr;
+    }
     return ptr;
 }
 

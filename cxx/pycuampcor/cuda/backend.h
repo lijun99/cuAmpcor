@@ -37,7 +37,10 @@ void backendSynchronize();
 void backendCopyFromHost2D(void *dst, size_t dpitch, const void *src, size_t spitch,
     size_t widthInBytes, size_t height, stream_t stream);
 
-/// page-locked host memory to stage tiles, copied asynchronously to the device
+/// whether the work memory is host memory (tiles are loaded to it directly)
+constexpr bool backendWorkInHostMemory = false;
+/// page-locked host memory to stage tiles, copied asynchronously to the device;
+/// nullptr if it can't be allocated (then tiles are copied from pageable memory)
 void *backendAllocStaging(size_t bytes);
 void backendFreeStaging(void *ptr);
 /// an event marking the completion of the work queued on a stream

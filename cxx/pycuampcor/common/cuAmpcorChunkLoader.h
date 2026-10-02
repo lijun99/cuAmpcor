@@ -63,8 +63,8 @@ private:
         SlcImage *image;
         std::unique_ptr<cuArrays<image_complex_type>> complexBuffer;
         std::unique_ptr<cuArrays<image_real_type>> realBuffer;
-        // host memory to stage the chunks, copied asynchronously to the device (nullptr for CPU),
-        // and the event marking the end of its last copy
+        // page-locked host memory to stage the chunks, copied asynchronously to the device
+        // (nullptr for CPU, or if it can't be allocated), and the event marking the end of its last copy
         void *staging = nullptr;
         event_t stagingDone;
         Source(const cuAmpcorChunkFootprint &, int dataType, SlcImage *);

@@ -104,9 +104,13 @@ void cuAmpcorChunkLoader::Source::load(int idxChunk, cuAmpcorLoadedChunk &chunk,
         backendCopyFromHost2D(buffer, pitch, staging, pitch, pitch, chunk.height, stream);
         backendRecordEvent(stagingDone, stream);
     }
-    else {
+    else if (backendWorkInHostMemory) {
         // the work memory is host memory (CPU backend)
         image->loadToHost(buffer, chunk.startDown, chunk.startAcross, chunk.height, chunk.width);
+    }
+    else {
+        // no page-locked memory: copy from pageable memory
+        image->loadToDevice(buffer, chunk.startDown, chunk.startAcross, chunk.height, chunk.width, stream);
     }
 }
 
