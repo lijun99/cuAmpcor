@@ -1,0 +1,23 @@
+# editors and OS
+.idea/
+.vscode/
+*~
+*.swp
+.DS_Store
+
+# python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+dist/
+
+# build trees (cmake, scikit-build-core)
+build/
+build-*/
+debug/
+_skbuild/
+
+# compiled objects
+*.o
+*.so
