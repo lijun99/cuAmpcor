@@ -39,14 +39,19 @@ public:
 };
 
 // FFT Oversampler for real images
+// the inverse fft of the padded spectrum is done for one image at a time, along the columns
+// (only those with non-zero spectrum) and then along the rows
 class cuOverSamplerR2R
 {
 private:
      fftw_plan_type forwardPlan;
-     fftw_plan_type backwardPlan;
+     fftw_plan_type backwardPlanColumns[2]; // for the positive and negative frequency columns
+     fftw_plan_type backwardPlanRows;
      stream_t stream;
-     cuArrays<complex_type> *workSizeIn;
-     cuArrays<complex_type> *workSizeOut;
+     cuArrays<complex_type> *workSizeIn;   // the spectra of the input images
+     cuArrays<complex_type> *workColumns;  // the spectrum of one image, padded along the columns
+     cuArrays<complex_type> *workPadded;   // the inverse fft along the columns, padded along the rows
+     cuArrays<complex_type> *workSizeOut;  // the oversampled image
 
 public:
     cuOverSamplerR2R() = delete;
