@@ -33,15 +33,15 @@ jobs:
           activate-environment: pycuampcor
       - name: Install dependencies
         run: >
-          conda install -y -c conda-forge python=3.12 cmake ninja cxx-compiler fftw pybind11 gtest
-          scikit-build-core pip numpy pytest ${{ matrix.extra }}
+          conda install -y -c conda-forge python=3.12 cmake ninja cxx-compiler fftw hdf5 zlib pybind11 gtest
+          scikit-build-core pip numpy pytest h5py ${{ matrix.extra }}
       - name: C++ unit tests
         run: |
-          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DPYCUAMPCOR_CUDA=OFF \
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DPYCUAMPCOR_CUDA=OFF -DPYCUAMPCOR_HDF5=ON \
             -DPYCUAMPCOR_BUILD_TESTS=ON -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DPython_EXECUTABLE=$(which python)
           cmake --build build
           ctest --test-dir build --output-on-failure
       - name: Python tests
         run: |
-          pip install . -v --no-deps --no-build-isolation -Ccmake.define.PYCUAMPCOR_CUDA=OFF
+          pip install . -v --no-deps --no-build-isolation -Ccmake.define.PYCUAMPCOR_CUDA=OFF -Ccmake.define.PYCUAMPCOR_HDF5=ON
           pytest -v tests/python
