@@ -42,7 +42,7 @@ protected:
 
 TEST_F(SlcImageTest, LoadTiles)
 {
-    SlcImage image(filename, H, W, sizeof(image_complex_type), 1);
+    MmapSlcImage image(filename, H, W, sizeof(image_complex_type), 1);
     // tiles in the middle and at the end of the file
     for (auto tile : {std::vector<int>{3, 5, 7, 11}, std::vector<int>{H-4, W-6, 4, 6}}) {
         const int h0 = tile[0], w0 = tile[1], h = tile[2], w = tile[3];
@@ -60,11 +60,11 @@ TEST_F(SlcImageTest, LoadTiles)
 TEST_F(SlcImageTest, Errors)
 {
     // file smaller than the image size
-    EXPECT_THROW(SlcImage(filename, H+1, W, sizeof(image_complex_type), 1), std::runtime_error);
+    EXPECT_THROW(MmapSlcImage(filename, H+1, W, sizeof(image_complex_type), 1), std::runtime_error);
     // missing file
-    EXPECT_THROW(SlcImage(filename + ".missing", H, W, sizeof(image_complex_type), 1), std::runtime_error);
+    EXPECT_THROW(MmapSlcImage(filename + ".missing", H, W, sizeof(image_complex_type), 1), std::runtime_error);
     // zero buffer size for mmap
-    SlcImage image(filename, H, W, sizeof(image_complex_type), 0);
+    MmapSlcImage image(filename, H, W, sizeof(image_complex_type), 0);
     auto buffer = make<image_complex_type>(2, 2);
     EXPECT_THROW(image.loadToDevice(buffer->devData, 0, 0, 2, 2, stream), std::runtime_error);
 }

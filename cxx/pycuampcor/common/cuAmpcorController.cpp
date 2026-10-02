@@ -184,11 +184,11 @@ void cuAmpcorController::runAmpcorLayers(const std::vector<cuAmpcorController *>
         mmapSizeInGB = std::max(mmapSizeInGB, p->mmapSizeInGB);
     // TODO: selecting band
     std::cout << "Opening reference image " << param->referenceImageName << "...\n";
-    auto referenceImage = std::make_unique<SlcImage>(param->referenceImageName,
+    auto referenceImage = SlcImage::open(param->referenceImageName,
         param->referenceImageHeight, param->referenceImageWidth,
         param->referenceImageDataType*sizeof(float), mmapSizeInGB);
     std::cout << "Opening secondary image " << param->secondaryImageName << "...\n";
-    auto secondaryImage = std::make_unique<SlcImage>(param->secondaryImageName,
+    auto secondaryImage = SlcImage::open(param->secondaryImageName,
         param->secondaryImageHeight, param->secondaryImageWidth,
         param->secondaryImageDataType*sizeof(float), mmapSizeInGB);
 

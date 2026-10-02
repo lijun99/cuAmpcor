@@ -11,7 +11,13 @@
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND {
 
-SlcImage::SlcImage(const std::string& filepath, size_t img_height, size_t img_width, size_t pixel_size, size_t buffer_size)
+std::unique_ptr<SlcImage> SlcImage::open(const std::string& filepath, size_t img_height, size_t img_width,
+                                         size_t pixel_size, size_t buffer_size)
+{
+    return std::make_unique<MmapSlcImage>(filepath, img_height, img_width, pixel_size, buffer_size);
+}
+
+MmapSlcImage::MmapSlcImage(const std::string& filepath, size_t img_height, size_t img_width, size_t pixel_size, size_t buffer_size)
     : width(img_width), height(img_height), pixel_size(pixel_size), fd(-1), mapped_data(nullptr),
       mapped_offset(0), mapped_size(0)
 {
@@ -20,7 +26,7 @@ SlcImage::SlcImage(const std::string& filepath, size_t img_height, size_t img_wi
     page_size = sysconf(_SC_PAGE_SIZE);  // Get system page size
 
     // Open the file
-    fd = open(filepath.c_str(), O_RDONLY);
+    fd = ::open(filepath.c_str(), O_RDONLY);
     if (fd == -1) {
         throw std::runtime_error("Failed to open file: " + filepath);
     }
@@ -35,7 +41,7 @@ SlcImage::SlcImage(const std::string& filepath, size_t img_height, size_t img_wi
     }
 }
 
-void SlcImage::remapIfNeeded(size_t required_start, size_t required_end)
+void MmapSlcImage::remapIfNeeded(size_t required_start, size_t required_end)
 {
 
     if(required_start < mapped_offset || required_end > mapped_offset + mapped_size)
@@ -79,7 +85,7 @@ void SlcImage::remapIfNeeded(size_t required_start, size_t required_end)
 /// @param h_tile Down/Height tile size
 /// @param w_tile Across/Width tile size
 /// @param stream CUDA stream for copying (not used for CPU)
-void SlcImage::loadToDevice(void *dArray, size_t h_offset, size_t w_offset, size_t h_tile, size_t w_tile, stream_t stream)
+void MmapSlcImage::loadToDevice(void *dArray, size_t h_offset, size_t w_offset, size_t h_tile, size_t w_tile, stream_t stream)
 {
     size_t tileStartAddress = (h_offset*width + w_offset)*pixel_size;
     size_t tileLastAddress = ((h_offset+h_tile-1)*width + w_offset + w_tile)*pixel_size;
@@ -98,7 +104,7 @@ void SlcImage::loadToDevice(void *dArray, size_t h_offset, size_t w_offset, size
         w_tile*pixel_size, h_tile, stream);
 }
 
-SlcImage::~SlcImage()
+MmapSlcImage::~MmapSlcImage()
 {
     if (mapped_data!=nullptr) {
         munmap(mapped_data, mapped_size);
