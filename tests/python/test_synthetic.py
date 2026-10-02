@@ -149,3 +149,19 @@ def test_windows_outside_image(impl, images, tmp_path):
     # windows fully inside the image are still correct
     err = out["dense_offsets"][2:-3, 2:-3] - np.array(SHIFT)
     assert np.all(np.abs(err) < 0.1)
+
+
+@pytest.mark.parametrize("deramp, ratio_range", [
+    # magnitude: both workflows correlate the amplitudes before (or without) anti-aliasing,
+    # so the snr of the one-pass workflow is close to the two-pass one
+    (0, (0.8, 2.0)),
+    # complex: the one-pass workflow oversamples the complex images before taking the amplitudes,
+    # a correlation surface with a lower background (the two-pass snr is on raw amplitudes)
+    (1, (1.0, 10.0)),
+])
+def test_snr_onepass_vs_twopass(impl, deramp, ratio_range, images, tmp_path):
+    """The one-pass snr is estimated as the two-pass snr (same window at the raw pixel spacing)"""
+    snr = {wf: run_ampcor(impl, images, SHAPE, tmp_path / f"wf{wf}", workflow=wf, derampMethod=deramp)["snr"][..., 0]
+           for wf in (0, 1)}
+    ratio = np.median(snr[1] / snr[0])
+    assert ratio_range[0] < ratio < ratio_range[1], ratio

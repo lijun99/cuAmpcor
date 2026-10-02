@@ -26,7 +26,7 @@ TEST_F(StatsTest, SubtractMean)
     }
 }
 
-TEST_F(StatsTest, SumSquareAndSumCorr)
+TEST_F(StatsTest, SumCorr)
 {
     const int h = 5, w = 6, n = 2;
     auto v = randomReal(h*w*n);
@@ -34,12 +34,10 @@ TEST_F(StatsTest, SumSquareAndSumCorr)
     for (size_t i = 0; i < valid.size(); i++) valid[i] = (i % 3 != 0);
     auto a = makeFrom(v, h, w, 1, n);
     auto f = makeFrom(valid, h, w, 1, n);
-    auto sum = make<real_type>(1, n);
     auto sum2 = make<real_type>(1, n);
     auto count = make<int>(1, n);
-    cuArraysSumSquare(a.get(), sum.get(), stream);
     cuArraysSumCorr(a.get(), f.get(), sum2.get(), count.get(), stream);
-    auto s = download(*sum), s2 = download(*sum2);
+    auto s2 = download(*sum2);
     auto c = download(*count);
     for (int k = 0; k < n; k++) {
         double ref = 0;
@@ -48,7 +46,6 @@ TEST_F(StatsTest, SumSquareAndSumCorr)
             ref += v[k*h*w+i]*v[k*h*w+i];
             refCount += valid[k*h*w+i];
         }
-        EXPECT_NEAR(s[k], ref, 10*tol*ref);
         EXPECT_NEAR(s2[k], ref, 10*tol*ref);
         EXPECT_EQ(c[k], refCount);
     }
@@ -69,15 +66,6 @@ TEST_F(StatsTest, EstimateSnr)
     for (int k = 0; k < 2; k++) {
         double p2 = double(peakV[k])*peakV[k];
         EXPECT_NEAR(r[k], p2/((sumV[k] - p2)/(countV[k] - 1)), 10*tol*r[k]);
-    }
-
-    // with a fixed size
-    const int size = 100;
-    cuEstimateSnr(sum.get(), peak.get(), snr.get(), size, stream);
-    r = download(*snr);
-    for (int k = 0; k < 2; k++) {
-        double p2 = double(peakV[k])*peakV[k];
-        EXPECT_NEAR(r[k], p2/((sumV[k] - p2)/(size - 1)), 10*tol*r[k]);
     }
 }
 

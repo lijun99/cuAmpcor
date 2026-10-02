@@ -358,7 +358,7 @@ void cuArraysCopyExtractCorr(cuArrays<real_type> *imagesIn, cuArrays<real_type> 
 
 __global__ void cuArraysCopyExtractVaryingOffsetCorr(const real_type *imageIn, const int inNX, const int inNY,
      real_type *imageOut, const int outNX, const int outNY, int *imageValid, const int nImages,
-     const int2 *maxloc)
+     const int2 *maxloc, const int stride, const int2 validStart, const int2 validEnd)
 {
 
     // get the image index
@@ -372,15 +372,15 @@ __global__ void cuArraysCopyExtractVaryingOffsetCorr(const real_type *imageIn, c
     if (outx < outNX && outy < outNY)
     {
         // Find the corresponding input.
-        int inx = outx + maxloc[idxImage].x - outNX/2;
-        int iny = outy + maxloc[idxImage].y - outNY/2;
+        int inx = maxloc[idxImage].x + (outx - outNX/2)*stride;
+        int iny = maxloc[idxImage].y + (outy - outNY/2)*stride;
 
         // Find the location in flattened array.
         int idxOut = ( blockIdx.z * outNX + outx ) * outNY + outy;
         int idxIn = ( blockIdx.z * inNX + inx ) * inNY + iny;
 
-        // check whether inside of the input image
-        if (inx>=0 && iny>=0 && inx<inNX && iny<inNY)
+        // check whether inside of the valid region of the input image
+        if (inx>=validStart.x && iny>=validStart.y && inx<validEnd.x && iny<validEnd.y)
         {
             // inside the boundary, copy over and mark the pixel as valid (1)
             imageOut[idxOut] = imageIn[idxIn];
@@ -395,22 +395,41 @@ __global__ void cuArraysCopyExtractVaryingOffsetCorr(const real_type *imageIn, c
 }
 
 /**
- * copy a tile of images to another image, with starting pixels offsets accounting for boundary
- * @param[in] imageIn input images
- * @param[out] imageOut output images of dimension nImages*outNX*outNY
+ * extract the surfaces around the max locations with a stride (e.g., a raw pixel spacing on an
+ * oversampled surface), marking the pixels outside of a valid region of the input as invalid
+ * @param[in] imagesIn input images
+ * @param[out] imagesOut output images, centered at the max locations
+ * @param[out] imagesValid flags whether the pixels are within the valid region (1) or not (0)
+ * @param[in] maxloc the max locations (as centers)
+ * @param[in] stride the spacing of the extracted pixels in the input images
+ * @param[in] validStart, validRange the valid region of the input images
  */
-void cuArraysCopyExtractCorr(cuArrays<real_type> *imagesIn, cuArrays<real_type> *imagesOut, cuArrays<int> *imagesValid, cuArrays<int2> *maxloc, cudaStream_t stream)
+void cuArraysCopyExtractCorr(cuArrays<real_type> *imagesIn, cuArrays<real_type> *imagesOut, cuArrays<int> *imagesValid,
+    cuArrays<int2> *maxloc, int stride, int2 validStart, int2 validRange, cudaStream_t stream)
 {
-    //assert(imagesIn->height >= imagesOut && inNY >= outNY);
     const int nthreads = 16;
 
     dim3 threadsperblock(nthreads, nthreads,1);
 
     dim3 blockspergrid(IDIVUP(imagesOut->height,nthreads), IDIVUP(imagesOut->width,nthreads), imagesOut->count);
 
+    const int2 validEnd = make_int2(validStart.x + validRange.x, validStart.y + validRange.y);
     cuArraysCopyExtractVaryingOffsetCorr<<<blockspergrid, threadsperblock,0, stream>>>(imagesIn->devData, imagesIn->height, imagesIn->width,
-        imagesOut->devData, imagesOut->height, imagesOut->width, imagesValid->devData, imagesOut->count, maxloc->devData);
+        imagesOut->devData, imagesOut->height, imagesOut->width, imagesValid->devData, imagesOut->count, maxloc->devData,
+        stride, validStart, validEnd);
     getLastCudaError("cuArraysCopyExtract error");
+}
+
+/**
+ * copy a tile of images to another image, with starting pixels offsets accounting for boundary
+ * @param[in] imageIn input images
+ * @param[out] imageOut output images of dimension nImages*outNX*outNY
+ * @param[out] imagesValid flags whether the pixels are within the input images (1) or not (0)
+ */
+void cuArraysCopyExtractCorr(cuArrays<real_type> *imagesIn, cuArrays<real_type> *imagesOut, cuArrays<int> *imagesValid, cuArrays<int2> *maxloc, cudaStream_t stream)
+{
+    cuArraysCopyExtractCorr(imagesIn, imagesOut, imagesValid, maxloc, 1,
+        make_int2(0, 0), make_int2(imagesIn->height, imagesIn->width), stream);
 }
 
 

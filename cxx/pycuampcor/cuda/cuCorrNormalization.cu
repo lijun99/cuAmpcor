@@ -150,52 +150,6 @@ void cuArraysSubtractMean(cuArrays<real_type> *images, cudaStream_t stream)
 
 // cuda kernel to compute summation on extracted correlation surface (Minyan)
 template<const int Nthreads>
-__global__ void cuArraysSum_kernel(real_type *images, real_type *imagesSum, int imageSize, int nImages)
-{
-    __shared__ real_type shmem[Nthreads];
-
-    const int tid = threadIdx.x;
-    const int bid = blockIdx.x;
-
-    if (bid >= nImages) return;
-
-    const int imageIdx = bid;
-    const int imageOffset = imageIdx * imageSize;
-    real_type*    imageD = images + imageOffset;
-
-    real_type sum  = 0.0;
-
-    for (int i = tid; i < imageSize; i += Nthreads) {
-            sum += imageD[i] * imageD[i];
-    }
-
-    sum = sumReduceBlock<Nthreads>(sum, shmem);
-
-    if(tid ==0) {
-        imagesSum[bid] = sum;
-    }
-}
-
-/**
- * Compute the variance of images (for SNR)
- * @param[in] images Input images
- * @param[in] imagesValid validity flags for each pixel
- * @param[out] imagesSum variance
- * @param[out] imagesValidCount count of total valid pixels
- * @param[in] stream cudaStream
- */
-void cuArraysSumSquare(cuArrays<real_type> *images, cuArrays<real_type> *imagesSum, cudaStream_t stream)
-{
-    const dim3 grid(images->count, 1, 1);
-    const int imageSize = images->width*images->height;
-
-    cuArraysSum_kernel<NTHREADS> <<<grid,NTHREADS,0,stream>>>(images->devData,
-        imagesSum->devData, imageSize, images->count);
-    getLastCudaError("cuArraysSumValue kernel error\n");
-}
-
-// cuda kernel to compute summation on extracted correlation surface (Minyan)
-template<const int Nthreads>
 __global__ void cuArraysSumCorr_kernel(real_type *images, int *imagesValid, real_type *imagesSum, int *imagesValidCount, int imageSize, int nImages)
 {
     __shared__ real_type shmem[Nthreads];

@@ -168,6 +168,11 @@ void cuAmpcorParameter::_setupParameters_OnePass()
     windowSizeWidth = windowSizeWidthRaw*rawDataOversamplingFactor;  //
     windowSizeHeight = windowSizeHeightRaw*rawDataOversamplingFactor;
 
+    // Size to extract the correlation surface (at the raw pixel spacing) for snr, as in the two-pass
+    // workflow, within the search range (before adding the extra margin below)
+    corrRawZoomInHeight = std::min(corrStatWindowSize, 2*halfSearchRangeDownRaw+1);
+    corrRawZoomInWidth = std::min(corrStatWindowSize, 2*halfSearchRangeAcrossRaw+1);
+
     // serve as extra margin for search range
     halfZoomWindowSizeRaw = zoomWindowSize/(2*rawDataOversamplingFactor);
 

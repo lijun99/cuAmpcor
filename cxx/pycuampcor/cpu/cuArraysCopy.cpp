@@ -192,18 +192,37 @@ void cuArraysCopyExtractCorr(cuArrays<real_type> *imagesIn, cuArrays<real_type> 
  * @param[out] imagesValid flags whether the pixels are within the input images (1) or not (0)
  * @param[in] maxloc the max locations (as centers)
  */
-void cuArraysCopyExtractCorr(cuArrays<real_type> *imagesIn, cuArrays<real_type> *imagesOut, cuArrays<int> *imagesValid, cuArrays<int2> *maxloc, stream_t)
+void cuArraysCopyExtractCorr(cuArrays<real_type> *imagesIn, cuArrays<real_type> *imagesOut, cuArrays<int> *imagesValid, cuArrays<int2> *maxloc, stream_t stream)
 {
-    const int inNX = imagesIn->height, inNY = imagesIn->width;
+    cuArraysCopyExtractCorr(imagesIn, imagesOut, imagesValid, maxloc, 1,
+        make_int2(0, 0), make_int2(imagesIn->height, imagesIn->width), stream);
+}
+
+/**
+ * extract the surfaces around the max locations with a stride (e.g., a raw pixel spacing on an
+ * oversampled surface), marking the pixels outside of a valid region of the input as invalid
+ * @param[in] imagesIn input images
+ * @param[out] imagesOut output images, centered at the max locations
+ * @param[out] imagesValid flags whether the pixels are within the valid region (1) or not (0)
+ * @param[in] maxloc the max locations (as centers)
+ * @param[in] stride the spacing of the extracted pixels in the input images
+ * @param[in] validStart, validRange the valid region of the input images
+ */
+void cuArraysCopyExtractCorr(cuArrays<real_type> *imagesIn, cuArrays<real_type> *imagesOut, cuArrays<int> *imagesValid,
+    cuArrays<int2> *maxloc, int stride, int2 validStart, int2 validRange, stream_t)
+{
+    const int inNY = imagesIn->width;
+    const int inNX = imagesIn->height;
     const int outNX = imagesOut->height, outNY = imagesOut->width;
+    const int validEndX = validStart.x + validRange.x, validEndY = validStart.y + validRange.y;
     for(int idxImage = 0; idxImage < imagesOut->count; idxImage++) {
         const int2 loc = maxloc->devData[idxImage];
         for(int outx = 0; outx < outNX; outx++)
             for(int outy = 0; outy < outNY; outy++) {
-                int inx = outx + loc.x - outNX/2;
-                int iny = outy + loc.y - outNY/2;
+                int inx = loc.x + (outx - outNX/2)*stride;
+                int iny = loc.y + (outy - outNY/2)*stride;
                 int idxOut = (idxImage * outNX + outx) * outNY + outy;
-                if (inx>=0 && iny>=0 && inx<inNX && iny<inNY) {
+                if (inx>=validStart.x && iny>=validStart.y && inx<validEndX && iny<validEndY) {
                     // inside the boundary, copy over and mark the pixel as valid (1)
                     imagesOut->devData[idxOut] = imagesIn->devData[(idxImage * inNX + inx) * inNY + iny];
                     imagesValid->devData[idxOut] = 1;

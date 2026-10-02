@@ -19,38 +19,6 @@
 
 namespace pycuampcor::cuda {
 
-// cuda kernel for cuEstimateSnr
-__global__ void cudaKernel_estimateSnr(const real_type* corrSum, const real_type* maxval, real_type* snrValue, const int size, const int nImages)
-{
-    int idx = threadIdx.x + blockDim.x*blockIdx.x;
-
-    if (idx >= nImages) return;
-
-    real_type peak =  maxval[idx];
-    peak *= peak;
-    real_type mean = (corrSum[idx] - peak) / (size - 1);
-    snrValue[idx] = peak / mean;
-#ifdef CUAMPCOR_DEBUG
-    if(threadIdx.x==0)
-        printf("debug snr %g %g %g\n", peak, mean, snrValue[idx]);
-#endif
-}
-
-/**
- * Estimate the signal to noise ratio (SNR) of the correlation surface
- * @param[in] corrSum the sum of the correlation surface
- * @param[in] corrValidCount the number of valid pixels contributing to sum
- * @param[out] snrValue return snr value
- * @param[in] stream cuda stream
- */
-void cuEstimateSnr(cuArrays<real_type> *corrSum, cuArrays<real_type> *maxval, cuArrays<real_type> *snrValue, const int size, cudaStream_t stream)
-{
-    int nImages = corrSum->getSize();
-    cudaKernel_estimateSnr<<< IDIVUP(size, NTHREADS), NTHREADS, 0, stream>>>
-        (corrSum->devData,  maxval->devData, snrValue->devData, size, nImages);
-    getLastCudaError("cuda kernel estimate stats error\n");
-}
-
 __global__ void cudaKernel_estimateSnr(const real_type* corrSum, const int* corrValidCount, const real_type* maxval, real_type* snrValue, const int size)
 
 {

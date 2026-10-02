@@ -14,24 +14,6 @@ namespace pycuampcor::cpu {
 /**
  * Estimate the signal to noise ratio (SNR) of the correlation surface
  * @param[in] corrSum the sum of the correlation surface
- * @param[in] maxval the peak values
- * @param[out] snrValue return snr value
- * @param[in] size the number of pixels contributing to sum
- */
-void cuEstimateSnr(cuArrays<real_type> *corrSum, cuArrays<real_type> *maxval, cuArrays<real_type> *snrValue, const int size, stream_t)
-{
-    const size_t nImages = corrSum->getSize();
-    for(size_t idx = 0; idx < nImages; idx++) {
-        real_type peak = maxval->devData[idx];
-        peak *= peak;
-        real_type mean = (corrSum->devData[idx] - peak) / (size - 1);
-        snrValue->devData[idx] = peak / mean;
-    }
-}
-
-/**
- * Estimate the signal to noise ratio (SNR) of the correlation surface
- * @param[in] corrSum the sum of the correlation surface
  * @param[in] corrValidCount the number of valid pixels contributing to sum
  * @param[in] maxval the peak values
  * @param[out] snrValue return snr value

@@ -82,13 +82,13 @@ void cuArraysElementMultiplyConjugate(cuArrays<complex_type> *image1, cuArrays<c
 // implemented in cuArraysCopy.cpp
 void cuArraysCopyExtractCorr(cuArrays<real_type> *imagesIn, cuArrays<real_type> *imagesOut, cuArrays<int2> *maxloc, stream_t stream);
 void cuArraysCopyExtractCorr(cuArrays<real_type> *imagesIn, cuArrays<real_type> *imagesOut, cuArrays<int> *imagesValid, cuArrays<int2> *maxloc, stream_t stream);
+void cuArraysCopyExtractCorr(cuArrays<real_type> *imagesIn, cuArrays<real_type> *imagesOut, cuArrays<int> *imagesValid, cuArrays<int2> *maxloc,
+    int stride, int2 validStart, int2 validRange, stream_t stream);
 // implemented in cuCorrNormalization.cpp
-void cuArraysSumSquare(cuArrays<real_type> *images, cuArrays<real_type> *imagesSum, stream_t stream);
 void cuArraysSumCorr(cuArrays<real_type> *images, cuArrays<int> *imagesValid, cuArrays<real_type> *imagesSum, cuArrays<int> *imagesValidCount, stream_t stream);
 
 
 // implemented in cuEstimateStats.cpp
-void cuEstimateSnr(cuArrays<real_type> *corrSum, cuArrays<real_type> *maxval, cuArrays<real_type> *snrValue, const int size, stream_t stream);
 void cuEstimateSnr(cuArrays<real_type> *corrSum, cuArrays<int> *corrValidCount, cuArrays<real_type> *maxval, cuArrays<real_type> *snrValue, stream_t stream);
 
 // implemented in cuEstimateStats.cpp

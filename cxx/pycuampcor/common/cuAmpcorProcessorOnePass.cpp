@@ -115,8 +115,8 @@ void cuAmpcorProcessorOnePass::run(int idxDown_, int idxAcross_, const cuAmpcorC
     r_maxval->outputToFile("r_maxvalInit", stream);
 #endif
 
-    // extract a smaller chip around the peak {offsetInit}
-    // with extra pads, i_corrBatchValidCount is no longer needed
+    // extract a smaller chip around the peak {offsetInit} for oversampling
+    // (within the extra pads, so all its pixels are valid)
     cuArraysCopyExtractCorr(r_corrBatch, r_corrBatchZoomIn, offsetInit, stream);
 
 #ifdef CUAMPCOR_DEBUG
@@ -128,10 +128,12 @@ void cuAmpcorProcessorOnePass::run(int idxDown_, int idxAcross_, const cuAmpcorC
     // estimate variance on r_corrBatch
     cuEstimateVariance(r_corrBatch, offsetInit, r_maxval, r_referenceBatchOverSampled->size, param->rawDataOversamplingFactor, r_covValue, stream);
 
-    // snr on the extracted surface r_corrBatchZoomIn
-    cuArraysSumSquare(r_corrBatchZoomIn, r_corrBatchSum, stream);
-    int corrSurfaceSize = r_corrBatch->height*r_corrBatch->width;
-    cuEstimateSnr(r_corrBatchSum, r_maxval, r_snrValue, corrSurfaceSize, stream);
+    // snr as in the two-pass workflow: the peak over the mean of the correlation surface around it
+    // (corrStatWindowSize), at the raw pixel spacing and within the search range
+    cuArraysCopyExtractCorr(r_corrBatch, r_corrBatchRawZoomIn, i_corrBatchZoomInValid, offsetInit,
+        param->rawDataOversamplingFactor, start, range, stream);
+    cuArraysSumCorr(r_corrBatchRawZoomIn, i_corrBatchZoomInValid, r_corrBatchSum, i_corrBatchValidCount, stream);
+    cuEstimateSnr(r_corrBatchSum, i_corrBatchValidCount, r_maxval, r_snrValue, stream);
 
 #ifdef CUAMPCOR_DEBUG
     r_snrValue->outputToFile("r_snrValue", stream);
@@ -277,10 +279,29 @@ cuAmpcorProcessorOnePass::cuAmpcorProcessorOnePass(cuAmpcorParameter *param_,
     corrMaxValue = new cuArrays<real_type> (param->numberWindowDownInChunk, param->numberWindowAcrossInChunk);
     corrMaxValue->allocate();
 
+    r_corrBatchRawZoomIn = new cuArrays<real_type> (
+            param->corrRawZoomInHeight,
+            param->corrRawZoomInWidth,
+            param->numberWindowDownInChunk,
+            param->numberWindowAcrossInChunk);
+    r_corrBatchRawZoomIn->allocate();
+
+    i_corrBatchZoomInValid = new cuArrays<int> (
+            param->corrRawZoomInHeight,
+            param->corrRawZoomInWidth,
+            param->numberWindowDownInChunk,
+            param->numberWindowAcrossInChunk);
+    i_corrBatchZoomInValid->allocate();
+
     r_corrBatchSum = new cuArrays<real_type> (
                     param->numberWindowDownInChunk,
                     param->numberWindowAcrossInChunk);
     r_corrBatchSum->allocate();
+
+    i_corrBatchValidCount = new cuArrays<int> (
+                    param->numberWindowDownInChunk,
+                    param->numberWindowAcrossInChunk);
+    i_corrBatchValidCount->allocate();
 
     i_maxloc = new cuArrays<int2> (param->numberWindowDownInChunk, param->numberWindowAcrossInChunk);
     i_maxloc->allocate();
@@ -359,7 +380,10 @@ cuAmpcorProcessorOnePass::~cuAmpcorProcessorOnePass()
     delete offsetFinal;
     delete corrMaxValue;
 
+    delete r_corrBatchRawZoomIn;
+    delete i_corrBatchZoomInValid;
     delete r_corrBatchSum;
+    delete i_corrBatchValidCount;
     delete i_maxloc;
     delete r_maxval;
     delete r_snrValue;

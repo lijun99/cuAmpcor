@@ -30,23 +30,6 @@ void cuArraysSubtractMean(cuArrays<real_type> *images, stream_t)
 }
 
 /**
- * Compute the sum of squares of images (for SNR)
- * @param[in] images Input images
- * @param[out] imagesSum sum of squares
- */
-void cuArraysSumSquare(cuArrays<real_type> *images, cuArrays<real_type> *imagesSum, stream_t)
-{
-    const int imageSize = images->size;
-    for(int idxImage = 0; idxImage < images->count; idxImage++) {
-        const real_type *image = images->devData + (size_t)idxImage*imageSize;
-        double sum = 0.0;
-        for(int i = 0; i < imageSize; i++)
-            sum += image[i]*image[i];
-        imagesSum->devData[idxImage] = sum;
-    }
-}
-
-/**
  * Compute the sum of squares of images and the count of valid pixels (for SNR)
  * @param[in] images Input images
  * @param[in] imagesValid validity flags for each pixel

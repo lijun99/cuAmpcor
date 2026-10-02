@@ -174,6 +174,37 @@ TEST_F(CopyTest, CopyExtractCorr)
                 EXPECT_EQ(r[(k*h + i)*w + j], rv[(k*H + i + inV[k].x - h/2)*W + j + inV[k].y - w/2]);
 }
 
+// extract windows with a stride (e.g., a raw pixel spacing on an oversampled surface),
+// valid within a region of the input
+TEST_F(CopyTest, CopyExtractCorrStrided)
+{
+    const int H = 21, W = 25, h = 5, w = 7, n = 2, stride = 2;
+    const int2 start = make_int2(3, 2), range = make_int2(15, 20);
+    auto rv = randomReal(H*W*n);
+    auto rin = makeFrom(rv, H, W, 1, n);
+    // centered inside, and near the edge of the valid region
+    std::vector<int2> locV = {make_int2(10, 12), make_int2(4, 19)};
+    auto maxloc = makeFrom(locV, 1, n);
+    auto out = make<real_type>(h, w, 1, n);
+    auto valid = make<int>(h, w, 1, n);
+    cuArraysCopyExtractCorr(rin.get(), out.get(), valid.get(), maxloc.get(), stride, start, range, stream);
+    auto r = download(*out);
+    auto f = download(*valid);
+    int nInvalid = 0;
+    for (int k = 0; k < n; k++)
+        for (int i = 0; i < h; i++)
+            for (int j = 0; j < w; j++) {
+                int o = (k*h + i)*w + j;
+                int si = locV[k].x + (i - h/2)*stride, sj = locV[k].y + (j - w/2)*stride;
+                bool inside = si >= start.x && sj >= start.y && si < start.x + range.x && sj < start.y + range.y;
+                nInvalid += !inside;
+                EXPECT_EQ(f[o], inside ? 1 : 0);
+                EXPECT_EQ(r[o], inside ? rv[(k*H + si)*W + sj] : 0);
+            }
+    // the second window crosses the edges of the valid region
+    EXPECT_GT(nInvalid, 0);
+}
+
 // insert a small image into a larger one
 TEST_F(CopyTest, CopyInsert)
 {

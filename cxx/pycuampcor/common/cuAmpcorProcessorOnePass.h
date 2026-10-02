@@ -54,8 +54,10 @@ private:
     cuArrays<int2> *i_maxloc;
     cuArrays<real_type> *r_maxval;
 
-    // SNR estimation
+    // SNR estimation, as in the two-pass workflow: the correlation surface around the peak
+    // at the raw pixel spacing, its valid pixels and their count
     cuArrays<real_type> *r_corrBatchRawZoomIn;
+    cuArrays<int> *i_corrBatchZoomInValid, *i_corrBatchValidCount;
     cuArrays<real_type> *r_corrBatchSum;
     cuArrays<real_type> *r_snrValue;
 
