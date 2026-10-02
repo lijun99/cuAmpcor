@@ -27,14 +27,21 @@ void cuArraysMaxloc2D(cuArrays<real_type> *images,
         const real_type *image = images->devData + (size_t)imageIdx*images->size;
         real_type val = -REAL_MAX;
         int2 loc = start;
-        for(int idx = start.x; idx < start.x + range.x; idx++)
-            for(int idy = start.y; idy < start.y + range.y; idy++) {
-                real_type pixelValue = image[IDX2R(idx, idy, imageNY)];
-                if(val < pixelValue) {
-                    val = pixelValue;
-                    loc = make_int2(idx, idy);
-                }
-            }
+        for(int idx = start.x; idx < start.x + range.x; idx++) {
+            const real_type *row = image + IDX2R(idx, start.y, imageNY);
+            // the row maximum (if larger than the current maximum), vectorized
+            real_type rowMax = val;
+            #pragma omp simd reduction(max:rowMax)
+            for(int idy = 0; idy < range.y; idy++)
+                rowMax = (rowMax < row[idy]) ? row[idy] : rowMax;
+            // only rows with a larger value are searched for the (first) location
+            if(val < rowMax)
+                for(int idy = 0; idy < range.y; idy++)
+                    if(val < row[idy]) {
+                        val = row[idy];
+                        loc = make_int2(idx, start.y + idy);
+                    }
+        }
         maxloc->devData[imageIdx] = loc;
         maxval->devData[imageIdx] = val;
     }
