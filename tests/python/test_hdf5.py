@@ -86,6 +86,17 @@ def test_hdf5_cache_size(impl, cache_gb, images, raw_results, tmp_path):
     assert_same(out, raw_results(impl))
 
 
+@pytest.mark.parametrize("threads", [1, 3])
+def test_hdf5_decode_threads(impl, threads, images, raw_results, tmp_path, capfd, monkeypatch):
+    """The number of threads to decode chunks (PYCUAMPCOR_HDF5_THREADS) doesn't change the results"""
+    monkeypatch.setenv("PYCUAMPCOR_HDF5_THREADS", str(threads))
+    options = dict(chunks=(32, 48), compression="gzip", shuffle=True)
+    h5 = tuple(write_h5(tmp_path / f"{k}.h5", read_raw(f), **options) for k, f in zip(("ref", "sec"), images))
+    out = run_ampcor(impl, h5, SHAPE, tmp_path / "out")
+    assert_same(out, raw_results(impl))
+    assert capfd.readouterr().out.count(f"up to {threads} threads") == 2
+
+
 def test_hdf5_unallocated_chunks(impl, images, tmp_path, capfd):
     """Chunks never written are read as zeros (the default fill value), as in the raw file"""
     ref, sec = (read_raw(f) for f in images)

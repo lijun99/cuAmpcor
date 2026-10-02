@@ -5,6 +5,7 @@
 #include <zlib.h>
 
 #include <algorithm>
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <stdexcept>
@@ -65,9 +66,20 @@ struct ChunkIterData {
 
 } // namespace
 
+size_t Hdf5SlcImage::defaultMaxThreads()
+{
+    if (const char *value = std::getenv("PYCUAMPCOR_HDF5_THREADS")) {
+        const long n = std::strtol(value, nullptr, 10);
+        if (n >= 1) return static_cast<size_t>(n);
+    }
+    return 8;
+}
+
 Hdf5SlcImage::Hdf5SlcImage(const std::string& file, const std::string& dataset,
-                           size_t image_height, size_t image_width, size_t pixel_size_, size_t buffer_size)
-    : filename(file), height(image_height), width(image_width), pixel_size(pixel_size_)
+                           size_t image_height, size_t image_width, size_t pixel_size_, size_t buffer_size,
+                           size_t max_threads)
+    : filename(file), height(image_height), width(image_width), pixel_size(pixel_size_),
+      maxThreads(std::max<size_t>(max_threads, 1))
 {
     std::lock_guard<std::mutex> lock(hdf5Mutex());
     const std::string name = "HDF5 dataset " + dataset + " in " + file;
@@ -129,7 +141,8 @@ Hdf5SlcImage::Hdf5SlcImage(const std::string& file, const std::string& dataset,
     if (direct) {
         std::string filters = shuffle ? (deflate ? "shuffle+deflate" : "shuffle") : (deflate ? "deflate" : "none");
         std::cout << "  HDF5 " << dataset << ": chunks " << chunkHeight << " x " << chunkWidth
-                  << ", filters " << filters << ", decoded directly (cache of " << cacheCapacity << " chunks)" << std::endl;
+                  << ", filters " << filters << ", decoded directly (cache of " << cacheCapacity
+                  << " chunks, up to " << maxThreads << " threads)" << std::endl;
     }
     else {
         std::cout << "  HDF5 " << dataset << ": read with the HDF5 library" << std::endl;
@@ -310,7 +323,7 @@ std::vector<Hdf5SlcImage::Chunk> Hdf5SlcImage::getChunks(const std::vector<size_
             task.second.set_exception(std::current_exception());
         }
     };
-    const size_t nThreads = std::min<size_t>(missing.size(), std::max(1u, std::thread::hardware_concurrency()));
+    const size_t nThreads = std::min(missing.size(), maxThreads);
     if (nThreads <= 1) {
         for (auto &task : missing) decode(task);
     }

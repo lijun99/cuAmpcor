@@ -24,12 +24,18 @@ namespace pycuampcor::PYCUAMPCOR_BACKEND {
 /// Chunked datasets without filters, or with deflate (gzip) preceded optionally by shuffle
 /// (as in the NISAR products), are read directly: the chunks are located once when opening,
 /// read from the file and decoded in parallel without calling the HDF5 library, and kept in
-/// a cache of up to buffer_size GB shared by all workers. Other datasets (contiguous, other
-/// filters, a user block, a non-zero fill value) are read with the HDF5 library (H5Dread).
+/// a cache of up to buffer_size GB shared by all workers. Each worker decodes the chunks missing
+/// for its tile with up to max_threads threads (set by PYCUAMPCOR_HDF5_THREADS, default 8).
+/// Other datasets (contiguous, other filters, a user block, a non-zero fill value) are read
+/// with the HDF5 library (H5Dread).
 class Hdf5SlcImage : public SlcImage {
 public:
     Hdf5SlcImage(const std::string& file, const std::string& dataset,
-                 size_t image_height, size_t image_width, size_t pixel_size, size_t buffer_size);
+                 size_t image_height, size_t image_width, size_t pixel_size, size_t buffer_size,
+                 size_t max_threads = defaultMaxThreads());
+
+    /// the default number of threads to decode chunks: PYCUAMPCOR_HDF5_THREADS if set, or 8
+    static size_t defaultMaxThreads();
     ~Hdf5SlcImage() override;
 
     void loadToHost(void* host, size_t h_offset, size_t w_offset,
@@ -76,6 +82,7 @@ private:
     std::unordered_map<size_t, CacheEntry> cache;
     std::list<size_t> lru;   ///< most recently used at the front
     size_t cacheCapacity = 1; ///< in chunks
+    size_t maxThreads = 1;    ///< threads to decode the chunks missing for a tile
 
     void inspectLayout(hid_t dcpl, size_t buffer_size);
     Chunk decodeChunk(size_t index) const;
