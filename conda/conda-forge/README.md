@@ -7,7 +7,7 @@ versions in the conda-forge global pinning) are defined by conda-forge.
 
 For each release:
 
-1. tag the release, e.g., `git tag v2.1.0 && git push origin v2.1.0`;
+1. tag the release, e.g., `git tag v2.2.0 && git push origin v2.2.0`;
 2. update `version` in `meta.yaml` (the same as `project(... VERSION ...)` in CMakeLists.txt);
 3. update `sha256` with
    `curl -sL https://github.com/earthdef/cuAmpcor/archive/refs/tags/v<version>.tar.gz | sha256sum`.
