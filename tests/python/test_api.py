@@ -152,10 +152,15 @@ def test_image_errors(impl, images, tmp_path):
     # missing file
     with pytest.raises(RuntimeError, match="Failed to open"):
         run_ampcor(impl, (images[0] + ".missing", images[1]), SHAPE, tmp_path, n_windows=(2, 2))
-    # errors raised while processing chunks (in parallel) are propagated:
-    # with zero mmap buffer size, loading any image tile fails
-    with pytest.raises(RuntimeError, match="mmap"):
-        run_ampcor(impl, images, SHAPE, tmp_path, mmapSize=0, nThreads=4)
+    # (errors raised while processing chunks in parallel: see test_hdf5_corrupt_chunk)
+
+
+def test_mmap_buffer_smaller_than_chunk(impl, images, tmp_path):
+    """The mmap window is enlarged to the chunks that need more than mmapSize"""
+    expected = run_ampcor(impl, images, SHAPE, tmp_path / "default")
+    out = run_ampcor(impl, images, SHAPE, tmp_path / "zero", mmapSize=0)
+    for name in expected:
+        np.testing.assert_array_equal(out[name], expected[name], err_msg=name)
 
 
 def test_auto_chunk_size(impl, images, tmp_path):

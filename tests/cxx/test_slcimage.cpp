@@ -63,10 +63,25 @@ TEST_F(SlcImageTest, Errors)
     EXPECT_THROW(MmapSlcImage(filename, H+1, W, sizeof(image_complex_type), 1), std::runtime_error);
     // missing file
     EXPECT_THROW(MmapSlcImage(filename + ".missing", H, W, sizeof(image_complex_type), 1), std::runtime_error);
-    // zero buffer size for mmap
-    MmapSlcImage image(filename, H, W, sizeof(image_complex_type), 0);
+    // a tile beyond the end of the file
+    MmapSlcImage image(filename, H, W, sizeof(image_complex_type), 1);
     auto buffer = make<image_complex_type>(2, 2);
-    EXPECT_THROW(image.loadToDevice(buffer->devData, 0, 0, 2, 2, stream), std::runtime_error);
+    EXPECT_THROW(image.loadToDevice(buffer->devData, H-1, 0, 2, 2, stream), std::runtime_error);
+}
+
+TEST_F(SlcImageTest, BufferSmallerThanTile)
+{
+    // a zero buffer size: the mmap window is enlarged to each tile
+    MmapSlcImage image(filename, H, W, sizeof(image_complex_type), 0);
+    for (auto tile : {std::vector<int>{3, 5, 7, 11}, std::vector<int>{0, 0, H, W}, std::vector<int>{H-4, W-6, 4, 6}}) {
+        const int h0 = tile[0], w0 = tile[1], h = tile[2], w = tile[3];
+        auto buffer = make<image_complex_type>(h, w);
+        image.loadToDevice(buffer->devData, h0, w0, h, w, stream);
+        auto r = download(*buffer);
+        for (int i = 0; i < h; i++)
+            for (int j = 0; j < w; j++)
+                EXPECT_EQ(r[i*w+j].x, values[(h0+i)*W + w0+j].x);
+    }
 }
 
 TEST_F(SlcImageTest, Reader)

@@ -9,6 +9,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <assert.h>
+#include <algorithm>
 #include <iostream>
 #include <cstring>
 #include <stdexcept>
@@ -127,19 +128,17 @@ void MmapSlcImage::remapIfNeeded(size_t required_start, size_t required_end)
         // align new mapping offset
         // round to the page size
         mapped_offset = (required_start/page_size)*page_size;
-        // compute the mapped size
-        mapped_size = file_size - mapped_offset;
-        // not to exceed the buffer size
-        if (mapped_size > max_map_size) {
-            mapped_size = max_map_size;
-        }
-        // the mapped region must cover the requested range
-        if (required_end > mapped_offset + mapped_size) {
+        // the requested range must be within the file
+        if (required_end > file_size) {
             mapped_data = nullptr;
             mapped_size = 0;
-            throw std::runtime_error("The requested image tile exceeds the file size or the mmap buffer size;"
-                " check the image size or increase mmapSize (in GB)");
+            throw std::runtime_error("The requested image tile exceeds the file size; check the image size");
         }
+        // the buffer size, enlarged if a tile needs more (e.g., chunks of many lines with a large skip);
+        // the mapping only reserves address space, pages are read on demand
+        max_map_size = std::max(max_map_size, required_end - mapped_offset);
+        // compute the mapped size, not to exceed the buffer size
+        mapped_size = std::min(file_size - mapped_offset, max_map_size);
         // remap
         mapped_data = mmap(nullptr, mapped_size, PROT_READ, MAP_PRIVATE, fd, mapped_offset);
         if (mapped_data == MAP_FAILED) {

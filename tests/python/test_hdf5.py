@@ -189,6 +189,19 @@ def test_reader_option(impl, images, raw_results, tmp_path):
         ampcor.runAmpcor()
 
 
+def test_hdf5_corrupt_chunk(impl, images, tmp_path):
+    """An error raised while decoding a chunk in a worker (CUDA stream or CPU thread) is propagated"""
+    path = tmp_path / "sec.h5"
+    name = write_h5(path, read_raw(images[1]), chunks=(64, 96), compression="gzip", shuffle=True)
+    with h5py.File(path, "r") as f:
+        info = f[DATASET].id.get_chunk_info_by_coord((128, 192))
+    with open(path, "r+b") as f:
+        f.seek(info.byte_offset)
+        f.write(b"\xff" * info.size)
+    with pytest.raises(RuntimeError, match="decompress"):
+        run_ampcor(impl, (images[0], name), SHAPE, tmp_path / "out", nThreads=4)
+
+
 def test_hdf5_errors(impl, images, tmp_path):
     ref, sec = (read_raw(f) for f in images)
     good = write_h5(tmp_path / "ref.h5", ref)
