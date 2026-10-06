@@ -33,7 +33,7 @@ jobs:
           cp conda/conda-forge/conda-forge.yml feedstock/
           cd feedstock
           git init -q && git add -A && git -c user.name=ci -c user.email=ci@localhost commit -q -m recipe
-          conda smithy rerender --no-check-uptodate
+          conda-smithy rerender --no-check-uptodate
           ls .ci_support
       - name: Build matrix
         id: matrix
