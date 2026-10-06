@@ -80,7 +80,7 @@ jobs:
       - name: Build
         run: |
           cd feedstock
-          conda build recipe -m .ci_support/${{ matrix.config }}.yaml -c conda-forge --override-channels \
+          conda-build recipe -m .ci_support/${{ matrix.config }}.yaml -c conda-forge --override-channels \
             --output-folder ../out
       - name: Upload to anaconda.org/lijun99
         env:
