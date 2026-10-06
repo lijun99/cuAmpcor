@@ -34,6 +34,23 @@ jobs:
           cd feedstock
           git init -q && git add -A && git -c user.name=ci -c user.email=ci@localhost commit -q -m recipe
           conda-smithy rerender --no-check-uptodate
+          # also build for CUDA 13.0 (requiring cuda-version >=13.0), which works with any CUDA 13 toolkit,
+          # e.g., from the nvidia channel, while the conda-forge pinning may require a newer minor version
+          python - <<'EOF'
+          import pathlib, re
+          for src in sorted(pathlib.Path('.ci_support').glob('*cuda_compiler_version13.*.yaml')):
+              m = re.search(r'cuda_compiler_version(13\.\d+)cxx_compiler_version(\d+)', src.name)
+              if not m or m.group(1) == '13.0':
+                  continue
+              lines = src.read_text().splitlines()
+              for i in range(1, len(lines)):
+                  if lines[i - 1] == 'cuda_compiler_version:':
+                      lines[i] = "- '13.0'"
+                  if lines[i - 1] == 'cxx_compiler_version:':
+                      lines[i] = "- '14'"
+              dst = src.with_name(src.name.replace(m.group(0), 'cuda_compiler_version13.0cxx_compiler_version14'))
+              dst.write_text('\n'.join(lines) + '\n')
+          EOF
           ls .ci_support
       - name: Build matrix
         id: matrix
