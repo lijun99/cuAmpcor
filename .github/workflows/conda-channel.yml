@@ -1,0 +1,91 @@
+name: conda-channel
+
+# Build the conda-forge recipe (conda/conda-forge) for all the conda-forge variants (cpu and cuda,
+# python versions, linux-64/aarch64, osx-64/arm64) and upload the packages to the anaconda.org
+# channel lijun99, until pycuampcor is available from conda-forge.
+# The variants are generated with conda-smithy from the current conda-forge pinning.
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+jobs:
+  configs:
+    if: github.repository == 'earthdef/cuAmpcor'
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+          activate-environment: smithy
+      - name: Install conda-smithy
+        run: conda install -y -c conda-forge conda-smithy
+      - name: Generate the variant configs
+        run: |
+          mkdir -p feedstock/recipe
+          cp conda/conda-forge/meta.yaml feedstock/recipe/
+          cp conda/conda-forge/conda-forge.yml feedstock/
+          cd feedstock
+          git init -q && git add -A && git -c user.name=ci -c user.email=ci@localhost commit -q -m recipe
+          conda smithy rerender --no-check-uptodate
+          ls .ci_support
+      - name: Build matrix
+        id: matrix
+        run: |
+          python - <<'EOF' >> $GITHUB_OUTPUT
+          import json, pathlib
+          runners = {'linux_64': 'ubuntu-latest', 'linux_aarch64': 'ubuntu-24.04-arm',
+                     'osx_64': 'macos-15-intel', 'osx_arm64': 'macos-15'}
+          include = []
+          for f in sorted(pathlib.Path('feedstock/.ci_support').glob('*.yaml')):
+              platform = next(p for p in sorted(runners, key=len, reverse=True) if f.name.startswith(p + '_'))
+              include.append({'config': f.stem, 'runner': runners[platform]})
+          print('matrix=' + json.dumps({'include': include}))
+          EOF
+      - uses: actions/upload-artifact@v4
+        with:
+          name: feedstock
+          path: |
+            feedstock/recipe
+            feedstock/.ci_support
+          include-hidden-files: true
+
+  build:
+    needs: configs
+    name: ${{ matrix.config }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.configs.outputs.matrix) }}
+    defaults:
+      run:
+        shell: bash -el {0}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: feedstock
+          path: feedstock
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+          activate-environment: build
+      - name: Install conda-build
+        run: conda install -y -c conda-forge conda-build anaconda-client
+      - name: Build
+        run: |
+          cd feedstock
+          conda build recipe -m .ci_support/${{ matrix.config }}.yaml -c conda-forge --override-channels \
+            --output-folder ../out
+      - name: Upload to anaconda.org/lijun99
+        env:
+          ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_API_TOKEN }}
+        run: |
+          pkgs=$(ls out/*/*.conda out/*/*.tar.bz2 2>/dev/null)
+          echo "$pkgs"
+          anaconda -t "$ANACONDA_API_TOKEN" upload --user lijun99 --skip-existing $pkgs
