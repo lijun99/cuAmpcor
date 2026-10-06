@@ -82,7 +82,7 @@ jobs:
           cd feedstock
           config=.ci_support/${{ matrix.config }}.yaml
           # the runners have no GPU driver: declare the CUDA version for the test environment of cuda builds
-          cuda=$(sed -n '/^cuda_compiler_version:/{n;p}' $config | sed "s/^- //; s/'//g")
+          cuda=$(awk '/^cuda_compiler_version:/ {getline; gsub("[- \047]", ""); print}' $config)
           if [ -n "$cuda" ] && [ "$cuda" != None ]; then export CONDA_OVERRIDE_CUDA=$cuda; fi
           conda-build recipe -m $config -c conda-forge --override-channels --output-folder ../out
       - name: Upload to anaconda.org/lijun99
