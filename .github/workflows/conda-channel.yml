@@ -80,12 +80,16 @@ jobs:
       - name: Build
         run: |
           cd feedstock
-          conda-build recipe -m .ci_support/${{ matrix.config }}.yaml -c conda-forge --override-channels \
-            --output-folder ../out
+          config=.ci_support/${{ matrix.config }}.yaml
+          # the runners have no GPU driver: declare the CUDA version for the test environment of cuda builds
+          cuda=$(sed -n '/^cuda_compiler_version:/{n;p}' $config | sed "s/^- //; s/'//g")
+          if [ -n "$cuda" ] && [ "$cuda" != None ]; then export CONDA_OVERRIDE_CUDA=$cuda; fi
+          conda-build recipe -m $config -c conda-forge --override-channels --output-folder ../out
       - name: Upload to anaconda.org/lijun99
         env:
           ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_API_TOKEN }}
         run: |
-          pkgs=$(ls out/*/*.conda out/*/*.tar.bz2 2>/dev/null)
-          echo "$pkgs"
-          anaconda -t "$ANACONDA_API_TOKEN" upload --user lijun99 --skip-existing $pkgs
+          shopt -s nullglob
+          pkgs=(out/*/*.conda out/*/*.tar.bz2)
+          printf '%s\n' "${pkgs[@]}"
+          anaconda -t "$ANACONDA_API_TOKEN" upload --user lijun99 --skip-existing "${pkgs[@]}"
