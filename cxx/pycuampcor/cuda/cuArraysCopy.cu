@@ -22,7 +22,7 @@
 // dependencies
 #include "cuArraysCopy.h"
 #include "cuArrays.h"
-#include "cudaUtil.h"
+#include "device.h"
 #include "cudaError.h"
 #include "float2.h"
 

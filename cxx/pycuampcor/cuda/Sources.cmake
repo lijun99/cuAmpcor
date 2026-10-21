@@ -14,5 +14,6 @@ set(PYCUAMPCOR_CUDA_SOURCES
     cuOverSampler.cpp
     cuSincOverSampler.cu
     cudaError.cpp
-    cudaUtil.cpp
+    backend.cpp
+    device.cpp
     )

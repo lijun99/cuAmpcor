@@ -1,6 +1,6 @@
 # CPU backend sources
 set(PYCUAMPCOR_CPU_SOURCES
-    cpuUtil.cpp
+    backend.cpp
     cuArrays.cpp
     cuArraysCopy.cpp
     cuArraysPadding.cpp

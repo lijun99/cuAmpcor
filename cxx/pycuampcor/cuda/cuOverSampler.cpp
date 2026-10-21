@@ -6,7 +6,7 @@
 // my declarations
 #include "cuOverSampler.h"
 #include "cuArrays.h"
-#include "cudaUtil.h"
+#include "device.h"
 #include "cudaError.h"
 #include "float2.h"
 #include "cuArraysCopy.h"
@@ -31,13 +31,6 @@ cuOverSamplerC2C::cuOverSamplerC2C(int inNX, int inNY, int outNX, int outNY, int
     int inNYp2 = inNY;
     int outNXp2 = outNX;
     int outNYp2 = outNY;
-
-    /* if expanded to 2^n
-    int inNXp2 = nextpower2(inNX);
-    int inNYp2 = nextpower2(inNY);
-    int outNXp2 = inNXp2*outNX/inNX;
-    int outNYp2 = inNYp2*outNY/inNY;
-    */
 
     // set up work arrays
     workIn = std::make_unique<cuArrays<complex_type>>(inNXp2, inNYp2, nImages);
@@ -119,13 +112,6 @@ cuOverSamplerR2R::cuOverSamplerR2R(int inNX, int inNY, int outNX, int outNY, int
     int inNYp2 = inNY;
     int outNXp2 = outNX;
     int outNYp2 = outNY;
-
-    /* if expanded to 2^n
-    int inNXp2 = nextpower2(inNX);
-    int inNYp2 = nextpower2(inNY);
-    int outNXp2 = inNXp2*outNX/inNX;
-    int outNYp2 = inNYp2*outNY/inNY;
-    */
 
     int imageSize = inNXp2 *inNYp2;
     int n[NRANK] ={inNXp2, inNYp2};

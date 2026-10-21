@@ -1,10 +1,10 @@
 /**
- * @file cpuUtil.cpp
- * @brief Backend hooks for the shared ampcor code, CPU version
+ * @file backend.cpp
+ * @brief Backend hooks for the shared ampcor code, CPU version (see backend.h)
  *
  **/
 
-#include "cpuUtil.h"
+#include "backend.h"
 #include "logging.h"
 #include "cuAmpcorParameter.h"
 

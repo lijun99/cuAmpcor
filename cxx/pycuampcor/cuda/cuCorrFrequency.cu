@@ -6,7 +6,7 @@
 #include "cuCorrFrequency.h"
 #include "float2.h"
 #include "cuArraysCopy.h"
-#include "cudaUtil.h"
+#include "device.h"
 #include "cudaError.h"
 #include "logging.h"
 #include "cuArrays.h"

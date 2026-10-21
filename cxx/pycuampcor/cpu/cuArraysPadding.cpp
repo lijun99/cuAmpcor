@@ -5,7 +5,7 @@
 
 #include "cuArraysPadding.h"
 #include "float2.h"
-#include "cpuUtil.h"
+#include "indexing.h"
 #include "cuArrays.h"
 
 namespace pycuampcor::cpu {

@@ -11,7 +11,6 @@
 #include "data_types.h"
 #include "float2.h"
 // utilities
-#include "cpuUtil.h"
 #include "fftwUtil.h"
 
 // batches of 2D arrays

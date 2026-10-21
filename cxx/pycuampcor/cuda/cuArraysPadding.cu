@@ -5,7 +5,7 @@
 
 #include "cuArraysPadding.h"
 #include "float2.h"
-#include "cudaUtil.h"
+#include "device.h"
 #include "cudaError.h"
 #include "cuArrays.h"
 

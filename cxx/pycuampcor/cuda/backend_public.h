@@ -12,7 +12,7 @@
 #include "float2.h"
 // utilities
 #include "cudaError.h"
-#include "cudaUtil.h"
+#include "device.h"
 #include "cufftPlan.h"
 
 // batches of 2D arrays
