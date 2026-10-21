@@ -1,12 +1,12 @@
 /*
- * @file  cuArraysPadding.cpp
+ * @file  ArraysPadding.cpp
  * @brief Utilities for padding zeros to cuArrays for FFT (zero padding in the middle), CPU backend
  */
 
-#include "cuArraysPadding.h"
+#include "ArraysPadding.h"
 #include "float2.h"
 #include "indexing.h"
-#include "cuArrays.h"
+#include "Arrays.h"
 
 namespace pycuampcor::cpu {
 

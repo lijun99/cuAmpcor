@@ -1,8 +1,8 @@
 /**
- * @file  cuEstimateStats.h
+ * @file  EstimateStats.h
  * @brief SNR and covariance of the offsets (CPU backend)
  *
- * Implemented in cuEstimateStats.cpp.
+ * Implemented in EstimateStats.cpp.
  */
 
 #pragma once

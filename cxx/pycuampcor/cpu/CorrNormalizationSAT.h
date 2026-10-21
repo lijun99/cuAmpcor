@@ -1,8 +1,8 @@
 /**
- * @file  cuCorrNormalizationSAT.h
+ * @file  CorrNormalizationSAT.h
  * @brief Normalization of correlation surfaces with sum area tables (CPU backend)
  *
- * Implemented in cuCorrNormalizationSAT.cpp.
+ * Implemented in CorrNormalizationSAT.cpp.
  */
 
 #pragma once

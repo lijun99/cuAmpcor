@@ -1,14 +1,14 @@
 /*
- * @file cuOffset.cpp
+ * @file Offset.cpp
  * @brief Utilities used to determine the offset field (CPU backend)
  *
  */
 
 // my module dependencies
-#include "cuOffset.h"
+#include "Offset.h"
 #include "float2.h"
 #include "indexing.h"
-#include "cuArrays.h"
+#include "Arrays.h"
 
 namespace pycuampcor::cpu {
 

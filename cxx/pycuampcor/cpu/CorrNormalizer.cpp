@@ -1,13 +1,13 @@
 /*
- * @file cuCorrNormalizer.cpp
+ * @file CorrNormalizer.cpp
  * @brief processors to normalize the correlation surface (CPU backend)
  *
  */
 
-#include "cuCorrNormalizer.h"
+#include "CorrNormalizer.h"
 #include "float2.h"
-#include "cuCorrNormalizationSAT.h"
-#include "cuArrays.h"
+#include "CorrNormalizationSAT.h"
+#include "Arrays.h"
 
 namespace pycuampcor::cpu {
 

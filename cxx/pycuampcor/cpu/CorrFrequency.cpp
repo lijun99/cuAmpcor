@@ -1,12 +1,12 @@
 /*
- * @file  cuCorrFrequency.cpp
+ * @file  CorrFrequency.cpp
  * @brief A class performs cross correlation in frequency domain (CPU backend)
  */
 
-#include "cuCorrFrequency.h"
+#include "CorrFrequency.h"
 #include "float2.h"
-#include "cuArraysCopy.h"
-#include "cuArrays.h"
+#include "ArraysCopy.h"
+#include "Arrays.h"
 
 namespace pycuampcor::cpu {
 

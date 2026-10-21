@@ -1,8 +1,8 @@
 /**
- * @file  cuArraysCopy.h
+ * @file  ArraysCopy.h
  * @brief Copy, extract, insert and convert batches of images (CPU backend)
  *
- * Implemented in cuArraysCopy.cpp.
+ * Implemented in ArraysCopy.cpp.
  */
 
 #pragma once

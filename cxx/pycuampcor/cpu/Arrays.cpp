@@ -1,11 +1,11 @@
 /**
- * \file  cuArrays.cpp
+ * \file  Arrays.cpp
  * \brief  Implementations for cuArrays class (CPU backend)
  *
  */
 
 // dependencies
-#include "cuArrays.h"
+#include "Arrays.h"
 #include "logging.h"
 #include "float2.h"
 

@@ -1,16 +1,16 @@
 /*
- * @file cuOverSampler.cpp
+ * @file OverSampler.cpp
  * @brief Implementations of cuOverSamplerR2R (C2C) class (CPU backend)
  */
 
 // my declarations
-#include "cuOverSampler.h"
+#include "OverSampler.h"
 #include "float2.h"
-#include "cuArraysCopy.h"
-#include "cuArraysPadding.h"
+#include "ArraysCopy.h"
+#include "ArraysPadding.h"
 #include "indexing.h"
-#include "cuArrays.h"
-#include "cuSincOverSampler.h"
+#include "Arrays.h"
+#include "SincOverSampler.h"
 #include "cuSurfaceOverSampler.h"
 #include "arrayTraits.h"
 #include "cuAmpcorOptions.h"

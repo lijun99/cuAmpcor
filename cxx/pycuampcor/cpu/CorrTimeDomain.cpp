@@ -1,12 +1,12 @@
 /*
- * @file  cuCorrTimeDomain.cpp
+ * @file  CorrTimeDomain.cpp
  * @brief Correlation between two sets of images in time domain (CPU backend)
  *
  */
 
-#include "cuCorrTimeDomain.h"
+#include "CorrTimeDomain.h"
 #include "float2.h"
-#include "cuArrays.h"
+#include "Arrays.h"
 
 namespace pycuampcor::cpu {
 

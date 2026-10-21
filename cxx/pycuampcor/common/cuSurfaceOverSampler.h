@@ -5,7 +5,7 @@
  * The correlation surfaces around their peaks are oversampled to find the sub-pixel peak, with
  * FFT (the whole surface) or sinc interpolation (around the peak only). The packages (cpu, cuda)
  * implement both for their arrays, and create one by the method with newSurfaceOverSampler
- * (cuOverSampler.h of the package).
+ * (OverSampler.h of the cpu package, cuOverSampler.h of the cuda package).
  */
 
 #pragma once

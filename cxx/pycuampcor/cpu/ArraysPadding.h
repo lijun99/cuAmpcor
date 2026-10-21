@@ -1,8 +1,8 @@
 /**
- * @file  cuArraysPadding.h
+ * @file  ArraysPadding.h
  * @brief Zero padding of spectra for the FFT oversampling (CPU backend)
  *
- * Implemented in cuArraysPadding.cpp.
+ * Implemented in ArraysPadding.cpp.
  */
 
 #pragma once

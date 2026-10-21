@@ -1,12 +1,12 @@
 /*
- * @file cuCorrNormalizationSAT.cpp
+ * @file CorrNormalizationSAT.cpp
  * @brief Utilities to normalize the 2D correlation surface with the sum area table (CPU backend)
  *
  */
 
-#include "cuCorrNormalizationSAT.h"
+#include "CorrNormalizationSAT.h"
 #include "float2.h"
-#include "cuArrays.h"
+#include "Arrays.h"
 
 namespace pycuampcor::cpu {
 

@@ -1,5 +1,5 @@
 /*
- * @file  cuCorrFrequency.h
+ * @file  CorrFrequency.h
  * @brief A class performs cross correlation in frequency domain (CPU backend)
  */
 

@@ -1,13 +1,13 @@
 /**
- * @file cuSincOverSampler.cpp
+ * @file SincOverSampler.cpp
  * @brief Implementation for cuSincOversampler class (CPU backend)
  *
  */
 
 // my declaration
-#include "cuSincOverSampler.h"
+#include "SincOverSampler.h"
 #include "float2.h"
-#include "cuArrays.h"
+#include "Arrays.h"
 
 // dependencies
 

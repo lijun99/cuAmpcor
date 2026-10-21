@@ -1,13 +1,13 @@
 /**
- * @file  cuEstimateStats.cpp
+ * @file  EstimateStats.cpp
  * @brief Estimate the statistics of the correlation surface (CPU backend)
  *
  * 9/23/2017, Minyan Zhong
  */
 
-#include "cuEstimateStats.h"
+#include "EstimateStats.h"
 #include "float2.h"
-#include "cuArrays.h"
+#include "Arrays.h"
 
 namespace pycuampcor::cpu {
 

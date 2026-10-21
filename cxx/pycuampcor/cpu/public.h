@@ -26,21 +26,21 @@
 #include "fftwUtil.h"
 
 // batches of 2D arrays
-#include "cuArrays.h"
+#include "Arrays.h"
 // kernels on batches of arrays
-#include "cuArraysCopy.h"
-#include "cuArraysPadding.h"
-#include "cuDeramp.h"
-#include "cuCorrNormalization.h"
-#include "cuCorrNormalizationSAT.h"
-#include "cuCorrTimeDomain.h"
-#include "cuOffset.h"
-#include "cuEstimateStats.h"
+#include "ArraysCopy.h"
+#include "ArraysPadding.h"
+#include "Deramp.h"
+#include "CorrNormalization.h"
+#include "CorrNormalizationSAT.h"
+#include "CorrTimeDomain.h"
+#include "Offset.h"
+#include "EstimateStats.h"
 // workers with their own buffers and plans
-#include "cuOverSampler.h"
-#include "cuSincOverSampler.h"
-#include "cuCorrFrequency.h"
-#include "cuCorrNormalizer.h"
+#include "OverSampler.h"
+#include "SincOverSampler.h"
+#include "CorrFrequency.h"
+#include "CorrNormalizer.h"
 
 // the processing: chunks loaded from the images, processors of the chunks, and the controller
 #include "cuAmpcorChunkLoader.h"

@@ -4,7 +4,7 @@
  */
 
 #include "cuAmpcorChunkLoader.h"
-#include "cuArrays.h"
+#include "Arrays.h"
 #include "cuAmpcorOptions.h"
 #include "SlcImage.h"
 

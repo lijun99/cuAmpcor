@@ -1,5 +1,5 @@
 /**
- * @file  cuArrays.h
+ * @file  Arrays.h
  * @brief Header file for cuArrays class (CPU backend)
  *
  * A class describes a batch of images (in 2d arrays).

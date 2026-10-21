@@ -5,7 +5,8 @@
  * The correlation surfaces of the windows are normalized by the norms of the reference window
  * and of the secondary window under it. The packages (cpu, cuda) implement it for their arrays,
  * with sum area tables or, for small windows on the GPU, sums in shared memory, and create the
- * implementation for a window size with newCuNormalizer (cuCorrNormalizer.h of the package).
+ * implementation for a window size with newCuNormalizer (CorrNormalizer.h of the cpu package,
+ * cuCorrNormalizer.h of the cuda package).
  */
 
 #pragma once

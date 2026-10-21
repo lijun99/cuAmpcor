@@ -1,14 +1,14 @@
 /*
- * @file cuCorrNormalization.cpp
+ * @file CorrNormalization.cpp
  * @brief Utilities to normalize the correlation surface (CPU backend)
  *
  * The normalization of the correlation surface itself is done with the
- * sum area tables, see cuCorrNormalizationSAT.cpp
+ * sum area tables, see CorrNormalizationSAT.cpp
  */
 
-#include "cuCorrNormalization.h"
+#include "CorrNormalization.h"
 #include "float2.h"
-#include "cuArrays.h"
+#include "Arrays.h"
 
 namespace pycuampcor::cpu {
 

@@ -10,18 +10,18 @@
 #include "../common/forward.h"
 
 namespace pycuampcor::cpu {
-    // batches of 2D arrays, in the work (host) memory (cuArrays.h)
+    // batches of 2D arrays, in the work (host) memory (Arrays.h)
     template <typename T>
     class cuArrays;
     // an fftw plan (fftwUtil.h)
     class FftwPlan;
-    // fft oversamplers (cuOverSampler.h) and sinc oversampler (cuSincOverSampler.h)
+    // fft oversamplers (OverSampler.h) and sinc oversampler (SincOverSampler.h)
     class cuOverSamplerC2C;
     class cuOverSamplerR2R;
     class cuSincOverSamplerR2R;
-    // cross-correlation in the frequency domain (cuCorrFrequency.h)
+    // cross-correlation in the frequency domain (CorrFrequency.h)
     class cuFreqCorrelator;
-    // normalizers of the correlation surfaces (cuCorrNormalizer.h)
+    // normalizers of the correlation surfaces (CorrNormalizer.h)
     class cuNormalizeSAT;
     // the chunks of the images loaded for processing (cuAmpcorChunkLoader.h)
     struct cuAmpcorLoadedChunk;

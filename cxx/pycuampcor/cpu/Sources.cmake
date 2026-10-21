@@ -1,19 +1,19 @@
-# CPU backend sources
+# CPU package sources
 set(PYCUAMPCOR_CPU_SOURCES
+    Arrays.cpp
+    ArraysCopy.cpp
+    ArraysPadding.cpp
+    CorrFrequency.cpp
+    CorrNormalization.cpp
+    CorrNormalizationSAT.cpp
+    CorrNormalizer.cpp
+    CorrTimeDomain.cpp
+    Deramp.cpp
+    EstimateStats.cpp
+    Offset.cpp
+    OverSampler.cpp
+    SincOverSampler.cpp
     cuAmpcorChunkLoader.cpp
     cuAmpcorController.cpp
     processors.cpp
-    cuArrays.cpp
-    cuArraysCopy.cpp
-    cuArraysPadding.cpp
-    cuCorrFrequency.cpp
-    cuCorrNormalization.cpp
-    cuCorrNormalizationSAT.cpp
-    cuCorrNormalizer.cpp
-    cuCorrTimeDomain.cpp
-    cuDeramp.cpp
-    cuEstimateStats.cpp
-    cuOffset.cpp
-    cuOverSampler.cpp
-    cuSincOverSampler.cpp
     )

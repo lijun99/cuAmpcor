@@ -8,20 +8,20 @@
  */
 
 // the arrays of the package, and the types and workers that go with them
-#include "cuArrays.h"
+#include "Arrays.h"
 #include "arrayTraits.h"
 // the kernels
-#include "cuArraysCopy.h"
-#include "cuCorrNormalization.h"
-#include "cuCorrTimeDomain.h"
-#include "cuDeramp.h"
-#include "cuEstimateStats.h"
-#include "cuOffset.h"
+#include "ArraysCopy.h"
+#include "CorrNormalization.h"
+#include "CorrTimeDomain.h"
+#include "Deramp.h"
+#include "EstimateStats.h"
+#include "Offset.h"
 // the workers
-#include "cuCorrFrequency.h"
-#include "cuCorrNormalizer.h"
-#include "cuOverSampler.h"
-#include "cuSincOverSampler.h"
+#include "CorrFrequency.h"
+#include "CorrNormalizer.h"
+#include "OverSampler.h"
+#include "SincOverSampler.h"
 // the chunks loaded from the images
 #include "cuAmpcorChunkLoader.h"
 #include "float2.h"

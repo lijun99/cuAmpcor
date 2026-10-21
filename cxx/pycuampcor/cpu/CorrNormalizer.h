@@ -1,5 +1,5 @@
 /**
- * @file  cuCorrNormalizer.h
+ * @file  CorrNormalizer.h
  * @brief The normalizers of correlation surfaces (CPU package; see cuNormalizer.h)
  *
  * The CPU package uses the sum area table based algorithm (cuNormalizeSAT) for all sizes.

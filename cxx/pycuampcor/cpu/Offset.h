@@ -1,8 +1,8 @@
 /**
- * @file  cuOffset.h
+ * @file  Offset.h
  * @brief Peak locations of correlation surfaces and offsets (CPU backend)
  *
- * Implemented in cuOffset.cpp.
+ * Implemented in Offset.cpp.
  */
 
 #pragma once

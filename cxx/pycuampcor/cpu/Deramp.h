@@ -1,8 +1,8 @@
 /**
- * @file  cuDeramp.h
+ * @file  Deramp.h
  * @brief Removal of the phase ramp of complex images (CPU backend)
  *
- * Implemented in cuDeramp.cpp.
+ * Implemented in Deramp.cpp.
  */
 
 #pragma once

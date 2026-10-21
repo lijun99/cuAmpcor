@@ -1,5 +1,5 @@
 /*
- * @file cuSincOverSampler.h
+ * @file SincOverSampler.h
  * @brief A class performs sinc interpolation/oversampling (CPU backend)
  *
  * Oversample a given 2d signal by i_covs factor.

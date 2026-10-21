@@ -1,5 +1,5 @@
 /*
- * @file  cuDeramp.cpp
+ * @file  Deramp.cpp
  * @brief Derampling a batch of 2D complex images (CPU backend)
  *
  * A phase ramp is equivalent to a frequency shift in frequency domain,
@@ -12,12 +12,12 @@
  *
  */
 
-#include "cuDeramp.h"
+#include "Deramp.h"
 #include "cuAmpcorOptions.h"
 #include "float2.h"
 #include "logging.h"
 #include "debug.h"
-#include "cuArrays.h"
+#include "Arrays.h"
 
 namespace pycuampcor::cpu {
 

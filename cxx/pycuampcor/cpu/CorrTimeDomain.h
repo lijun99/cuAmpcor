@@ -1,8 +1,8 @@
 /**
- * @file  cuCorrTimeDomain.h
+ * @file  CorrTimeDomain.h
  * @brief Cross-correlation in the time (spatial) domain (CPU backend)
  *
- * Implemented in cuCorrTimeDomain.cpp.
+ * Implemented in CorrTimeDomain.cpp.
  */
 
 #pragma once

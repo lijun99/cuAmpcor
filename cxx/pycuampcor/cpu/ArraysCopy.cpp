@@ -1,8 +1,8 @@
 /**
- * @file cuArraysCopy.cpp
+ * @file ArraysCopy.cpp
  * @brief Utilities for copying/converting images to different format (CPU backend)
  *
- * All methods are declared in cuArraysCopy.h
+ * All methods are declared in ArraysCopy.h
  * cudaArraysCopyToBatch to extract a batch of windows from the raw image
  *   various implementations include:
  *   1. fixed or varying offsets, as start pixels for windows
@@ -15,15 +15,15 @@
  *   overloaded for different data types
  * cuArraysCopyPadded to insert a batch of windows to another batch while padding 0s for rest elements
  *   used for fft oversampling
- *   see also cuArraysPadding.cpp for other zero-padding utilities
+ *   see also ArraysPadding.cpp for other zero-padding utilities
  * cuArraysR2C cuArraysC2R cuArraysAbs to convert between different data types
  */
 
 // dependencies
-#include "cuArraysCopy.h"
+#include "ArraysCopy.h"
 #include "float2.h"
 #include "indexing.h"
-#include "cuArrays.h"
+#include "Arrays.h"
 
 namespace pycuampcor::cpu {
 

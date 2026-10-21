@@ -1,8 +1,8 @@
 /**
- * @file  cuCorrNormalization.h
+ * @file  CorrNormalization.h
  * @brief Statistics and normalization of correlation surfaces (CPU backend)
  *
- * Implemented in cuCorrNormalization.cpp.
+ * Implemented in CorrNormalization.cpp.
  */
 
 #pragma once

@@ -1,5 +1,5 @@
 /*
- * @file cuOverSampler.h
+ * @file OverSampler.h
  * @brief Oversampling with FFT padding method (CPU backend)
  *
  * Define cuOverSampler class, to save fftw plans and perform oversampling calculations
