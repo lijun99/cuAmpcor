@@ -1,0 +1,7 @@
+pycuampcor (cuAmpcor)
+Copyright 2018-2026 California Institute of Technology
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Some routines in cxx/pycuampcor/cuda/cudaUtil.h are adapted from the NVIDIA CUDA
+samples (helper_cuda.h), Copyright 1993-2013 NVIDIA Corporation.

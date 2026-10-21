@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### License
+
+- pycuampcor is now licensed under the Apache License 2.0 (as ISCE2 and ISCE3), instead of MIT;
+  the copyright notice is in `NOTICE`.
+
 ### New
 
 - The parameters can be given to the constructor as keyword arguments (the property names, e.g.,

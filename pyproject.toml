@@ -6,7 +6,7 @@ build-backend = "scikit_build_core.build"
 name = "pycuampcor"
 dynamic = ["version"]
 description = "Amplitude cross-correlation (ampcor) for SAR images with CPU (OpenMP) and CUDA backends"
-license = {text = "MIT"}
+license = {text = "Apache-2.0"}
 readme = "README.md"
 requires-python = ">=3.8"
 dependencies = []
