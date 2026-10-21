@@ -30,6 +30,9 @@
 
 ### Changes
 
+- `setupParams` keeps the parameters as set: `numberWindowDownInChunk` / `numberWindowAcrossInChunk`
+  read 0 (automatic) after the setup; the numbers of windows in a chunk used are the new read-only
+  `windowsDownInChunk` / `windowsAcrossInChunk`.
 - `PyCuAmpcor.device_list()` returns the devices (dicts with `id`, `name`, `sm_count`,
   `compute_capability` and `total_memory`) instead of printing them.
 - The CUDA utilities adapted from the NVIDIA CUDA samples are replaced by our own: CUDA and cuFFT
@@ -40,6 +43,9 @@
 
 - `setupParams` can be called repeatedly: the one-pass workflow no longer adds its zoom-in margin
   to `halfSearchRangeDown` / `halfSearchRangeAcross`.
+- A repeated `setupParams` (e.g., after changing `deviceID`, the numbers of windows or the search
+  range) chooses the automatic numbers of windows in a chunk again, and no longer keeps the
+  zoom-in window (`corrSurfaceZoomInWindow`) limited by a previous, smaller search range.
 - A CUDA error is cleared once reported, so it is no longer reported again by a later kernel
   (e.g., after an invalid `deviceID`).
 

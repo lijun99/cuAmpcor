@@ -37,10 +37,10 @@ cuAmpcorProcessor::cuAmpcorProcessor(cuAmpcorParameter *param_,
     offsetImage(offsetImage_), snrImage(snrImage_), covImage(covImage_),
     peakValueImage(peakValueImage_), stream(stream_)
 {
-    ChunkOffsetDown = std::make_unique<cuArrays<int>>(param->numberWindowDownInChunk, param->numberWindowAcrossInChunk);
+    ChunkOffsetDown = std::make_unique<cuArrays<int>>(param->windowsDownInChunk, param->windowsAcrossInChunk);
     ChunkOffsetDown->allocate();
     ChunkOffsetDown->allocateHost();
-    ChunkOffsetAcross = std::make_unique<cuArrays<int>>(param->numberWindowDownInChunk, param->numberWindowAcrossInChunk);
+    ChunkOffsetAcross = std::make_unique<cuArrays<int>>(param->windowsDownInChunk, param->windowsAcrossInChunk);
     ChunkOffsetAcross->allocate();
     ChunkOffsetAcross->allocateHost();
 }
@@ -53,17 +53,17 @@ void cuAmpcorProcessor::setIndex(int idxDown_, int idxAcross_)
     idxChunk = idxChunkAcross + idxChunkDown*param->numberChunkAcross;
 
     if(idxChunkDown == param->numberChunkDown -1) {
-        nWindowsDown = param->numberWindowDown - param->numberWindowDownInChunk*(param->numberChunkDown -1);
+        nWindowsDown = param->numberWindowDown - param->windowsDownInChunk*(param->numberChunkDown -1);
     }
     else {
-        nWindowsDown = param->numberWindowDownInChunk;
+        nWindowsDown = param->windowsDownInChunk;
     }
 
     if(idxChunkAcross == param->numberChunkAcross -1) {
-        nWindowsAcross = param->numberWindowAcross - param->numberWindowAcrossInChunk*(param->numberChunkAcross -1);
+        nWindowsAcross = param->numberWindowAcross - param->windowsAcrossInChunk*(param->numberChunkAcross -1);
     }
     else {
-        nWindowsAcross = param->numberWindowAcrossInChunk;
+        nWindowsAcross = param->windowsAcrossInChunk;
     }
 }
 
@@ -72,15 +72,15 @@ void cuAmpcorProcessor::setIndex(int idxDown_, int idxAcross_)
 /// @param[out] rstartPixel  start pixel locations for chips within the chunk
 void cuAmpcorProcessor::getRelativeOffset(int *rStartPixel, const std::vector<int> &oStartPixel, int diff)
 {
-    for(int i=0; i<param->numberWindowDownInChunk; ++i) {
+    for(int i=0; i<param->windowsDownInChunk; ++i) {
         int iDown = i;
         if(i>=nWindowsDown) iDown = nWindowsDown-1;
-        for(int j=0; j<param->numberWindowAcrossInChunk; ++j){
+        for(int j=0; j<param->windowsAcrossInChunk; ++j){
             int iAcross = j;
             if(j>=nWindowsAcross) iAcross = nWindowsAcross-1;
-            int idxInChunk = iDown*param->numberWindowAcrossInChunk+iAcross;
-            int idxInAll = (iDown+idxChunkDown*param->numberWindowDownInChunk)*param->numberWindowAcross
-                + idxChunkAcross*param->numberWindowAcrossInChunk+iAcross;
+            int idxInChunk = iDown*param->windowsAcrossInChunk+iAcross;
+            int idxInAll = (iDown+idxChunkDown*param->windowsDownInChunk)*param->numberWindowAcross
+                + idxChunkAcross*param->windowsAcrossInChunk+iAcross;
             rStartPixel[idxInChunk] = oStartPixel[idxInAll] - diff;
         }
     }

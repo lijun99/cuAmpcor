@@ -302,7 +302,17 @@ def test_auto_chunk_size(impl, images, tmp_path):
     else:
         sms = pycuampcor.PyCuAmpcor.get_sm_count(ampcor.deviceID)
         expected = (min(max(sms // 4, 1), n_windows[0]), min(8, n_windows[1]))
-    assert (ampcor.numberWindowDownInChunk, ampcor.numberWindowAcrossInChunk) == expected
+    assert (ampcor.windowsDownInChunk, ampcor.windowsAcrossInChunk) == expected
+    # the inputs are kept (automatic): a new setup uses the new numbers of windows
+    assert (ampcor.numberWindowDownInChunk, ampcor.numberWindowAcrossInChunk) == (0, 0)
+    ampcor.numberWindowDown, ampcor.numberWindowAcross = 1, 2
+    ampcor.setupParams()
+    assert (ampcor.windowsDownInChunk, ampcor.windowsAcrossInChunk) == (1, min(expected[1], 2))
+    # explicit values are used as given
+    ampcor.numberWindowDownInChunk, ampcor.numberWindowAcrossInChunk = 3, 5
+    ampcor.setupParams()
+    assert (ampcor.windowsDownInChunk, ampcor.windowsAcrossInChunk) == (3, 5)
+    assert new_ampcor(impl).windowsDownInChunk == 0
     # same results as with an explicit chunk size
     auto = run_ampcor(impl, images, SHAPE, tmp_path / "auto", n_windows=n_windows,
                       numberWindowDownInChunk=0, numberWindowAcrossInChunk=0)

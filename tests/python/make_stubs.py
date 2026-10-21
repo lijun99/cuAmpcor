@@ -101,8 +101,9 @@ def class_stub(cls):
     """The stub of an ampcor class"""
     name = cls.__name__
     defaults = cls()
-    params = [n for n, v in vars(cls).items() if isinstance(v, property)]
-    types = {n: param_types(getattr(defaults, n)) for n in params}
+    params = [n for n, v in vars(cls).items() if isinstance(v, property) and v.fset]
+    readonly = [n for n, v in vars(cls).items() if isinstance(v, property) and not v.fset]
+    types = {n: param_types(getattr(defaults, n)) for n in params + readonly}
 
     out = f"\nclass {name}:\n" + docstring(cls.__doc__, "    ")
     doc_default, doc_kwargs = init_docs(cls)
@@ -118,6 +119,9 @@ def class_stub(cls):
         out += (f"    @property\n    def {n}(self) -> {getter}:\n"
                 + docstring(getattr(cls, n).__doc__, "        ")
                 + f"    @{n}.setter\n    def {n}(self, value: {setter}) -> None: ...\n")
+    for n in readonly:
+        out += (f"    @property\n    def {n}(self) -> {types[n][0]}:\n"
+                + docstring(getattr(cls, n).__doc__, "        "))
 
     methods = dict(METHODS, **(CUDA_METHODS if hasattr(cls, "device_list") else {}))
     for n, (decorator, signature) in methods.items():

@@ -434,6 +434,16 @@ class PyCPUAmpcor:
         """
     @mmapSize.setter
     def mmapSize(self, value: SupportsIndex) -> None: ...
+    @property
+    def windowsDownInChunk(self) -> int:
+        """Number of windows down in a chunk used, set by setupParams: numberWindowDownInChunk,
+        or the automatic value if 0 (0 before setupParams).
+        """
+    @property
+    def windowsAcrossInChunk(self) -> int:
+        """Number of windows across in a chunk used, set by setupParams:
+        numberWindowAcrossInChunk, or the automatic value if 0 (0 before setupParams).
+        """
     def runAmpcor(self) -> None:
         """Run ampcor and write the outputs; the object must be set up (setupParams and
         the gross offsets, or the keyword constructor).

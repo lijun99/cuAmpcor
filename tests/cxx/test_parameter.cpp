@@ -33,7 +33,7 @@ TEST(ParameterTest, TwoPassSizes)
     setWindows(p);
     p.workflow = 0;
     p.setupParameters();
-    EXPECT_EQ(p.zoomWindowSize, 16);
+    EXPECT_EQ(p.corrZoomWindowSize, 16);
     EXPECT_EQ(p.halfZoomWindowSizeRaw, 4);
     EXPECT_EQ(p.windowSizeWidth, 128);
     EXPECT_EQ(p.windowSizeHeight, 64);
@@ -56,7 +56,12 @@ TEST(ParameterTest, TwoPassZoomWindowLimitedBySearchRange)
     p.workflow = 0;
     p.setupParameters();
     // min(half search range)*2*oversampling
-    EXPECT_EQ(p.zoomWindowSize, 3*2*2);
+    EXPECT_EQ(p.corrZoomWindowSize, 3*2*2);
+    // the input is kept: a larger search range uses the whole zoom window again
+    EXPECT_EQ(p.zoomWindowSize, 16);
+    p.halfSearchRangeAcrossRaw = 10;
+    p.setupParameters();
+    EXPECT_EQ(p.corrZoomWindowSize, 16);
 }
 
 TEST(ParameterTest, OnePassSizes)
@@ -130,9 +135,15 @@ TEST(ParameterTest, AutoChunkSize)
     backendDefaultChunkSize(&p, down, across);
     EXPECT_GE(down, 1);
     EXPECT_GE(across, 1);
-    EXPECT_EQ(p.numberWindowDownInChunk, std::min(down, 1000));
-    EXPECT_EQ(p.numberWindowAcrossInChunk, std::min(across, 2));
-    EXPECT_EQ(p.numberChunkDown, (1000 + p.numberWindowDownInChunk - 1) / p.numberWindowDownInChunk);
+    EXPECT_EQ(p.windowsDownInChunk, std::min(down, 1000));
+    EXPECT_EQ(p.windowsAcrossInChunk, std::min(across, 2));
+    EXPECT_EQ(p.numberChunkDown, (1000 + p.windowsDownInChunk - 1) / p.windowsDownInChunk);
+    // the inputs are kept (automatic): a new setup uses the new numbers of windows
+    EXPECT_EQ(p.numberWindowDownInChunk, 0);
+    EXPECT_EQ(p.numberWindowAcrossInChunk, 0);
+    p.numberWindowDown = 1;
+    p.setupParameters();
+    EXPECT_EQ(p.windowsDownInChunk, 1);
 
     // explicit values are kept
     cuAmpcorParameter q;
@@ -140,8 +151,8 @@ TEST(ParameterTest, AutoChunkSize)
     q.numberWindowDownInChunk = 2;
     q.numberWindowAcrossInChunk = 3;
     q.setupParameters();
-    EXPECT_EQ(q.numberWindowDownInChunk, 2);
-    EXPECT_EQ(q.numberWindowAcrossInChunk, 3);
+    EXPECT_EQ(q.windowsDownInChunk, 2);
+    EXPECT_EQ(q.windowsAcrossInChunk, 3);
 }
 
 // the starting pixels of windows and chunks (to load from the images)

@@ -74,7 +74,8 @@ public:
 
     // Zoom in region near location of max correlation
     int zoomWindowSize;      ///< Zoom-in window size in correlation surface (same for down and across directions)
-    int halfZoomWindowSizeRaw; ///<  half of zoomWindowSize/rawDataOversamplingFactor
+    int corrZoomWindowSize;  ///< zoomWindowSize used (limited by the search range in the two-pass workflow)
+    int halfZoomWindowSizeRaw; ///<  half of corrZoomWindowSize/rawDataOversamplingFactor
 
     int corrSurfaceOverSamplingFactor;  ///< Oversampling factor for interpolating correlation surface
     int corrSurfaceOverSamplingMethod;  ///< correlation surface oversampling method 0 = fft (default)  1 = sinc
@@ -118,7 +119,8 @@ public:
     // number of chips/windows in a batch/chunk
     int numberWindowDownInChunk;    ///< number of windows processed in a chunk (down); 0 = automatic
     int numberWindowAcrossInChunk;  ///< number of windows processed in a chunk (across); 0 = automatic
-    int numberWindowsInChunk; 		///< numberWindowDownInChunk*numberWindowAcrossInChunk
+    int windowsDownInChunk;         ///< number of windows in a chunk used (down), set by setupParameters
+    int windowsAcrossInChunk;       ///< number of windows in a chunk used (across), set by setupParameters
     int numberChunkDown;            ///< number of chunks (down)
     int numberChunkAcross;          ///< number of chunks (across)
     int numberChunks;               ///< total number of chunks

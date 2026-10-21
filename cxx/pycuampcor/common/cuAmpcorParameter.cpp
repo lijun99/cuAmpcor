@@ -66,6 +66,9 @@ cuAmpcorParameter::cuAmpcorParameter()
     numberWindowAcross = 1;
     numberWindowDownInChunk = 0; // automatic, see setupParameters()
     numberWindowAcrossInChunk = 0;
+    windowsDownInChunk = 0; // set by setupParameters()
+    windowsAcrossInChunk = 0;
+    corrZoomWindowSize = 0;
 
     referenceStartPixelDown0 = 0;
     referenceStartPixelAcross0 = 0;
@@ -107,17 +110,20 @@ void cuAmpcorParameter::setupParameters()
 
     // automatic (0 or negative) numbers of windows in a chunk: the backend default,
     // limited by the numbers of windows
-    if(numberWindowDownInChunk <= 0 || numberWindowAcrossInChunk <= 0) {
+    // (the inputs are kept, so that the setup can be repeated after changing the parameters)
+    windowsDownInChunk = numberWindowDownInChunk;
+    windowsAcrossInChunk = numberWindowAcrossInChunk;
+    if(windowsDownInChunk <= 0 || windowsAcrossInChunk <= 0) {
         int down, across;
         backendDefaultChunkSize(this, down, across);
-        if(numberWindowDownInChunk <= 0)
-            numberWindowDownInChunk = std::min(down, numberWindowDown);
-        if(numberWindowAcrossInChunk <= 0)
-            numberWindowAcrossInChunk = std::min(across, numberWindowAcross);
+        if(windowsDownInChunk <= 0)
+            windowsDownInChunk = std::min(down, numberWindowDown);
+        if(windowsAcrossInChunk <= 0)
+            windowsAcrossInChunk = std::min(across, numberWindowAcross);
     }
 
-    numberChunkDown = IDIVUP(numberWindowDown, numberWindowDownInChunk);
-    numberChunkAcross = IDIVUP(numberWindowAcross, numberWindowAcrossInChunk);
+    numberChunkDown = IDIVUP(numberWindowDown, windowsDownInChunk);
+    numberChunkAcross = IDIVUP(numberWindowAcross, windowsAcrossInChunk);
     numberChunks = numberChunkDown*numberChunkAcross;
     allocateArrays();
 }
@@ -135,9 +141,9 @@ void cuAmpcorParameter::_setupParameters_TwoPass()
     int corrSurfaceActualSize =
         std::min(halfSearchRangeAcrossRaw, halfSearchRangeDownRaw)*
         2*rawDataOversamplingFactor;
-    zoomWindowSize = std::min(zoomWindowSize, corrSurfaceActualSize);
+    corrZoomWindowSize = std::min(zoomWindowSize, corrSurfaceActualSize);
 
-    halfZoomWindowSizeRaw = zoomWindowSize/(2*rawDataOversamplingFactor); // 8*2/(2*2) = 4
+    halfZoomWindowSizeRaw = corrZoomWindowSize/(2*rawDataOversamplingFactor); // 8*2/(2*2) = 4
 
     windowSizeWidth = windowSizeWidthRaw*rawDataOversamplingFactor;  //
     windowSizeHeight = windowSizeHeightRaw*rawDataOversamplingFactor;
@@ -176,6 +182,7 @@ void cuAmpcorParameter::_setupParameters_OnePass()
     corrRawZoomInWidth = std::min(corrStatWindowSize, 2*halfSearchRangeAcrossRaw+1);
 
     // serve as extra margin for search range
+    corrZoomWindowSize = zoomWindowSize;
     halfZoomWindowSizeRaw = zoomWindowSize/(2*rawDataOversamplingFactor);
 
     // add extra search range to ensure enough area to oversample correlation surface
@@ -355,13 +362,13 @@ void cuAmpcorParameter::setChunkStartPixels()
             int sChunkED = 0;
             int sChunkEA = 0;
 
-            int numberWindowDownInChunkRun = numberWindowDownInChunk;
-            int numberWindowAcrossInChunkRun = numberWindowAcrossInChunk;
+            int numberWindowDownInChunkRun = windowsDownInChunk;
+            int numberWindowAcrossInChunkRun = windowsAcrossInChunk;
             // modify the number of windows in last chunk
             if(ichunk == numberChunkDown -1)
-                numberWindowDownInChunkRun = numberWindowDown - numberWindowDownInChunk*(numberChunkDown -1);
+                numberWindowDownInChunkRun = numberWindowDown - windowsDownInChunk*(numberChunkDown -1);
             if(jchunk == numberChunkAcross -1)
-                numberWindowAcrossInChunkRun = numberWindowAcross - numberWindowAcrossInChunk*(numberChunkAcross -1);
+                numberWindowAcrossInChunkRun = numberWindowAcross - windowsAcrossInChunk*(numberChunkAcross -1);
 
             // iterate over windows in the chunk to find the starting pixels and the chunk height/windowSizeWidth
             // these parameters are needed to copy the chunk from the whole image file
@@ -369,7 +376,7 @@ void cuAmpcorParameter::setChunkStartPixels()
             {
                 for(int j=0; j<numberWindowAcrossInChunkRun; j++)
                 {
-                    int idxWindow = (ichunk*numberWindowDownInChunk+i)*numberWindowAcross + (jchunk*numberWindowAcrossInChunk+j);
+                    int idxWindow = (ichunk*windowsDownInChunk+i)*numberWindowAcross + (jchunk*windowsAcrossInChunk+j);
                     int vpixel = referenceStartPixelDown[idxWindow];
                     if(mChunkSD > vpixel) mChunkSD = vpixel;
                     if(mChunkED < vpixel) mChunkED = vpixel;

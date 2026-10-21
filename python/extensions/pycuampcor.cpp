@@ -373,6 +373,17 @@ PYBIND11_MODULE(PYCUAMPCOR_MODULE, m)
         "Set up the processing from the parameters, after they are set; the gross offsets\n"
         "are then set with setConstantGrossOffset or setVaryingGrossOffset.")
 
+        .def_property_readonly("windowsDownInChunk", [](const cls& self) {
+            return self.param->windowsDownInChunk;
+        },
+        "Number of windows down in a chunk used, set by setupParams: numberWindowDownInChunk,\n"
+        "or the automatic value if 0 (0 before setupParams).")
+        .def_property_readonly("windowsAcrossInChunk", [](const cls& self) {
+            return self.param->windowsAcrossInChunk;
+        },
+        "Number of windows across in a chunk used, set by setupParams:\n"
+        "numberWindowAcrossInChunk, or the automatic value if 0 (0 before setupParams).")
+
         .def("setConstantGrossOffset", &setConstantGrossOffset,
         "Set a constant gross offset (in pixels) for all windows, after setupParams.",
         pybind11::arg("grossOffsetDown"), pybind11::arg("grossOffsetAcross"))

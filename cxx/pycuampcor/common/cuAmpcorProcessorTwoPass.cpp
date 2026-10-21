@@ -230,13 +230,13 @@ void cuAmpcorProcessorTwoPass::run(int idxDown_, int idxAcross_, const cuAmpcorC
         stream);
 
     // Insert the chunk results to final images
-    cuArraysCopyInsert(offsetFinal, offsetImage, idxDown_*param->numberWindowDownInChunk, idxAcross_*param->numberWindowAcrossInChunk,stream);
+    cuArraysCopyInsert(offsetFinal, offsetImage, idxDown_*param->windowsDownInChunk, idxAcross_*param->windowsAcrossInChunk,stream);
     // snr
-    cuArraysCopyInsert(r_snrValue, snrImage, idxDown_*param->numberWindowDownInChunk, idxAcross_*param->numberWindowAcrossInChunk,stream);
+    cuArraysCopyInsert(r_snrValue, snrImage, idxDown_*param->windowsDownInChunk, idxAcross_*param->windowsAcrossInChunk,stream);
     // Variance.
-    cuArraysCopyInsert(r_covValue, covImage, idxDown_*param->numberWindowDownInChunk, idxAcross_*param->numberWindowAcrossInChunk,stream);
+    cuArraysCopyInsert(r_covValue, covImage, idxDown_*param->windowsDownInChunk, idxAcross_*param->windowsAcrossInChunk,stream);
     // peak value.
-    cuArraysCopyInsert(corrMaxValue, peakValueImage, idxDown_*param->numberWindowDownInChunk, idxAcross_*param->numberWindowAcrossInChunk,stream);
+    cuArraysCopyInsert(corrMaxValue, peakValueImage, idxDown_*param->windowsDownInChunk, idxAcross_*param->windowsAcrossInChunk,stream);
     // all done
 
 }
@@ -257,47 +257,47 @@ cuAmpcorProcessorTwoPass::cuAmpcorProcessorTwoPass(cuAmpcorParameter *param_,
 
     c_referenceBatchRaw = new cuArrays<complex_type> (
         param->windowSizeHeightRaw, param->windowSizeWidthRaw,
-        param->numberWindowDownInChunk, param->numberWindowAcrossInChunk);
+        param->windowsDownInChunk, param->windowsAcrossInChunk);
     c_referenceBatchRaw->allocate();
 
     c_secondaryBatchRaw = new cuArrays<complex_type> (
         param->searchWindowSizeHeightRaw, param->searchWindowSizeWidthRaw,
-        param->numberWindowDownInChunk, param->numberWindowAcrossInChunk);
+        param->windowsDownInChunk, param->windowsAcrossInChunk);
     c_secondaryBatchRaw->allocate();
 
     r_referenceBatchRaw = new cuArrays<real_type> (
         param->windowSizeHeightRaw, param->windowSizeWidthRaw,
-        param->numberWindowDownInChunk, param->numberWindowAcrossInChunk);
+        param->windowsDownInChunk, param->windowsAcrossInChunk);
     r_referenceBatchRaw->allocate();
 
     r_secondaryBatchRaw = new cuArrays<real_type> (
         param->searchWindowSizeHeightRaw, param->searchWindowSizeWidthRaw,
-        param->numberWindowDownInChunk, param->numberWindowAcrossInChunk);
+        param->windowsDownInChunk, param->windowsAcrossInChunk);
     r_secondaryBatchRaw->allocate();
 
     c_secondaryBatchZoomIn = new cuArrays<complex_type> (
         param->searchWindowSizeHeightRawZoomIn, param->searchWindowSizeWidthRawZoomIn,
-        param->numberWindowDownInChunk, param->numberWindowAcrossInChunk);
+        param->windowsDownInChunk, param->windowsAcrossInChunk);
     c_secondaryBatchZoomIn->allocate();
 
     c_referenceBatchOverSampled = new cuArrays<complex_type> (
             param->windowSizeHeight, param->windowSizeWidth,
-            param->numberWindowDownInChunk, param->numberWindowAcrossInChunk);
+            param->windowsDownInChunk, param->windowsAcrossInChunk);
     c_referenceBatchOverSampled->allocate();
 
     c_secondaryBatchOverSampled = new cuArrays<complex_type> (
             param->searchWindowSizeHeight, param->searchWindowSizeWidth,
-            param->numberWindowDownInChunk, param->numberWindowAcrossInChunk);
+            param->windowsDownInChunk, param->windowsAcrossInChunk);
     c_secondaryBatchOverSampled->allocate();
 
     r_referenceBatchOverSampled = new cuArrays<real_type> (
             param->windowSizeHeight, param->windowSizeWidth,
-            param->numberWindowDownInChunk, param->numberWindowAcrossInChunk);
+            param->windowsDownInChunk, param->windowsAcrossInChunk);
     r_referenceBatchOverSampled->allocate();
 
     r_secondaryBatchOverSampled = new cuArrays<real_type> (
             param->searchWindowSizeHeight, param->searchWindowSizeWidth,
-            param->numberWindowDownInChunk, param->numberWindowAcrossInChunk);
+            param->windowsDownInChunk, param->windowsAcrossInChunk);
     r_secondaryBatchOverSampled->allocate();
 
     referenceBatchOverSampler = new cuOverSamplerC2C(
@@ -311,45 +311,45 @@ cuAmpcorProcessorTwoPass::cuAmpcorProcessorTwoPass(cuAmpcorParameter *param_,
     r_corrBatchRaw = new cuArrays<real_type> (
             param->searchWindowSizeHeightRaw-param->windowSizeHeightRaw+1,
             param->searchWindowSizeWidthRaw-param->windowSizeWidthRaw+1,
-            param->numberWindowDownInChunk,
-            param->numberWindowAcrossInChunk);
+            param->windowsDownInChunk,
+            param->windowsAcrossInChunk);
     r_corrBatchRaw->allocate();
 
     r_corrBatchZoomIn = new cuArrays<real_type> (
             param->searchWindowSizeHeight - param->windowSizeHeight+1,
             param->searchWindowSizeWidth - param->windowSizeWidth+1,
-            param->numberWindowDownInChunk,
-            param->numberWindowAcrossInChunk);
+            param->windowsDownInChunk,
+            param->windowsAcrossInChunk);
     r_corrBatchZoomIn->allocate();
 
     r_corrBatchZoomInAdjust = new cuArrays<real_type> (
             param->searchWindowSizeHeight - param->windowSizeHeight,
             param->searchWindowSizeWidth - param->windowSizeWidth,
-            param->numberWindowDownInChunk,
-            param->numberWindowAcrossInChunk);
+            param->windowsDownInChunk,
+            param->windowsAcrossInChunk);
     r_corrBatchZoomInAdjust->allocate();
 
 
     r_corrBatchZoomInOverSampled = new cuArrays<real_type> (
-        param->zoomWindowSize * param->corrSurfaceOverSamplingFactor,
-        param->zoomWindowSize * param->corrSurfaceOverSamplingFactor,
-        param->numberWindowDownInChunk,
-        param->numberWindowAcrossInChunk);
+        param->corrZoomWindowSize * param->corrSurfaceOverSamplingFactor,
+        param->corrZoomWindowSize * param->corrSurfaceOverSamplingFactor,
+        param->windowsDownInChunk,
+        param->windowsAcrossInChunk);
     r_corrBatchZoomInOverSampled->allocate();
 
-    offsetInit = new cuArrays<int2> (param->numberWindowDownInChunk, param->numberWindowAcrossInChunk);
+    offsetInit = new cuArrays<int2> (param->windowsDownInChunk, param->windowsAcrossInChunk);
     offsetInit->allocate();
 
-    offsetZoomIn = new cuArrays<int2> (param->numberWindowDownInChunk, param->numberWindowAcrossInChunk);
+    offsetZoomIn = new cuArrays<int2> (param->windowsDownInChunk, param->windowsAcrossInChunk);
     offsetZoomIn->allocate();
 
-    offsetFinal = new cuArrays<real2_type> (param->numberWindowDownInChunk, param->numberWindowAcrossInChunk);
+    offsetFinal = new cuArrays<real2_type> (param->windowsDownInChunk, param->windowsAcrossInChunk);
     offsetFinal->allocate();
 
-    maxLocShift = new cuArrays<int2> (param->numberWindowDownInChunk, param->numberWindowAcrossInChunk);
+    maxLocShift = new cuArrays<int2> (param->windowsDownInChunk, param->windowsAcrossInChunk);
     maxLocShift->allocate();
 
-    corrMaxValue = new cuArrays<real_type> (param->numberWindowDownInChunk, param->numberWindowAcrossInChunk);
+    corrMaxValue = new cuArrays<real_type> (param->windowsDownInChunk, param->windowsAcrossInChunk);
     corrMaxValue->allocate();
 
 
@@ -357,41 +357,41 @@ cuAmpcorProcessorTwoPass::cuAmpcorProcessorTwoPass(cuAmpcorParameter *param_,
     r_corrBatchRawZoomIn = new cuArrays<real_type> (
             param->corrRawZoomInHeight,
             param->corrRawZoomInWidth,
-            param->numberWindowDownInChunk,
-            param->numberWindowAcrossInChunk);
+            param->windowsDownInChunk,
+            param->windowsAcrossInChunk);
     r_corrBatchRawZoomIn->allocate();
 
     i_corrBatchZoomInValid = new cuArrays<int> (
             param->corrRawZoomInHeight,
             param->corrRawZoomInWidth,
-            param->numberWindowDownInChunk,
-            param->numberWindowAcrossInChunk);
+            param->windowsDownInChunk,
+            param->windowsAcrossInChunk);
     i_corrBatchZoomInValid->allocate();
 
 
     r_corrBatchSum = new cuArrays<real_type> (
-                    param->numberWindowDownInChunk,
-                    param->numberWindowAcrossInChunk);
+                    param->windowsDownInChunk,
+                    param->windowsAcrossInChunk);
     r_corrBatchSum->allocate();
 
     i_corrBatchValidCount = new cuArrays<int> (
-                        param->numberWindowDownInChunk,
-                        param->numberWindowAcrossInChunk);
+                        param->windowsDownInChunk,
+                        param->windowsAcrossInChunk);
     i_corrBatchValidCount->allocate();
 
-    i_maxloc = new cuArrays<int2> (param->numberWindowDownInChunk, param->numberWindowAcrossInChunk);
+    i_maxloc = new cuArrays<int2> (param->windowsDownInChunk, param->windowsAcrossInChunk);
 
     i_maxloc->allocate();
 
-    r_maxval = new cuArrays<real_type> (param->numberWindowDownInChunk, param->numberWindowAcrossInChunk);
+    r_maxval = new cuArrays<real_type> (param->windowsDownInChunk, param->windowsAcrossInChunk);
 
     r_maxval->allocate();
 
-    r_snrValue = new cuArrays<real_type> (param->numberWindowDownInChunk, param->numberWindowAcrossInChunk);
+    r_snrValue = new cuArrays<real_type> (param->windowsDownInChunk, param->windowsAcrossInChunk);
 
     r_snrValue->allocate();
 
-    r_covValue = new cuArrays<real3_type> (param->numberWindowDownInChunk, param->numberWindowAcrossInChunk);
+    r_covValue = new cuArrays<real3_type> (param->windowsDownInChunk, param->windowsAcrossInChunk);
 
     r_covValue->allocate();
 
@@ -401,34 +401,34 @@ cuAmpcorProcessorTwoPass::cuAmpcorProcessorTwoPass(cuAmpcorParameter *param_,
         corrSincOverSampler = new cuSincOverSamplerR2R(param->corrSurfaceOverSamplingFactor, stream);
     }
     else {
-        corrOverSampler= new cuOverSamplerR2R(param->zoomWindowSize, param->zoomWindowSize,
-            (param->zoomWindowSize)*param->corrSurfaceOverSamplingFactor,
-            (param->zoomWindowSize)*param->corrSurfaceOverSamplingFactor,
-            param->numberWindowDownInChunk*param->numberWindowAcrossInChunk,
+        corrOverSampler= new cuOverSamplerR2R(param->corrZoomWindowSize, param->corrZoomWindowSize,
+            (param->corrZoomWindowSize)*param->corrSurfaceOverSamplingFactor,
+            (param->corrZoomWindowSize)*param->corrSurfaceOverSamplingFactor,
+            param->windowsDownInChunk*param->windowsAcrossInChunk,
             stream);
     }
     if(param->algorithm == 0) {
         cuCorrFreqDomain = new cuFreqCorrelator(
             param->searchWindowSizeHeightRaw, param->searchWindowSizeWidthRaw,
-            param->numberWindowDownInChunk*param->numberWindowAcrossInChunk,
+            param->windowsDownInChunk*param->windowsAcrossInChunk,
             stream);
         cuCorrFreqDomain_OverSampled = new cuFreqCorrelator(
             param->searchWindowSizeHeight, param->searchWindowSizeWidth,
-            param->numberWindowDownInChunk * param->numberWindowAcrossInChunk,
+            param->windowsDownInChunk * param->windowsAcrossInChunk,
             stream);
     }
 
     corrNormalizerRaw = std::unique_ptr<cuNormalizeProcessor>(newCuNormalizer(
         param->searchWindowSizeHeightRaw,
         param->searchWindowSizeWidthRaw,
-        param->numberWindowDownInChunk * param->numberWindowAcrossInChunk
+        param->windowsDownInChunk * param->windowsAcrossInChunk
         ));
 
     corrNormalizerOverSampled =
         std::unique_ptr<cuNormalizeProcessor>(newCuNormalizer(
         param->searchWindowSizeHeight,
         param->searchWindowSizeWidth,
-        param->numberWindowDownInChunk * param->numberWindowAcrossInChunk
+        param->windowsDownInChunk * param->windowsAcrossInChunk
         ));
 
 

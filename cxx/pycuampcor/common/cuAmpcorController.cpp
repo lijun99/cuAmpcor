@@ -60,8 +60,8 @@ struct LayerImages {
     {
         // nWindowsDownRun is defined as numberChunk * numberWindowInChunk
         // It may be bigger than the actual number of windows
-        const int nWindowsDownRun = param->numberChunkDown * param->numberWindowDownInChunk;
-        const int nWindowsAcrossRun = param->numberChunkAcross * param->numberWindowAcrossInChunk;
+        const int nWindowsDownRun = param->numberChunkDown * param->windowsDownInChunk;
+        const int nWindowsAcrossRun = param->numberChunkAcross * param->windowsAcrossInChunk;
         newArray(offsetRun, nWindowsDownRun, nWindowsAcrossRun);
         newArray(snrRun, nWindowsDownRun, nWindowsAcrossRun);
         newArray(covRun, nWindowsDownRun, nWindowsAcrossRun);
@@ -140,8 +140,8 @@ void checkLayers(const std::vector<cuAmpcorParameter *> &params)
             throw std::invalid_argument("All layers must use the same reference and secondary images");
         if (p->numberWindowDown != p0->numberWindowDown
             || p->numberWindowAcross != p0->numberWindowAcross
-            || p->numberWindowDownInChunk != p0->numberWindowDownInChunk
-            || p->numberWindowAcrossInChunk != p0->numberWindowAcrossInChunk)
+            || p->windowsDownInChunk != p0->windowsDownInChunk
+            || p->windowsAcrossInChunk != p0->windowsAcrossInChunk)
             throw std::invalid_argument("All layers must have the same numbers of windows and windows in a chunk");
         for (const auto &name : {p->offsetImageName, p->grossOffsetImageName, p->snrImageName,
                                  p->covImageName, p->peakValueImageName})
