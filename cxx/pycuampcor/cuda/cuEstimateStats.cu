@@ -6,7 +6,6 @@
  */
 
 #include "cuEstimateStats.h"
-#include "cuArrays.h"
 #include "float2.h"
 #include "device.h"
 #include "cudaError.h"
@@ -14,7 +13,9 @@
 
 namespace pycuampcor::cuda {
 
-__global__ void cudaKernel_estimateSnr(const real_type* corrSum, const int* corrValidCount, const real_type* maxval, real_type* snrValue, const int size)
+__global__ void cudaKernel_estimateSnr(ArraysView<const real_type> corrSum,
+    ArraysView<const int> corrValidCount, ArraysView<const real_type> maxval,
+    ArraysView<real_type> snrValue, const int size)
 
 {
     int idx = threadIdx.x + blockDim.x*blockIdx.x;
@@ -33,19 +34,22 @@ __global__ void cudaKernel_estimateSnr(const real_type* corrSum, const int* corr
  * @param[out] snrValue return snr value
  * @param[in] stream cuda stream
  */
-void cuEstimateSnr(cuArrays<real_type> *corrSum, cuArrays<int> *corrValidCount, cuArrays<real_type> *maxval, cuArrays<real_type> *snrValue, cudaStream_t stream)
+void cuEstimateSnr(ArraysView<const real_type> corrSum, ArraysView<const int> corrValidCount,
+    ArraysView<const real_type> maxval, ArraysView<real_type> snrValue, cudaStream_t stream)
 {
 
-    int size = corrSum->getSize();
+    int size = corrSum.size();
     cudaKernel_estimateSnr<<< divUp(size, NTHREADS), NTHREADS, 0, stream>>>
-        (corrSum->devData, corrValidCount->devData, maxval->devData, snrValue->devData, size);
+        (corrSum, corrValidCount, maxval, snrValue, size);
     checkCudaAsyncErrors();
 }
 
 // cuda kernel for cuEstimateVariance
-__global__ void cudaKernel_estimateVar(const real_type* corrBatchRaw, const int NX, const int NY, const int2* maxloc,
-        const real_type* maxval, const int templateSize, const int distance, real3_type* covValue, const int size)
+__global__ void cudaKernel_estimateVar(ArraysView<const real_type> corrBatchRaw,
+    ArraysView<const int2> maxloc, ArraysView<const real_type> maxval, const int templateSize,
+    const int distance, ArraysView<real3_type> covValue, const int size)
 {
+    const int NX = corrBatchRaw.height(), NY = corrBatchRaw.width();
 
     // Find image id.
     int idxImage = threadIdx.x + blockDim.x*blockIdx.x;
@@ -64,21 +68,15 @@ __global__ void cudaKernel_estimateVar(const real_type* corrBatchRaw, const int 
 
     }
     else {
-        int offset = NX * NY * idxImage;
-        int idx00 = offset + (px - distance) * NY + py - distance;
-        int idx01 = offset + (px - distance) * NY + py    ;
-        int idx02 = offset + (px - distance) * NY + py + distance;
-        int idx10 = offset + (px    ) * NY + py - distance;
-        int idx11 = offset + (px    ) * NY + py    ;
-        int idx12 = offset + (px    ) * NY + py + distance;
-        int idx20 = offset + (px + distance) * NY + py - distance;
-        int idx21 = offset + (px + distance) * NY + py    ;
-        int idx22 = offset + (px + distance) * NY + py + distance;
+        // the surface at the peak and at distance pixels around it
+        const ArraysView<const real_type> corr = corrBatchRaw.array(idxImage);
+        const int x0 = px - distance, x2 = px + distance;
+        const int y0 = py - distance, y2 = py + distance;
 
         // second-order derivatives
-        real_type dxx = - ( corrBatchRaw[idx21] + corrBatchRaw[idx01] - 2.0*corrBatchRaw[idx11] );
-        real_type dyy = - ( corrBatchRaw[idx12] + corrBatchRaw[idx10] - 2.0*corrBatchRaw[idx11] ) ;
-        real_type dxy = ( corrBatchRaw[idx22] + corrBatchRaw[idx00] - corrBatchRaw[idx20] - corrBatchRaw[idx02] ) *0.25;
+        real_type dxx = - ( corr(x2, py) + corr(x0, py) - 2.0*corr(px, py) );
+        real_type dyy = - ( corr(px, y2) + corr(px, y0) - 2.0*corr(px, py) ) ;
+        real_type dxy = ( corr(x2, y2) + corr(x0, y0) - corr(x2, y0) - corr(x0, y2) ) *0.25;
 
         real_type n2 = max(1.0 - peak, 0.0);
 
@@ -116,12 +114,14 @@ __global__ void cudaKernel_estimateVar(const real_type* corrBatchRaw, const int 
  * @param[out] covValue variance value
  * @param[in] stream cuda stream
  */
-void cuEstimateVariance(cuArrays<real_type> *corrBatchRaw, cuArrays<int2> *maxloc, cuArrays<real_type> *maxval, const int templateSize, const int distance, cuArrays<real3_type> *covValue, cudaStream_t stream)
+void cuEstimateVariance(ArraysView<const real_type> corrBatchRaw, ArraysView<const int2> maxloc,
+    ArraysView<const real_type> maxval, const int templateSize, const int distance,
+    ArraysView<real3_type> covValue, cudaStream_t stream)
 {
-    int size = corrBatchRaw->count;
+    int size = corrBatchRaw.count();
     // One dimensional launching parameters to loop over every correlation surface.
     cudaKernel_estimateVar<<< divUp(size, NTHREADS), NTHREADS, 0, stream>>>
-        (corrBatchRaw->devData, corrBatchRaw->height, corrBatchRaw->width, maxloc->devData, maxval->devData, templateSize, distance, covValue->devData, size);
+        (corrBatchRaw, maxloc, maxval, templateSize, distance, covValue, size);
     checkCudaAsyncErrors();
 }
 //end of file

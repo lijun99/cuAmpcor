@@ -61,7 +61,7 @@ TEST_F(StatsTest, EstimateSnr)
     auto snr = make<real_type>(1, 2);
 
     // with the count of valid pixels
-    cuEstimateSnr(sum.get(), count.get(), peak.get(), snr.get(), stream);
+    cuEstimateSnr(*sum, *count, *peak, *snr, stream);
     auto r = download(*snr);
     for (int k = 0; k < 2; k++) {
         double p2 = double(peakV[k])*peakV[k];
@@ -107,7 +107,7 @@ TEST_F(StatsTest, EstimateVariance)
     auto peak = makeFrom(peakV, 1, n);
     auto cov = make<real3_type>(1, n);
     for (int d : {1, 2}) {
-        cuEstimateVariance(corr.get(), loc.get(), peak.get(), templateSize, d, cov.get(), stream);
+        cuEstimateVariance(*corr, *loc, *peak, templateSize, d, *cov, stream);
         auto r = download(*cov);
         std::vector<real_type> c0(c.begin(), c.begin() + NX*NY);
         auto ref = refCovariance(c0, NY, locV[0], peakV[0], templateSize, d);

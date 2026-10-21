@@ -7,8 +7,6 @@
 // my module dependencies
 #include "Offset.h"
 #include "float2.h"
-#include "indexing.h"
-#include "Arrays.h"
 
 namespace pycuampcor::cpu {
 
@@ -21,17 +19,16 @@ namespace pycuampcor::cpu {
  * @param[out] maxval arrays to hold the max values
  * @note This routine is overloaded with the routine without start/range
  */
-void cuArraysMaxloc2D(array_type<real_type> *images,
+void cuArraysMaxloc2D(ArraysView<const real_type> images,
                       const int2 start, const int2 range,
-                      array_type<int2> *maxloc, array_type<real_type> *maxval, stream_t)
+                      ArraysView<int2> maxloc, ArraysView<real_type> maxval, stream_t)
 {
-    const int imageNY = images->width;
-    for(int imageIdx = 0; imageIdx < images->count; imageIdx++) {
-        const real_type *image = images->devData + static_cast<size_t>(imageIdx)*images->size;
+    for(int imageIdx = 0; imageIdx < images.count(); imageIdx++) {
+        const ArraysView<const real_type> image = images.array(imageIdx);
         real_type val = -REAL_MAX;
         int2 loc = start;
         for(int idx = start.x; idx < start.x + range.x; idx++) {
-            const real_type *row = image + idx2r(idx, start.y, imageNY);
+            const real_type *row = &image(idx, start.y);
             // the row maximum (if larger than the current maximum), vectorized
             real_type rowMax = val;
             #pragma omp simd reduction(max:rowMax)
@@ -45,8 +42,8 @@ void cuArraysMaxloc2D(array_type<real_type> *images,
                         loc = make_int2(idx, start.y + idy);
                     }
         }
-        maxloc->devData[imageIdx] = loc;
-        maxval->devData[imageIdx] = val;
+        maxloc[imageIdx] = loc;
+        maxval[imageIdx] = val;
     }
 }
 
@@ -56,11 +53,11 @@ void cuArraysMaxloc2D(array_type<real_type> *images,
  * @param[out] maxloc arrays to hold the max locations
  * @param[out] maxval arrays to hold the max values
  */
-void cuArraysMaxloc2D(array_type<real_type> *images,
-                      array_type<int2> *maxloc, array_type<real_type> *maxval, stream_t stream)
+void cuArraysMaxloc2D(ArraysView<const real_type> images,
+                      ArraysView<int2> maxloc, ArraysView<real_type> maxval, stream_t stream)
 {
     // if no start and range are provided, use the whole image
-    cuArraysMaxloc2D(images, make_int2(0, 0), make_int2(images->height, images->width),
+    cuArraysMaxloc2D(images, make_int2(0, 0), make_int2(images.height(), images.width()),
         maxloc, maxval, stream);
 }
 
@@ -73,21 +70,21 @@ void cuArraysMaxloc2D(array_type<real_type> *images,
  * @param[in] initOrigin, initFactor origin and scale factor of offsetInit
  * @param[in] zoomInOrigin, zoomInFactor origin and scale factor of offsetZoomIn
  */
-void cuSubPixelOffset(array_type<int2> *offsetInit,
-    array_type<int2> *offsetZoomIn,
-    array_type<real2_type> *offsetFinal,
+void cuSubPixelOffset(ArraysView<const int2> offsetInit,
+    ArraysView<const int2> offsetZoomIn,
+    ArraysView<real2_type> offsetFinal,
     const int2 initOrigin, const int initFactor,
     const int2 zoomInOrigin, const int zoomInFactor,
     stream_t)
 {
-    const size_t size = offsetInit->getSize();
+    const int size = offsetInit.size();
     const real_type initRatio = 1.0f/static_cast<real_type>(initFactor);
     const real_type zoomInRatio = 1.0f/static_cast<real_type>(zoomInFactor);
-    for(size_t idx = 0; idx < size; idx++) {
-        const int2 init = offsetInit->devData[idx];
-        const int2 zoomIn = offsetZoomIn->devData[idx];
-        offsetFinal->devData[idx].x = initRatio*(init.x-initOrigin.x) + zoomInRatio*(zoomIn.x - zoomInOrigin.x);
-        offsetFinal->devData[idx].y = initRatio*(init.y-initOrigin.y) + zoomInRatio*(zoomIn.y - zoomInOrigin.y);
+    for(int idx = 0; idx < size; idx++) {
+        const int2 init = offsetInit[idx];
+        const int2 zoomIn = offsetZoomIn[idx];
+        offsetFinal[idx].x = initRatio*(init.x-initOrigin.x) + zoomInRatio*(zoomIn.x - zoomInOrigin.x);
+        offsetFinal[idx].y = initRatio*(init.y-initOrigin.y) + zoomInRatio*(zoomIn.y - zoomInOrigin.y);
     }
 }
 
@@ -105,19 +102,19 @@ void cuSubPixelOffset(array_type<int2> *offsetInit,
  * Final offset =  pixel size offset (offsetInit - half search range)
  *     + subpixel offset (offsetZoomIn / overall oversampling factor)
  */
-void cuSubPixelOffset2Pass(array_type<int2> *offsetInit, array_type<int2> *offsetZoomIn,
-    array_type<real2_type> *offsetFinal,
+void cuSubPixelOffset2Pass(ArraysView<const int2> offsetInit, ArraysView<const int2> offsetZoomIn,
+    ArraysView<real2_type> offsetFinal,
     int OverSampleRatioZoomin, int OverSampleRatioRaw,
     int xHalfRangeInit,  int yHalfRangeInit,
     stream_t)
 {
-    const size_t size = offsetInit->getSize();
+    const int size = offsetInit.size();
     const real_type OSratio = real_type(1)/(OverSampleRatioZoomin*OverSampleRatioRaw);
     const real_type xoffset = xHalfRangeInit ;
     const real_type yoffset = yHalfRangeInit ;
-    for(size_t idx = 0; idx < size; idx++) {
-        offsetFinal->devData[idx].x = OSratio*(offsetZoomIn->devData[idx].x) + offsetInit->devData[idx].x - xoffset;
-        offsetFinal->devData[idx].y = OSratio*(offsetZoomIn->devData[idx].y) + offsetInit->devData[idx].y - yoffset;
+    for(int idx = 0; idx < size; idx++) {
+        offsetFinal[idx].x = OSratio*(offsetZoomIn[idx].x) + offsetInit[idx].x - xoffset;
+        offsetFinal[idx].y = OSratio*(offsetZoomIn[idx].y) + offsetInit[idx].y - yoffset;
     }
 }
 
@@ -152,16 +149,17 @@ static inline int2 adjustOffset(const int oldRange, const int newRange, const in
  * @param[in] xOldRange, yOldRange are (half) search ranges in first step
  * @param[in] xNewRange, yNewRange are (half) search range
  */
-void cuDetermineSecondaryExtractOffset(array_type<int2> *maxLoc, array_type<int2> *maxLocShift,
+void cuDetermineSecondaryExtractOffset(ArraysView<int2> maxLoc, ArraysView<int2> maxLocShift,
     int xOldRange, int yOldRange, int xNewRange, int yNewRange, stream_t)
 {
-    for(int imageIndex = 0; imageIndex < maxLoc->size; imageIndex++) {
-        int2 result = adjustOffset(xOldRange, xNewRange, maxLoc->devData[imageIndex].x);
-        maxLoc->devData[imageIndex].x = result.x;
-        maxLocShift->devData[imageIndex].x = result.y;
-        result = adjustOffset(yOldRange, yNewRange, maxLoc->devData[imageIndex].y);
-        maxLoc->devData[imageIndex].y = result.x;
-        maxLocShift->devData[imageIndex].y = result.y;
+    const int size = maxLoc.size();
+    for(int imageIndex = 0; imageIndex < size; imageIndex++) {
+        int2 result = adjustOffset(xOldRange, xNewRange, maxLoc[imageIndex].x);
+        maxLoc[imageIndex].x = result.x;
+        maxLocShift[imageIndex].x = result.y;
+        result = adjustOffset(yOldRange, yNewRange, maxLoc[imageIndex].y);
+        maxLoc[imageIndex].y = result.x;
+        maxLocShift[imageIndex].y = result.y;
     }
 }
 

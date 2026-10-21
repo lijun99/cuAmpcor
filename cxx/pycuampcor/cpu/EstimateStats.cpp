@@ -7,7 +7,6 @@
 
 #include "EstimateStats.h"
 #include "float2.h"
-#include "Arrays.h"
 
 namespace pycuampcor::cpu {
 
@@ -18,13 +17,14 @@ namespace pycuampcor::cpu {
  * @param[in] maxval the peak values
  * @param[out] snrValue return snr value
  */
-void cuEstimateSnr(array_type<real_type> *corrSum, array_type<int> *corrValidCount, array_type<real_type> *maxval, array_type<real_type> *snrValue, stream_t)
+void cuEstimateSnr(ArraysView<const real_type> corrSum, ArraysView<const int> corrValidCount,
+    ArraysView<const real_type> maxval, ArraysView<real_type> snrValue, stream_t)
 {
-    const size_t size = corrSum->getSize();
-    for(size_t idx = 0; idx < size; idx++) {
-        const real_type peak = maxval->devData[idx];
-        real_type mean = (corrSum->devData[idx] - peak * peak) / (corrValidCount->devData[idx] - 1);
-        snrValue->devData[idx] = peak * peak / mean;
+    const int size = corrSum.size();
+    for(int idx = 0; idx < size; idx++) {
+        const real_type peak = maxval[idx];
+        real_type mean = (corrSum[idx] - peak * peak) / (corrValidCount[idx] - 1);
+        snrValue[idx] = peak * peak / mean;
     }
 }
 
@@ -37,38 +37,33 @@ void cuEstimateSnr(array_type<real_type> *corrSum, array_type<int> *corrValidCou
  * @param[in] distance distance between a pixel
  * @param[out] covValue variance value
  */
-void cuEstimateVariance(array_type<real_type> *corrBatchRaw, array_type<int2> *maxloc, array_type<real_type> *maxval, const int templateSize, const int distance, array_type<real3_type> *covValue, stream_t)
+void cuEstimateVariance(ArraysView<const real_type> corrBatchRaw, ArraysView<const int2> maxloc,
+    ArraysView<const real_type> maxval, const int templateSize, const int distance,
+    ArraysView<real3_type> covValue, stream_t)
 {
-    const int NX = corrBatchRaw->height;
-    const int NY = corrBatchRaw->width;
-    const real_type *corr = corrBatchRaw->devData;
+    const int NX = corrBatchRaw.height();
+    const int NY = corrBatchRaw.width();
 
-    for(int idxImage = 0; idxImage < corrBatchRaw->count; idxImage++) {
-        int px = maxloc->devData[idxImage].x;
-        int py = maxloc->devData[idxImage].y;
-        real_type peak = maxval->devData[idxImage];
+    for(int idxImage = 0; idxImage < corrBatchRaw.count(); idxImage++) {
+        int px = maxloc[idxImage].x;
+        int py = maxloc[idxImage].y;
+        real_type peak = maxval[idxImage];
 
         // Check if maxval is on the margin.
         if (px-distance < 0 || py-distance <0 || px + distance >=NX || py+distance >=NY)  {
-            covValue->devData[idxImage] = make_real3(99.0, 99.0, 0.0);
+            covValue[idxImage] = make_real3(99.0, 99.0, 0.0);
             continue;
         }
 
-        int offset = NX * NY * idxImage;
-        int idx00 = offset + (px - distance) * NY + py - distance;
-        int idx01 = offset + (px - distance) * NY + py    ;
-        int idx02 = offset + (px - distance) * NY + py + distance;
-        int idx10 = offset + (px    ) * NY + py - distance;
-        int idx11 = offset + (px    ) * NY + py    ;
-        int idx12 = offset + (px    ) * NY + py + distance;
-        int idx20 = offset + (px + distance) * NY + py - distance;
-        int idx21 = offset + (px + distance) * NY + py    ;
-        int idx22 = offset + (px + distance) * NY + py + distance;
+        // the surface at the peak and at distance pixels around it
+        const ArraysView<const real_type> corr = corrBatchRaw.array(idxImage);
+        const int x0 = px - distance, x2 = px + distance;
+        const int y0 = py - distance, y2 = py + distance;
 
         // second-order derivatives
-        real_type dxx = - ( corr[idx21] + corr[idx01] - 2.0*corr[idx11] );
-        real_type dyy = - ( corr[idx12] + corr[idx10] - 2.0*corr[idx11] ) ;
-        real_type dxy = ( corr[idx22] + corr[idx00] - corr[idx20] - corr[idx02] ) *0.25;
+        real_type dxx = - ( corr(x2, py) + corr(x0, py) - 2.0*corr(px, py) );
+        real_type dyy = - ( corr(px, y2) + corr(px, y0) - 2.0*corr(px, py) ) ;
+        real_type dxy = ( corr(x2, y2) + corr(x0, y0) - corr(x2, y0) - corr(x0, y2) ) *0.25;
 
         real_type n2 = std::max(1.0 - peak, 0.0);
 
@@ -85,13 +80,13 @@ void cuEstimateVariance(array_type<real_type> *corrBatchRaw, array_type<int2> *m
 
         // if the Gaussian curvature is too small
         if (std::fabs(u) < 1e-2) {
-            covValue->devData[idxImage] = make_real3(99.0, 99.0, 0.0);
+            covValue[idxImage] = make_real3(99.0, 99.0, 0.0);
         }
         else {
             real_type cov_xx = (- n2 * u * dyy + n4 * ( dyy*dyy + dxy*dxy) ) / u2;
             real_type cov_yy = (- n2 * u * dxx + n4 * ( dxx*dxx + dxy*dxy) ) / u2;
             real_type cov_xy = (  n2 * u * dxy - n4 * ( dxx + dyy ) * dxy ) / u2;
-            covValue->devData[idxImage] = make_real3(cov_xx, cov_yy, cov_xy);
+            covValue[idxImage] = make_real3(cov_xx, cov_yy, cov_xy);
         }
     }
 }

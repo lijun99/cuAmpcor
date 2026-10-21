@@ -9,7 +9,6 @@
 #include "float2.h"
 #include "device.h"
 #include "cudaError.h"
-#include "cuArrays.h"
 
 namespace pycuampcor::cuda {
 
@@ -85,17 +84,18 @@ __device__ void max_reduction_2d(const real_type* const image,
 
 // kernel for 2D array(image), find max location only
 template <const int BLOCKSIZE>
-__global__ void  cudaKernel_maxloc2D(const real_type* const images, int2* maxloc, real_type* maxval,
-    const int2 imageSize, const size_t nImages, const int2 start, const int2 range)
+__global__ void  cudaKernel_maxloc2D(ArraysView<const real_type> images, ArraysView<int2> maxloc,
+    ArraysView<real_type> maxval, const int2 start, const int2 range)
 {
     __shared__ real_type shval[BLOCKSIZE];
     __shared__ int shloc[BLOCKSIZE];
 
     int imageIdx = blockIdx.x;
-    if(imageIdx >= nImages) return;
+    if(imageIdx >= images.count()) return;
 
     // get the starting pointer for this image
-    const real_type *image = images + imageIdx*imageSize.x*imageSize.y;
+    const int2 imageSize = make_int2(images.height(), images.width());
+    const real_type *image = images.array(imageIdx).data_handle();
 
     max_reduction_2d<BLOCKSIZE>(image, imageSize, start, range, shval, shloc);
 
@@ -116,16 +116,12 @@ __global__ void  cudaKernel_maxloc2D(const real_type* const images, int2* maxloc
  * @param[in] stream cudaStream
  * @note This routine is overloaded with the routine without maxval
  */
-void cuArraysMaxloc2D(cuArrays<real_type> *images,
+void cuArraysMaxloc2D(ArraysView<const real_type> images,
                       const int2 start, const int2 range,
-                      cuArrays<int2> *maxloc, cuArrays<real_type> *maxval, cudaStream_t stream)
+                      ArraysView<int2> maxloc, ArraysView<real_type> maxval, cudaStream_t stream)
 {
-    cudaKernel_maxloc2D<NTHREADS><<<images->count, NTHREADS, 0, stream>>>
-        (images->devData,
-        maxloc->devData, maxval->devData,
-        make_int2(images->height, images->width), images->count,
-        start, range
-        );
+    cudaKernel_maxloc2D<NTHREADS><<<images.count(), NTHREADS, 0, stream>>>
+        (images, maxloc, maxval, start, range);
     checkCudaAsyncErrors();
 }
 
@@ -136,24 +132,21 @@ void cuArraysMaxloc2D(cuArrays<real_type> *images,
  * @param[out] maxloc arrays to hold the max locations
  * @param[in] stream cudaStream
  */
-void cuArraysMaxloc2D(cuArrays<real_type> *images,
-                      cuArrays<int2> *maxloc, cuArrays<real_type> *maxval, cudaStream_t stream)
+void cuArraysMaxloc2D(ArraysView<const real_type> images,
+                      ArraysView<int2> maxloc, ArraysView<real_type> maxval, cudaStream_t stream)
 {
     // if no start and range are provided, use the whole image
     int2 start = make_int2(0, 0);
-    int2 imageSize = make_int2(images->height, images->width);
-    cudaKernel_maxloc2D<NTHREADS><<<images->count, NTHREADS, 0, stream>>>
-        (images->devData,
-        maxloc->devData, maxval->devData,
-        imageSize, images->count,
-        start, imageSize
-        );
+    int2 imageSize = make_int2(images.height(), images.width());
+    cudaKernel_maxloc2D<NTHREADS><<<images.count(), NTHREADS, 0, stream>>>
+        (images, maxloc, maxval, start, imageSize);
     checkCudaAsyncErrors();
 }
 
 // cuda kernel for cuSubPixelOffset
-__global__ void cuSubPixelOffset_kernel(const int2 *offsetInit, const int2 *offsetZoomIn,
-                                        real2_type *offsetFinal, const int size,
+__global__ void cuSubPixelOffset_kernel(ArraysView<const int2> offsetInit,
+                                        ArraysView<const int2> offsetZoomIn,
+                                        ArraysView<real2_type> offsetFinal, const int size,
                                         const int2 initOrigin, const real_type initRatio,
                                         const int2 zoomInOrigin, const real_type zoomInRatio)
 {
@@ -170,29 +163,29 @@ __global__ void cuSubPixelOffset_kernel(const int2 *offsetInit, const int2 *offs
  * @param[in] offsetZoomIn max location from the oversampled cross-correlation surface
  * @param[out] offsetFinal the combined offset value
  */
-void cuSubPixelOffset(cuArrays<int2> *offsetInit,
-    cuArrays<int2> *offsetZoomIn,
-    cuArrays<real2_type> *offsetFinal,
+void cuSubPixelOffset(ArraysView<const int2> offsetInit,
+    ArraysView<const int2> offsetZoomIn,
+    ArraysView<real2_type> offsetFinal,
     const int2 initOrigin, const int initFactor,
     const int2 zoomInOrigin, const int zoomInFactor,
     cudaStream_t stream)
 {
-    int size = offsetInit->getSize();
+    int size = offsetInit.size();
 
     // GPU performs multiplication faster
     real_type initRatio = 1.0f/static_cast<real_type>(initFactor);
     real_type zoomInRatio = 1.0f/static_cast<real_type>(zoomInFactor);
 
     cuSubPixelOffset_kernel<<<divUp(size, NTHREADS), NTHREADS, 0, stream>>>
-        (offsetInit->devData, offsetZoomIn->devData,
-         offsetFinal->devData, size, initOrigin, initRatio, zoomInOrigin, zoomInRatio);
+        (offsetInit, offsetZoomIn, offsetFinal, size, initOrigin, initRatio, zoomInOrigin, zoomInRatio);
     checkCudaAsyncErrors();
 
 }
 
 // cuda kernel for cuSubPixelOffset
-__global__ void cuSubPixelOffset2Pass_kernel(const int2 *offsetInit, const int2 *offsetZoomIn,
-                                        real2_type *offsetFinal,
+__global__ void cuSubPixelOffset2Pass_kernel(ArraysView<const int2> offsetInit,
+                                        ArraysView<const int2> offsetZoomIn,
+                                        ArraysView<real2_type> offsetFinal,
                                         const real_type OSratio,
                                         const real_type xoffset, const real_type yoffset, const int size)
 {
@@ -224,20 +217,19 @@ __global__ void cuSubPixelOffset2Pass_kernel(const int2 *offsetInit, const int2 
  *        = subpixel offset
  *    Final offset =  pixel size offset +  subpixel offset
  */
-void cuSubPixelOffset2Pass(cuArrays<int2> *offsetInit, cuArrays<int2> *offsetZoomIn,
-    cuArrays<real2_type> *offsetFinal,
+void cuSubPixelOffset2Pass(ArraysView<const int2> offsetInit, ArraysView<const int2> offsetZoomIn,
+    ArraysView<real2_type> offsetFinal,
     int OverSampleRatioZoomin, int OverSampleRatioRaw,
     int xHalfRangeInit,  int yHalfRangeInit,
     cudaStream_t stream)
 {
-    int size = offsetInit->getSize();
+    int size = offsetInit.size();
     real_type OSratio = real_type(1)/(OverSampleRatioZoomin*OverSampleRatioRaw);
     real_type xoffset = xHalfRangeInit ;
     real_type yoffset = yHalfRangeInit ;
 
     cuSubPixelOffset2Pass_kernel<<<divUp(size, NTHREADS), NTHREADS, 0, stream>>>
-        (offsetInit->devData, offsetZoomIn->devData,
-         offsetFinal->devData, OSratio, xoffset, yoffset, size);
+        (offsetInit, offsetZoomIn, offsetFinal, OSratio, xoffset, yoffset, size);
     checkCudaAsyncErrors();
 
 }
@@ -281,7 +273,7 @@ static inline __device__ int2 dev_adjustOffset(
 }
 
 // cuda kernel for cuDetermineSecondaryExtractOffset
-__global__ void cudaKernel_determineSecondaryExtractOffset(int2 * maxLoc, int2 *shift,
+__global__ void cudaKernel_determineSecondaryExtractOffset(ArraysView<int2> maxLoc, ArraysView<int2> shift,
     const size_t nImages, int xOldRange, int yOldRange, int xNewRange, int yNewRange)
 {
     int imageIndex = threadIdx.x + blockDim.x *blockIdx.x; //image index
@@ -306,13 +298,14 @@ __global__ void cudaKernel_determineSecondaryExtractOffset(int2 * maxLoc, int2 *
  *  We now choose a smaller search range around the max location for oversampling.
  *  This procedure is used to determine the starting pixel locations for extraction.
  */
-void cuDetermineSecondaryExtractOffset(cuArrays<int2> *maxLoc, cuArrays<int2> *maxLocShift,
+void cuDetermineSecondaryExtractOffset(ArraysView<int2> maxLoc, ArraysView<int2> maxLocShift,
     int xOldRange, int yOldRange, int xNewRange, int yNewRange, cudaStream_t stream)
 {
     int threadsperblock=NTHREADS;
-    int blockspergrid=divUp(maxLoc->size, threadsperblock);
+    int size = maxLoc.size();
+    int blockspergrid=divUp(size, threadsperblock);
     cudaKernel_determineSecondaryExtractOffset<<<blockspergrid, threadsperblock, 0, stream>>>
-        (maxLoc->devData, maxLocShift->devData, maxLoc->size, xOldRange, yOldRange, xNewRange, yNewRange);
+        (maxLoc, maxLocShift, size, xOldRange, yOldRange, xNewRange, yNewRange);
     checkCudaAsyncErrors();
 }
 

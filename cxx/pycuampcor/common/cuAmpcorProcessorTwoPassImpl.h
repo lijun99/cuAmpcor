@@ -50,10 +50,10 @@ void cuAmpcorProcessorTwoPass<arrayT>::run(int idxDown, int idxAcross, const chu
         cuCorrFreqDomain.get(), corrNormalizerRaw.get(), "r_corrBatchRaw");
 
     // the peaks, to the pixel
-    cuArraysMaxloc2D(r_corrBatchRaw.get(), offsetInit.get(), r_maxval.get(), stream);
+    cuArraysMaxloc2D(*r_corrBatchRaw, *offsetInit, *r_maxval, stream);
     // the covariance of the offsets
-    cuEstimateVariance(r_corrBatchRaw.get(), offsetInit.get(), r_maxval.get(), r_referenceBatchRaw->size,
-        1, r_covValue.get(), stream);
+    cuEstimateVariance(*r_corrBatchRaw, *offsetInit, *r_maxval, r_referenceBatchRaw->size,
+        1, *r_covValue, stream);
     // the SNR: the peak over the mean of the correlation surface around it
     cuArraysCopyExtractCorr(*r_corrBatchRaw, *r_corrBatchRawZoomIn, *i_corrBatchZoomInValid,
         *offsetInit, stream);
@@ -64,7 +64,7 @@ void cuAmpcorProcessorTwoPass<arrayT>::run(int idxDown, int idxAcross, const chu
     dump(i_corrBatchZoomInValid.get(), "i_corrBatchZoomInValid");
     dump(r_corrBatchSum.get(), "r_corrBatchSum");
     dump(i_corrBatchValidCount.get(), "i_corrBatchValidCount");
-    cuEstimateSnr(r_corrBatchSum.get(), i_corrBatchValidCount.get(), r_maxval.get(), r_snrValue.get(), stream);
+    cuEstimateSnr(*r_corrBatchSum, *i_corrBatchValidCount, *r_maxval, *r_snrValue, stream);
     dump(offsetInit.get(), "i_offsetInit");
     dump(r_snrValue.get(), "r_snrValue");
     dump(r_covValue.get(), "r_covValue");
@@ -73,7 +73,7 @@ void cuAmpcorProcessorTwoPass<arrayT>::run(int idxDown, int idxAcross, const chu
 
     // the starting pixels of the secondary windows around the peaks, with a half search range of
     // halfZoomWindowSizeRaw (e.g., 4 pixels) instead of halfSearchRange*Raw
-    cuDetermineSecondaryExtractOffset(offsetInit.get(), maxLocShift.get(),
+    cuDetermineSecondaryExtractOffset(*offsetInit, *maxLocShift,
         param.halfSearchRangeDownRaw, param.halfSearchRangeAcrossRaw,   // old range
         param.halfZoomWindowSizeRaw, param.halfZoomWindowSizeRaw,       // new range
         stream);
@@ -110,13 +110,13 @@ void cuAmpcorProcessorTwoPass<arrayT>::run(int idxDown, int idxAcross, const chu
     oversampleSurface(r_corrBatchZoomInAdjust.get(), r_corrBatchZoomInOverSampled.get(), maxLocShift.get());
 
     // the peaks of the oversampled surfaces
-    cuArraysMaxloc2D(r_corrBatchZoomInOverSampled.get(), offsetZoomIn.get(), corrMaxValue.get(), stream);
+    cuArraysMaxloc2D(*r_corrBatchZoomInOverSampled, *offsetZoomIn, *corrMaxValue, stream);
     dump(offsetZoomIn.get(), "i_offsetZoomIn");
     dump(corrMaxValue.get(), "r_maxvalZoomInOversampled");
 
     // the offsets: the pixel peak (relative to the half search range) plus the sub-pixel peak,
     // (Init - HalfSearchRange) + ZoomIn/(2*ovs)
-    cuSubPixelOffset2Pass(offsetInit.get(), offsetZoomIn.get(), offsetFinal.get(),
+    cuSubPixelOffset2Pass(*offsetInit, *offsetZoomIn, *offsetFinal,
         param.corrSurfaceOverSamplingFactor, param.rawDataOversamplingFactor,
         param.halfSearchRangeDownRaw, param.halfSearchRangeAcrossRaw, stream);
 

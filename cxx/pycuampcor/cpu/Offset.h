@@ -8,24 +8,34 @@
 #pragma once
 
 #include "forward.h"
+#include "ArraysView.h"
 
 namespace pycuampcor::cpu {
 
-void cuArraysMaxloc2D(array_type<real_type> *images, array_type<int2> *maxloc,
-    array_type<real_type> *maxval, stream_t stream);
+/// the maximum of each surface of images, and its location (row, column)
+void cuArraysMaxloc2D(ArraysView<const real_type> images, ArraysView<int2> maxloc,
+    ArraysView<real_type> maxval, stream_t stream);
 
-void cuArraysMaxloc2D(array_type<real_type> *images, const int2 start, const int2 range,
-    array_type<int2> *maxloc, array_type<real_type> *maxval, stream_t stream);
+/// the same, within range pixels (rows, columns) starting at the pixel start of each surface
+void cuArraysMaxloc2D(ArraysView<const real_type> images, const int2 start, const int2 range,
+    ArraysView<int2> maxloc, ArraysView<real_type> maxval, stream_t stream);
 
-void cuSubPixelOffset(array_type<int2> *offsetInit, array_type<int2> *offsetRoomIn,
-    array_type<real2_type> *offsetFinal, const int2 initOrigin, const int initFactor,
+/// the offsets (offsetInit - initOrigin)/initFactor + (offsetZoomIn - zoomInOrigin)/zoomInFactor
+/// (one-pass workflow)
+void cuSubPixelOffset(ArraysView<const int2> offsetInit, ArraysView<const int2> offsetZoomIn,
+    ArraysView<real2_type> offsetFinal, const int2 initOrigin, const int initFactor,
     const int2 zoomInOrigin, const int zoomInFactor, stream_t stream);
 
-void cuSubPixelOffset2Pass(array_type<int2> *offsetInit, array_type<int2> *offsetZoomIn,
-    array_type<real2_type> *offsetFinal, int OverSampleRatioZoomin, int OverSampleRatioRaw,
+/// the offsets offsetInit - halfRangeInit + offsetZoomIn/(OverSampleRatioZoomin*OverSampleRatioRaw)
+/// (two-pass workflow)
+void cuSubPixelOffset2Pass(ArraysView<const int2> offsetInit, ArraysView<const int2> offsetZoomIn,
+    ArraysView<real2_type> offsetFinal, int OverSampleRatioZoomin, int OverSampleRatioRaw,
     int xHalfRangeInit, int yHalfRangeInit, stream_t stream);
 
-void cuDetermineSecondaryExtractOffset(array_type<int2> *maxLoc, array_type<int2> *maxLocShift,
+/// the starting pixels of the secondary windows of the half search range (xNewRange, yNewRange)
+/// around the peaks maxLoc, within the half search range (xOldRange, yOldRange) (in place), and
+/// the shift of the peaks from their centers (when the peaks are near the edges)
+void cuDetermineSecondaryExtractOffset(ArraysView<int2> maxLoc, ArraysView<int2> maxLocShift,
     int xOldRange, int yOldRange, int xNewRange, int yNewRange, stream_t stream);
 
 } // namespace

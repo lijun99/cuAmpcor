@@ -63,7 +63,7 @@ void cuAmpcorProcessorOnePass<arrayT>::run(int idxDown, int idxAcross, const chu
     const int extraPadSize = param.halfZoomWindowSizeRaw*param.rawDataOversamplingFactor;
     const auto start = traits::make_int2(extraPadSize, extraPadSize);
     const auto range = traits::make_int2(r_corrBatch->height - 2*extraPadSize, r_corrBatch->width - 2*extraPadSize);
-    cuArraysMaxloc2D(r_corrBatch.get(), start, range, offsetInit.get(), r_maxval.get(), stream);
+    cuArraysMaxloc2D(*r_corrBatch, start, range, *offsetInit, *r_maxval, stream);
     dump(offsetInit.get(), "i_offsetInit");
     dump(r_maxval.get(), "r_maxvalInit");
 
@@ -72,15 +72,15 @@ void cuAmpcorProcessorOnePass<arrayT>::run(int idxDown, int idxAcross, const chu
     dump(r_corrBatchZoomIn.get(), "r_corrBatchZoomIn");
 
     // the covariance of the offsets
-    cuEstimateVariance(r_corrBatch.get(), offsetInit.get(), r_maxval.get(), r_referenceBatchOverSampled->size,
-        param.rawDataOversamplingFactor, r_covValue.get(), stream);
+    cuEstimateVariance(*r_corrBatch, *offsetInit, *r_maxval, r_referenceBatchOverSampled->size,
+        param.rawDataOversamplingFactor, *r_covValue, stream);
     // the SNR, as in the two-pass workflow: the peak over the mean of the correlation surface
     // around it (corrStatWindowSize), at the raw pixel spacing and within the search range
     cuArraysCopyExtractCorr(*r_corrBatch, *r_corrBatchRawZoomIn, *i_corrBatchZoomInValid,
         *offsetInit, param.rawDataOversamplingFactor, start, range, stream);
     cuArraysSumCorr(r_corrBatchRawZoomIn.get(), i_corrBatchZoomInValid.get(), r_corrBatchSum.get(),
         i_corrBatchValidCount.get(), stream);
-    cuEstimateSnr(r_corrBatchSum.get(), i_corrBatchValidCount.get(), r_maxval.get(), r_snrValue.get(), stream);
+    cuEstimateSnr(*r_corrBatchSum, *i_corrBatchValidCount, *r_maxval, *r_snrValue, stream);
     dump(r_snrValue.get(), "r_snrValue");
     dump(r_covValue.get(), "r_covValue");
 
@@ -91,13 +91,13 @@ void cuAmpcorProcessorOnePass<arrayT>::run(int idxDown, int idxAcross, const chu
         param.corrZoomInOversampledSearchStart.y);
     const auto searchRange = traits::make_int2(param.corrZoomInOversampledSearchRange.x,
         param.corrZoomInOversampledSearchRange.y);
-    cuArraysMaxloc2D(r_corrBatchZoomInOverSampled.get(), searchStart, searchRange,
-        offsetZoomIn.get(), corrMaxValue.get(), stream);
+    cuArraysMaxloc2D(*r_corrBatchZoomInOverSampled, searchStart, searchRange,
+        *offsetZoomIn, *corrMaxValue, stream);
     dump(offsetZoomIn.get(), "i_offsetZoomIn");
     dump(corrMaxValue.get(), "r_maxvalZoomInOversampled");
 
     // the offsets: the peak of the surfaces (at the oversampled spacing) plus the sub-pixel peak
-    cuSubPixelOffset(offsetInit.get(), offsetZoomIn.get(), offsetFinal.get(),
+    cuSubPixelOffset(*offsetInit, *offsetZoomIn, *offsetFinal,
         traits::make_int2(param.corrWindowSize.x/2, param.corrWindowSize.y/2),   // the origin of the first peak
         param.rawDataOversamplingFactor,                                           // its oversampling
         traits::make_int2(param.corrZoomInSize.x/2*param.corrSurfaceOverSamplingFactor,
