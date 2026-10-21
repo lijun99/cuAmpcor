@@ -31,7 +31,7 @@ TEST_F(DerampTest, BothAxes)
     std::vector<double> amp;
     auto v = rampImage(h, w, 0.7, -1.3, amp);
     auto images = makeFrom(v, h, w);
-    cuDeramp(DerampMethod::Complex, images.get(), DerampAxis::Both, stream);
+    cuDeramp(DerampMethod::Complex, *images, DerampAxis::Both, stream);
     auto r = download(*images);
     for (int i = 0; i < h*w; i++) {
         EXPECT_NEAR(r[i].x, amp[i], 1e-4);
@@ -47,7 +47,7 @@ TEST_F(DerampTest, SingleAxis)
     auto v = rampImage(h, w, ax, ay, amp);
     for (auto axis : {DerampAxis::Down, DerampAxis::Across}) {
         auto images = makeFrom(v, h, w);
-        cuDeramp(DerampMethod::Complex, images.get(), axis, stream);
+        cuDeramp(DerampMethod::Complex, *images, axis, stream);
         auto r = download(*images);
         for (int x = 0; x < h; x++)
             for (int y = 0; y < w; y++) {
@@ -66,7 +66,7 @@ TEST_F(DerampTest, OtherMethodsSkip)
     auto v = randomComplex(h*w);
     auto images = makeFrom(v, h, w);
     for (auto method : {DerampMethod::Magnitude, DerampMethod::None}) {
-        cuDeramp(method, images.get(), DerampAxis::Both, stream);
+        cuDeramp(method, *images, DerampAxis::Both, stream);
         auto r = download(*images);
         for (int i = 0; i < h*w; i++) {
             EXPECT_EQ(r[i].x, v[i].x);

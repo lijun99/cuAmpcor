@@ -17,7 +17,6 @@
 #include "float2.h"
 #include "logging.h"
 #include "debug.h"
-#include "Arrays.h"
 
 namespace pycuampcor::cpu {
 
@@ -28,14 +27,13 @@ namespace pycuampcor::cpu {
  * @param[in,out] images input/output complex signals
  * @param[in] axis 0: deramp along x-axis; 1: deramp along y-axis; others: deramp along both axes
  */
-static void cuLinearDeramp(array_type<complex_type> *images, const int axis, stream_t)
+static void cuLinearDeramp(ArraysView<complex_type> images, const int axis, stream_t)
 {
-    const int imageNX = images->height;
-    const int imageNY = images->width;
-    const int imageSize = images->size;
+    const int imageNX = images.height();
+    const int imageNY = images.width();
 
-    for(int idxImage = 0; idxImage < images->count; idxImage++) {
-        complex_type *image = images->devData + static_cast<size_t>(idxImage)*imageSize;
+    for(int idxImage = 0; idxImage < images.count(); idxImage++) {
+        const ArraysView<complex_type> image = images.array(idxImage);
 
         // compute phase difference along y direction
         double phaseY = 0.0;
@@ -82,7 +80,7 @@ static void cuLinearDeramp(array_type<complex_type> *images, const int axis, str
     }
 }
 
-void cuDeramp(DerampMethod method, array_type<complex_type> *images, DerampAxis axis, stream_t stream)
+void cuDeramp(DerampMethod method, ArraysView<complex_type> images, DerampAxis axis, stream_t stream)
 {
     // the axis values (down 0, across 1, both 2) are those of cuLinearDeramp
     if (method == DerampMethod::Complex)

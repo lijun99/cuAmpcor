@@ -14,7 +14,6 @@
 
 #include "cuDeramp.h"
 #include "cuAmpcorOptions.h"
-#include "cuArrays.h"
 #include "float2.h"
 #include "cudaError.h"
 #include "device.h"
@@ -69,15 +68,16 @@ __device__ void complexSumReduceBlock(real2_type& sum, real_type *shmem)
 // cuda kernel for cuDerampMethod1
 // @param[in] axis 0: deramp along x-axis; 1: deramp along y-axis; others: deramp along both axes
 template<const int nthreads>
-__global__ void cuLinearDeramp_kernel(real2_type *images, const int imageNX, int const imageNY,
-    const int imageSize, const int nImages, const real_type normCoef, int axis)
+__global__ void cuLinearDeramp_kernel(ArraysView<real2_type> images, const real_type normCoef, int axis)
 {
     __shared__ real_type shmem[2*nthreads];
     int pixelIdx, pixelIdxX, pixelIdxY;
+    const int imageNX = images.height(), imageNY = images.width();
+    const int imageSize = images.arraySize();
 
     const int bid = blockIdx.x;
-    if(bid >= nImages) return;
-    real2_type *image = images+ bid*imageSize;
+    if(bid >= images.count()) return;
+    const ArraysView<real2_type> image = images.array(bid);
     const int tid = threadIdx.x;
 
     // compute phase difference along y direction
@@ -142,34 +142,26 @@ __global__ void cuLinearDeramp_kernel(real2_type *images, const int imageNX, int
  * @param[in,out] images input/output complex signals
  * @param[in] stream cuda stream
  */
-static void cuLinearDeramp(cuArrays<real2_type> *images, const int axis, cudaStream_t stream)
+static void cuLinearDeramp(ArraysView<real2_type> images, const int axis, cudaStream_t stream)
 {
 
-    const dim3 grid(images->count);
-    const int imageSize = images->width*images->height;
+    const dim3 grid(images.count());
+    const int imageSize = images.arraySize();
     const real_type invSize = real_type(1)/imageSize;
 
-    if(imageSize <=64) {
-        cuLinearDeramp_kernel<64> <<<grid, 64, 0, stream>>>
-        (images->devData, images->height, images->width,
-        imageSize, images->count, invSize, axis); }
-     else if(imageSize <=128) {
-        cuLinearDeramp_kernel<128> <<<grid, 128, 0, stream>>>
-        (images->devData, images->height, images->width,
-        imageSize, images->count, invSize, axis); }
-     else if(imageSize <=256) {
-        cuLinearDeramp_kernel<256> <<<grid, 256, 0, stream>>>
-        (images->devData, images->height, images->width,
-        imageSize, images->count, invSize, axis); }
-    else  {
-        cuLinearDeramp_kernel<512> <<<grid, 512, 0, stream>>>
-        (images->devData, images->height, images->width,
-        imageSize, images->count, invSize, axis); }
+    if(imageSize <=64)
+        cuLinearDeramp_kernel<64> <<<grid, 64, 0, stream>>>(images, invSize, axis);
+    else if(imageSize <=128)
+        cuLinearDeramp_kernel<128> <<<grid, 128, 0, stream>>>(images, invSize, axis);
+    else if(imageSize <=256)
+        cuLinearDeramp_kernel<256> <<<grid, 256, 0, stream>>>(images, invSize, axis);
+    else
+        cuLinearDeramp_kernel<512> <<<grid, 512, 0, stream>>>(images, invSize, axis);
     checkCudaAsyncErrors();
 
 }
 
-void cuDeramp(DerampMethod method, cuArrays<real2_type> *images, DerampAxis axis, cudaStream_t stream)
+void cuDeramp(DerampMethod method, ArraysView<complex_type> images, DerampAxis axis, cudaStream_t stream)
 {
     // the axis values (down 0, across 1, both 2) are those of cuLinearDeramp
     if (method == DerampMethod::Complex)

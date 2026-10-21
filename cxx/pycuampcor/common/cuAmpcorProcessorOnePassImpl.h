@@ -32,7 +32,7 @@ void cuAmpcorProcessorOnePass<arrayT>::run(int idxDown, int idxAcross, const chu
     copyToBatch(chunk.reference, param.referenceStartPixelDown, param.referenceStartPixelAcross,
         c_referenceBatchRaw.get());
     dump(c_referenceBatchRaw.get(), "c_referenceBatchRaw");
-    cuDeramp(param.derampMethod, c_referenceBatchRaw.get(), param.derampAxis, stream);
+    cuDeramp(param.derampMethod, *c_referenceBatchRaw, param.derampAxis, stream);
     dump(c_referenceBatchRaw.get(), "c_referenceBatchRawDeramped");
     referenceBatchOverSampler.execute(c_referenceBatchRaw.get(), c_referenceBatchOverSampled.get());
     const auto center = traits::make_int2(
@@ -48,7 +48,7 @@ void cuAmpcorProcessorOnePass<arrayT>::run(int idxDown, int idxAcross, const chu
     copyToBatch(chunk.secondary, param.secondaryStartPixelDown, param.secondaryStartPixelAcross,
         c_secondaryBatchRaw.get());
     dump(c_secondaryBatchRaw.get(), "c_secondaryBatchRaw");
-    cuDeramp(param.derampMethod, c_secondaryBatchRaw.get(), param.derampAxis, stream);
+    cuDeramp(param.derampMethod, *c_secondaryBatchRaw, param.derampAxis, stream);
     dump(c_secondaryBatchRaw.get(), "c_secondaryBatchRawDeramped");
     secondaryBatchOverSampler.execute(c_secondaryBatchRaw.get(), c_secondaryBatchOverSampled.get());
     cuArraysAbs(*c_secondaryBatchOverSampled, *r_secondaryBatchOverSampled, stream);

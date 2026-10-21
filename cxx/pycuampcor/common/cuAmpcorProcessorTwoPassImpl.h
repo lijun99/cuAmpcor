@@ -81,7 +81,7 @@ void cuAmpcorProcessorTwoPass<arrayT>::run(int idxDown, int idxAcross, const chu
     dump(maxLocShift.get(), "i_maxLocShift");
 
     // the reference windows: deramped, oversampled, their amplitudes with the mean subtracted
-    cuDeramp(param.derampMethod, c_referenceBatchRaw.get(), param.derampAxis, stream);
+    cuDeramp(param.derampMethod, *c_referenceBatchRaw, param.derampAxis, stream);
     dump(c_referenceBatchRaw.get(), "c_referenceBatchRawDeramped");
     referenceBatchOverSampler.execute(c_referenceBatchRaw.get(), c_referenceBatchOverSampled.get());
     cuArraysAbs(*c_referenceBatchOverSampled, *r_referenceBatchOverSampled, stream);
@@ -93,7 +93,7 @@ void cuAmpcorProcessorTwoPass<arrayT>::run(int idxDown, int idxAcross, const chu
     // the secondary windows around the peaks: deramped, oversampled, their amplitudes
     cuArraysCopyExtract(*c_secondaryBatchRaw, *c_secondaryBatchZoomIn, *offsetInit, stream);
     dump(c_secondaryBatchZoomIn.get(), "c_secondaryBatchZoomInRaw");
-    cuDeramp(param.derampMethod, c_secondaryBatchZoomIn.get(), param.derampAxis, stream);
+    cuDeramp(param.derampMethod, *c_secondaryBatchZoomIn, param.derampAxis, stream);
     dump(c_secondaryBatchZoomIn.get(), "c_secondaryBatchZoomInDeramped");
     secondaryBatchOverSampler.execute(c_secondaryBatchZoomIn.get(), c_secondaryBatchOverSampled.get());
     cuArraysAbs(*c_secondaryBatchOverSampled, *r_secondaryBatchOverSampled, stream);

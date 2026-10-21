@@ -8,10 +8,13 @@
 #pragma once
 
 #include "forward.h"
+#include "ArraysView.h"
 
 namespace pycuampcor::cuda {
 
-void cuDeramp(DerampMethod method, cuArrays<complex_type> *images, DerampAxis axis,
+/// remove the phase ramps of the complex windows (in place), along the axis, with the method
+/// (only DerampMethod::Complex deramps; the other methods leave the windows as they are)
+void cuDeramp(DerampMethod method, ArraysView<complex_type> images, DerampAxis axis,
     stream_t stream);
 
 } // namespace
