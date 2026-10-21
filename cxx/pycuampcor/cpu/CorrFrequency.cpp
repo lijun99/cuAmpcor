@@ -36,22 +36,19 @@ cuFreqCorrelator::cuFreqCorrelator(int imageNX, int imageNY, int nImages, stream
     int n[2] ={imageNX, imageNY};
 
     // set up work arrays
-    workFM = std::make_unique<array_type<complex_type>>(imageNX, (imageNY/2+1), nImages);
-    workFM->allocate();
-    workFS = std::make_unique<array_type<complex_type>>(imageNX, (imageNY/2+1), nImages);
-    workFS->allocate();
-    workT = std::make_unique<array_type<real_type>>(imageNX, imageNY, nImages);
-    workT->allocate();
+    workFM = array_type<complex_type>(imageNX, (imageNY/2+1), nImages);
+    workFS = array_type<complex_type>(imageNX, (imageNY/2+1), nImages);
+    workT = array_type<real_type>(imageNX, imageNY, nImages);
 
     // set up fft plans
     std::lock_guard<std::mutex> lock(fftwPlannerMutex());
     forwardPlan = PYCUAMPCOR_FFTW(plan_many_dft_r2c)(2, n, nImages,
-        workT->devData, nullptr, 1, imageSize,
-        fftwCast(workFM->devData), nullptr, 1, fImageSize,
+        workT.data_handle(), nullptr, 1, imageSize,
+        fftwCast(workFM.data_handle()), nullptr, 1, fImageSize,
         fftwFlags);
     backwardPlan = PYCUAMPCOR_FFTW(plan_many_dft_c2r)(2, n, nImages,
-        fftwCast(workFM->devData), nullptr, 1, fImageSize,
-        workT->devData, nullptr, 1, imageSize,
+        fftwCast(workFM.data_handle()), nullptr, 1, fImageSize,
+        workT.data_handle(), nullptr, 1, imageSize,
         fftwFlags);
 }
 
@@ -68,20 +65,20 @@ void cuFreqCorrelator::execute(ArraysView<const real_type> templates, ArraysView
     ArraysView<real_type> results)
 {
     // pad the reference windows to the the size of search windows
-    cuArraysCopyPadded(templates, *workT, stream);
+    cuArraysCopyPadded(templates, workT, stream);
     // forward fft to frequency domain (the input of the out-of-place r2c transform is not written,
     // fftw takes it as non-const)
-    PYCUAMPCOR_FFTW(execute_dft_r2c)(forwardPlan, workT->devData, fftwCast(workFM->devData));
+    PYCUAMPCOR_FFTW(execute_dft_r2c)(forwardPlan, workT.data_handle(), fftwCast(workFM.data_handle()));
     PYCUAMPCOR_FFTW(execute_dft_r2c)(forwardPlan, const_cast<real_type *>(images.data_handle()),
-        fftwCast(workFS->devData));
+        fftwCast(workFS.data_handle()));
     // fftw doesn't normalize, so manually get the image size for normalization
     real_type coef = 1.0/(images.arraySize());
     // multiply reference with secondary windows in frequency domain
-    cuArraysElementMultiplyConjugate(*workFM, *workFS, coef, stream);
+    cuArraysElementMultiplyConjugate(workFM, workFS, coef, stream);
     // backward fft to get correlation surface in time domain
-    PYCUAMPCOR_FFTW(execute_dft_c2r)(backwardPlan, fftwCast(workFM->devData), workT->devData);
+    PYCUAMPCOR_FFTW(execute_dft_c2r)(backwardPlan, fftwCast(workFM.data_handle()), workT.data_handle());
     // extract to get proper size of correlation surface
-    cuArraysCopyExtract(*workT, results, make_int2(0, 0), stream);
+    cuArraysCopyExtract(workT, results, make_int2(0, 0), stream);
     // all done
 }
 

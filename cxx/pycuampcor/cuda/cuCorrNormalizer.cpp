@@ -40,14 +40,11 @@ cuNormalizeSAT::cuNormalizeSAT(int secondaryNX, int secondaryNY, int count)
 {
     // allocate the work array
     // reference sum square
-    referenceSum2 = std::make_unique<cuArrays<real_type>>(1, 1, count);
-    referenceSum2->allocate();
+    referenceSum2 = cuArrays<real_type>(1, 1, count);
 
     // secondary sum and sum square
-    secondarySAT = std::make_unique<cuArrays<real_type>>(secondaryNX, secondaryNY, count);
-    secondarySAT->allocate();
-    secondarySAT2 = std::make_unique<cuArrays<real_type>>(secondaryNX, secondaryNY, count);
-    secondarySAT2->allocate();
+    secondarySAT = cuArrays<real_type>(secondaryNX, secondaryNY, count);
+    secondarySAT2 = cuArrays<real_type>(secondaryNX, secondaryNY, count);
 };
 
 cuNormalizeSAT::~cuNormalizeSAT() = default;
@@ -56,7 +53,7 @@ void cuNormalizeSAT::execute(ArraysView<real_type> correlation,
     ArraysView<const real_type> reference, ArraysView<const real_type> secondary, cudaStream_t stream)
 {
     cuCorrNormalizeSAT(correlation, reference, secondary,
-        *referenceSum2, *secondarySAT, *secondarySAT2, stream);
+        referenceSum2, secondarySAT, secondarySAT2, stream);
 }
 
 template<int Size>

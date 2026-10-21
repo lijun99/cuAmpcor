@@ -30,81 +30,81 @@ void cuAmpcorProcessorOnePass<arrayT>::run(int idxDown, int idxAcross, const chu
     // the reference windows (enlarged to the secondary size): deramped, oversampled, and the
     // amplitudes of their center (of the reference size), with the mean subtracted
     copyToBatch(chunk.reference, param.referenceStartPixelDown, param.referenceStartPixelAcross,
-        c_referenceBatchRaw.get());
-    dump(c_referenceBatchRaw.get(), "c_referenceBatchRaw");
-    cuDeramp(param.derampMethod, *c_referenceBatchRaw, param.derampAxis, stream);
-    dump(c_referenceBatchRaw.get(), "c_referenceBatchRawDeramped");
-    referenceBatchOverSampler.execute(*c_referenceBatchRaw, *c_referenceBatchOverSampled);
+        c_referenceBatchRaw);
+    dump(c_referenceBatchRaw, "c_referenceBatchRaw");
+    cuDeramp(param.derampMethod, c_referenceBatchRaw, param.derampAxis, stream);
+    dump(c_referenceBatchRaw, "c_referenceBatchRawDeramped");
+    referenceBatchOverSampler.execute(c_referenceBatchRaw, c_referenceBatchOverSampled);
     const auto center = traits::make_int2(
-        (c_referenceBatchOverSampled->height - r_referenceBatchOverSampled->height)/2,
-        (c_referenceBatchOverSampled->width - r_referenceBatchOverSampled->width)/2);
-    cuArraysCopyExtractAbs(*c_referenceBatchOverSampled, *r_referenceBatchOverSampled, center, stream);
-    dump(c_referenceBatchOverSampled.get(), "c_referenceBatchOverSampled");
-    dump(r_referenceBatchOverSampled.get(), "r_referenceBatchOverSampled");
-    cuArraysSubtractMean(*r_referenceBatchOverSampled, stream);
-    dump(r_referenceBatchOverSampled.get(), "r_referenceBatchOverSampledSubMean");
+        (c_referenceBatchOverSampled.height() - r_referenceBatchOverSampled.height())/2,
+        (c_referenceBatchOverSampled.width() - r_referenceBatchOverSampled.width())/2);
+    cuArraysCopyExtractAbs(c_referenceBatchOverSampled, r_referenceBatchOverSampled, center, stream);
+    dump(c_referenceBatchOverSampled, "c_referenceBatchOverSampled");
+    dump(r_referenceBatchOverSampled, "r_referenceBatchOverSampled");
+    cuArraysSubtractMean(r_referenceBatchOverSampled, stream);
+    dump(r_referenceBatchOverSampled, "r_referenceBatchOverSampledSubMean");
 
     // the secondary windows: deramped, oversampled, their amplitudes
     copyToBatch(chunk.secondary, param.secondaryStartPixelDown, param.secondaryStartPixelAcross,
-        c_secondaryBatchRaw.get());
-    dump(c_secondaryBatchRaw.get(), "c_secondaryBatchRaw");
-    cuDeramp(param.derampMethod, *c_secondaryBatchRaw, param.derampAxis, stream);
-    dump(c_secondaryBatchRaw.get(), "c_secondaryBatchRawDeramped");
-    secondaryBatchOverSampler.execute(*c_secondaryBatchRaw, *c_secondaryBatchOverSampled);
-    cuArraysAbs(*c_secondaryBatchOverSampled, *r_secondaryBatchOverSampled, stream);
-    dump(c_secondaryBatchOverSampled.get(), "c_secondaryBatchOverSampled");
-    dump(r_secondaryBatchOverSampled.get(), "r_secondaryBatchOverSampled");
+        c_secondaryBatchRaw);
+    dump(c_secondaryBatchRaw, "c_secondaryBatchRaw");
+    cuDeramp(param.derampMethod, c_secondaryBatchRaw, param.derampAxis, stream);
+    dump(c_secondaryBatchRaw, "c_secondaryBatchRawDeramped");
+    secondaryBatchOverSampler.execute(c_secondaryBatchRaw, c_secondaryBatchOverSampled);
+    cuArraysAbs(c_secondaryBatchOverSampled, r_secondaryBatchOverSampled, stream);
+    dump(c_secondaryBatchOverSampled, "c_secondaryBatchOverSampled");
+    dump(r_secondaryBatchOverSampled, "r_secondaryBatchOverSampled");
 
     // the normalized correlation surfaces of the oversampled windows
-    correlate(r_referenceBatchOverSampled.get(), r_secondaryBatchOverSampled.get(), r_corrBatch.get(),
+    correlate(r_referenceBatchOverSampled, r_secondaryBatchOverSampled, r_corrBatch,
         cuCorrFreqDomain_OverSampled.get(), corrNormalizerOverSampled.get(), "r_corrBatch");
 
     // the peaks, within the search range: without the extra margin (for the surfaces around the peak)
     const int extraPadSize = param.halfZoomWindowSizeRaw*param.rawDataOversamplingFactor;
     const auto start = traits::make_int2(extraPadSize, extraPadSize);
-    const auto range = traits::make_int2(r_corrBatch->height - 2*extraPadSize, r_corrBatch->width - 2*extraPadSize);
-    cuArraysMaxloc2D(*r_corrBatch, start, range, *offsetInit, *r_maxval, stream);
-    dump(offsetInit.get(), "i_offsetInit");
-    dump(r_maxval.get(), "r_maxvalInit");
+    const auto range = traits::make_int2(r_corrBatch.height() - 2*extraPadSize, r_corrBatch.width() - 2*extraPadSize);
+    cuArraysMaxloc2D(r_corrBatch, start, range, offsetInit, r_maxval, stream);
+    dump(offsetInit, "i_offsetInit");
+    dump(r_maxval, "r_maxvalInit");
 
     // the surfaces around the peaks, for the oversampling (within the margin: all valid)
-    cuArraysCopyExtractCorr(*r_corrBatch, *r_corrBatchZoomIn, *offsetInit, stream);
-    dump(r_corrBatchZoomIn.get(), "r_corrBatchZoomIn");
+    cuArraysCopyExtractCorr(r_corrBatch, r_corrBatchZoomIn, offsetInit, stream);
+    dump(r_corrBatchZoomIn, "r_corrBatchZoomIn");
 
     // the covariance of the offsets
-    cuEstimateVariance(*r_corrBatch, *offsetInit, *r_maxval, r_referenceBatchOverSampled->size,
-        param.rawDataOversamplingFactor, *r_covValue, stream);
+    cuEstimateVariance(r_corrBatch, offsetInit, r_maxval, r_referenceBatchOverSampled.arraySize(),
+        param.rawDataOversamplingFactor, r_covValue, stream);
     // the SNR, as in the two-pass workflow: the peak over the mean of the correlation surface
     // around it (corrStatWindowSize), at the raw pixel spacing and within the search range
-    cuArraysCopyExtractCorr(*r_corrBatch, *r_corrBatchRawZoomIn, *i_corrBatchZoomInValid,
-        *offsetInit, param.rawDataOversamplingFactor, start, range, stream);
-    cuArraysSumCorr(*r_corrBatchRawZoomIn, *i_corrBatchZoomInValid, *r_corrBatchSum,
-        *i_corrBatchValidCount, stream);
-    cuEstimateSnr(*r_corrBatchSum, *i_corrBatchValidCount, *r_maxval, *r_snrValue, stream);
-    dump(r_snrValue.get(), "r_snrValue");
-    dump(r_covValue.get(), "r_covValue");
+    cuArraysCopyExtractCorr(r_corrBatch, r_corrBatchRawZoomIn, i_corrBatchZoomInValid,
+        offsetInit, param.rawDataOversamplingFactor, start, range, stream);
+    cuArraysSumCorr(r_corrBatchRawZoomIn, i_corrBatchZoomInValid, r_corrBatchSum,
+        i_corrBatchValidCount, stream);
+    cuEstimateSnr(r_corrBatchSum, i_corrBatchValidCount, r_maxval, r_snrValue, stream);
+    dump(r_snrValue, "r_snrValue");
+    dump(r_covValue, "r_covValue");
 
     // the oversampled surfaces around the peaks, and their peaks within +/- 1 pixel of the center
     // (the surfaces are extracted around their peaks: no shift)
-    oversampleSurface(r_corrBatchZoomIn.get(), r_corrBatchZoomInOverSampled.get(), nullptr);
+    oversampleSurface(r_corrBatchZoomIn, r_corrBatchZoomInOverSampled, {});
     const auto searchStart = traits::make_int2(param.corrZoomInOversampledSearchStart.x,
         param.corrZoomInOversampledSearchStart.y);
     const auto searchRange = traits::make_int2(param.corrZoomInOversampledSearchRange.x,
         param.corrZoomInOversampledSearchRange.y);
-    cuArraysMaxloc2D(*r_corrBatchZoomInOverSampled, searchStart, searchRange,
-        *offsetZoomIn, *corrMaxValue, stream);
-    dump(offsetZoomIn.get(), "i_offsetZoomIn");
-    dump(corrMaxValue.get(), "r_maxvalZoomInOversampled");
+    cuArraysMaxloc2D(r_corrBatchZoomInOverSampled, searchStart, searchRange,
+        offsetZoomIn, corrMaxValue, stream);
+    dump(offsetZoomIn, "i_offsetZoomIn");
+    dump(corrMaxValue, "r_maxvalZoomInOversampled");
 
     // the offsets: the peak of the surfaces (at the oversampled spacing) plus the sub-pixel peak
-    cuSubPixelOffset(*offsetInit, *offsetZoomIn, *offsetFinal,
+    cuSubPixelOffset(offsetInit, offsetZoomIn, offsetFinal,
         traits::make_int2(param.corrWindowSize.x/2, param.corrWindowSize.y/2),   // the origin of the first peak
         param.rawDataOversamplingFactor,                                           // its oversampling
         traits::make_int2(param.corrZoomInSize.x/2*param.corrSurfaceOverSamplingFactor,
                           param.corrZoomInSize.y/2*param.corrSurfaceOverSamplingFactor),  // the origin of the sub-pixel peak
         param.rawDataOversamplingFactor*param.corrSurfaceOverSamplingFactor,      // its oversampling
         stream);
-    dump(offsetFinal.get(), "i_offsetFinal");
+    dump(offsetFinal, "i_offsetFinal");
 
     writeResults();
 }
@@ -131,9 +131,7 @@ cuAmpcorProcessorOnePass<arrayT>::cuAmpcorProcessorOnePass(const cuAmpcorParamet
     const int across = param.windowsAcrossInChunk;
     // a batch of windows of height x width (one per window in a chunk)
     auto batch = [down, across](auto &array, int height, int width) {
-        using array_t = typename std::remove_reference_t<decltype(array)>::element_type;
-        array = std::make_unique<array_t>(height, width, down, across);
-        array->allocate();
+        array = std::decay_t<decltype(array)>(height, width, down*across);
     };
 
     // the windows, and their oversampled amplitudes
@@ -148,7 +146,7 @@ cuAmpcorProcessorOnePass<arrayT>::cuAmpcorProcessorOnePass(const cuAmpcorParamet
     batch(r_corrBatch, param.corrWindowSize.x, param.corrWindowSize.y);
     batch(r_corrBatchZoomIn, param.corrZoomInSize.x, param.corrZoomInSize.y);
     batch(r_corrBatchZoomInOverSampled, param.corrZoomInOversampledSize.x, param.corrZoomInOversampledSize.y);
-    createSurfaceOversampler(r_corrBatchZoomIn->height, r_corrBatchZoomIn->width);
+    createSurfaceOversampler(r_corrBatchZoomIn.height(), r_corrBatchZoomIn.width());
 
     // the correlator (frequency domain) and the normalizer
     if (param.algorithm == Algorithm::Frequency)

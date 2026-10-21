@@ -66,44 +66,37 @@ protected:
 #endif
     }
 
-    /// allocate a batch of images in both backend and host memory
+    /// a batch of count images of height x width in the backend memory
     template<typename T>
-    std::unique_ptr<array_type<T>> make(int height, int width, int countH = 1, int countW = 1)
+    array_type<T> make(int height, int width, int count = 1)
     {
-        auto array = std::make_unique<array_type<T>>(height, width, countH, countW);
-        array->allocate();
-        array->allocateHost();
-        return array;
+        return array_type<T>(height, width, count);
     }
 
     /// copy values to the backend memory
     template<typename T>
     void upload(array_type<T> &array, const std::vector<T> &values)
     {
-        ASSERT_EQ(values.size(), array.getSize());
-        std::copy(values.begin(), values.end(), array.hostData);
-        array.copyToDevice(stream);
+        ASSERT_EQ(values.size(), array.size());
+        array.copyFromHost(values.data(), stream);
         synchronize();
     }
 
-    /// allocate and fill a batch of images
+    /// a batch of count images of height x width, with values
     template<typename T>
-    std::unique_ptr<array_type<T>> makeFrom(const std::vector<T> &values, int height, int width,
-        int countH = 1, int countW = 1)
+    array_type<T> makeFrom(const std::vector<T> &values, int height, int width, int count = 1)
     {
-        auto array = make<T>(height, width, countH, countW);
-        upload(*array, values);
+        auto array = make<T>(height, width, count);
+        upload(array, values);
         return array;
     }
 
     /// copy values from the backend memory
     template<typename T>
-    std::vector<T> download(array_type<T> &array)
+    std::vector<T> download(const array_type<T> &array)
     {
         synchronize();
-        array.copyToHost(stream);
-        synchronize();
-        return std::vector<T>(array.hostData, array.hostData + array.getSize());
+        return array.toHost(stream);
     }
 };
 

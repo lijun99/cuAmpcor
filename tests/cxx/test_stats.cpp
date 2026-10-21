@@ -14,9 +14,9 @@ TEST_F(StatsTest, SubtractMean)
     const int h = 7, w = 9, n = 3;
     auto v = randomReal(h*w*n);
     for (auto &x : v) x += 3;  // non-zero mean
-    auto a = makeFrom(v, h, w, 1, n);
-    cuArraysSubtractMean(*a, stream);
-    auto r = download(*a);
+    auto a = makeFrom(v, h, w, n);
+    cuArraysSubtractMean(a, stream);
+    auto r = download(a);
     for (int k = 0; k < n; k++) {
         double mean = 0;
         for (int i = 0; i < h*w; i++) mean += v[k*h*w + i];
@@ -32,13 +32,13 @@ TEST_F(StatsTest, SumCorr)
     auto v = randomReal(h*w*n);
     std::vector<int> valid(h*w*n);
     for (size_t i = 0; i < valid.size(); i++) valid[i] = (i % 3 != 0);
-    auto a = makeFrom(v, h, w, 1, n);
-    auto f = makeFrom(valid, h, w, 1, n);
+    auto a = makeFrom(v, h, w, n);
+    auto f = makeFrom(valid, h, w, n);
     auto sum2 = make<real_type>(1, n);
     auto count = make<int>(1, n);
-    cuArraysSumCorr(*a, *f, *sum2, *count, stream);
-    auto s2 = download(*sum2);
-    auto c = download(*count);
+    cuArraysSumCorr(a, f, sum2, count, stream);
+    auto s2 = download(sum2);
+    auto c = download(count);
     for (int k = 0; k < n; k++) {
         double ref = 0;
         int refCount = 0;
@@ -61,8 +61,8 @@ TEST_F(StatsTest, EstimateSnr)
     auto snr = make<real_type>(1, 2);
 
     // with the count of valid pixels
-    cuEstimateSnr(*sum, *count, *peak, *snr, stream);
-    auto r = download(*snr);
+    cuEstimateSnr(sum, count, peak, snr, stream);
+    auto r = download(snr);
     for (int k = 0; k < 2; k++) {
         double p2 = double(peakV[k])*peakV[k];
         EXPECT_NEAR(r[k], p2/((sumV[k] - p2)/(countV[k] - 1)), 10*tol*r[k]);
@@ -102,13 +102,13 @@ TEST_F(StatsTest, EstimateVariance)
             }
         peakV[k] = 0.9;
     }
-    auto corr = makeFrom(c, NX, NY, 1, n);
+    auto corr = makeFrom(c, NX, NY, n);
     auto loc = makeFrom(locV, 1, n);
     auto peak = makeFrom(peakV, 1, n);
     auto cov = make<real3_type>(1, n);
     for (int d : {1, 2}) {
-        cuEstimateVariance(*corr, *loc, *peak, templateSize, d, *cov, stream);
-        auto r = download(*cov);
+        cuEstimateVariance(corr, loc, peak, templateSize, d, cov, stream);
+        auto r = download(cov);
         std::vector<real_type> c0(c.begin(), c.begin() + NX*NY);
         auto ref = refCovariance(c0, NY, locV[0], peakV[0], templateSize, d);
         EXPECT_NEAR(r[0].x, ref[0], 1e-3*std::abs(ref[0]));

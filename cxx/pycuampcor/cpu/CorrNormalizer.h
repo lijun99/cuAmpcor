@@ -8,6 +8,7 @@
 #pragma once
 
 #include "forward.h"
+#include "Arrays.h"
 #include "arrayTraits.h"
 #include "cuNormalizer.h"
 
@@ -29,8 +30,8 @@ public:
         ArraysView<const real_type> secondary, stream_t stream) override;
 
 private:
-    std::unique_ptr<array_type<double>> secondarySAT;    ///< the sum area tables of the secondary windows
-    std::unique_ptr<array_type<double>> secondarySAT2;   ///< the same, of their squares
+    array_type<double> secondarySAT;    ///< the sum area tables of the secondary windows
+    array_type<double> secondarySAT2;   ///< the same, of their squares
 };
 
 } // namespace

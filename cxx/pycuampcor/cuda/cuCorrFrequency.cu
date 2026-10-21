@@ -56,12 +56,9 @@ cuFreqCorrelator::cuFreqCorrelator(int imageNX, int imageNY, int nImages, cudaSt
     cufftSetStream(backwardPlan, stream);
 
     // set up work arrays
-    workFM = std::make_unique<cuArrays<complex_type>>(imageNX, (imageNY/2+1), nImages);
-    workFM->allocate();
-    workFS = std::make_unique<cuArrays<complex_type>>(imageNX, (imageNY/2+1), nImages);
-    workFS->allocate();
-    workT = std::make_unique<cuArrays<real_type>>(imageNX, imageNY, nImages);
-    workT->allocate();
+    workFM = cuArrays<complex_type>(imageNX, (imageNY/2+1), nImages);
+    workFS = cuArrays<complex_type>(imageNX, (imageNY/2+1), nImages);
+    workT = cuArrays<real_type>(imageNX, imageNY, nImages);
 }
 
 /// destructor
@@ -78,30 +75,30 @@ void cuFreqCorrelator::execute(ArraysView<const real_type> templates, ArraysView
     ArraysView<real_type> results)
 {
     // pad the reference windows to the the size of search windows
-    cuArraysCopyPadded(templates, *workT, stream);
+    cuArraysCopyPadded(templates, workT, stream);
     // the input of the (out-of-place) forward FFT is not written (cufft takes it as non-const)
     real_type *imagesData = const_cast<real_type *>(images.data_handle());
     // forward fft to frequency domain
 #ifdef CUAMPCOR_DOUBLE
-    checkCudaErrors(cufftExecD2Z(forwardPlan, workT->devData, workFM->devData));
-    checkCudaErrors(cufftExecD2Z(forwardPlan, imagesData, workFS->devData));
+    checkCudaErrors(cufftExecD2Z(forwardPlan, workT.data_handle(), workFM.data_handle()));
+    checkCudaErrors(cufftExecD2Z(forwardPlan, imagesData, workFS.data_handle()));
 #else
-    checkCudaErrors(cufftExecR2C(forwardPlan, workT->devData, workFM->devData));
-    checkCudaErrors(cufftExecR2C(forwardPlan, imagesData, workFS->devData));
+    checkCudaErrors(cufftExecR2C(forwardPlan, workT.data_handle(), workFM.data_handle()));
+    checkCudaErrors(cufftExecR2C(forwardPlan, imagesData, workFS.data_handle()));
 #endif
 
     // cufft doesn't normalize, so manually get the image size for normalization
     real_type coef = 1.0/(images.arraySize());
     // multiply reference with secondary windows in frequency domain
-    cuArraysElementMultiplyConjugate(*workFM, *workFS, coef, stream);
+    cuArraysElementMultiplyConjugate(workFM, workFS, coef, stream);
     // backward fft to get correlation surface in time domain
 #ifdef CUAMPCOR_DOUBLE
-    checkCudaErrors(cufftExecZ2D(backwardPlan, workFM->devData, workT->devData));
+    checkCudaErrors(cufftExecZ2D(backwardPlan, workFM.data_handle(), workT.data_handle()));
 #else
-    checkCudaErrors(cufftExecC2R(backwardPlan, workFM->devData, workT->devData));
+    checkCudaErrors(cufftExecC2R(backwardPlan, workFM.data_handle(), workT.data_handle()));
 #endif
     // extract to get proper size of correlation surface
-    cuArraysCopyExtract(*workT, results, make_int2(0, 0), stream);
+    cuArraysCopyExtract(workT, results, make_int2(0, 0), stream);
     // all done
 }
 

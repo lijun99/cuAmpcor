@@ -54,22 +54,22 @@ TEST_F(SincTest, ConstantCenter)
     cuSincOverSamplerR2R sinc(covs, stream);
     for (int2 shift : {make_int2(0, 0), make_int2(1, -2)}) {
         const int factor = covs;
-        sinc.execute(*in, *out, shift, factor);
-        check(download(*out), 0, shift, factor);
+        sinc.execute(in, out, shift, factor);
+        check(download(out), 0, shift, factor);
     }
 }
 
 TEST_F(SincTest, VaryingCenter)
 {
     const int count = 3;
-    auto in = makeFrom(input(count), n, n, 1, count);
-    auto out = make<real_type>(n*covs, n*covs, 1, count);
+    auto in = makeFrom(input(count), n, n, count);
+    auto out = make<real_type>(n*covs, n*covs, count);
     std::vector<int2> shiftV = {make_int2(0, 0), make_int2(-1, 1), make_int2(2, 0)};
     auto shifts = makeFrom(shiftV, 1, count);
     cuSincOverSamplerR2R sinc(covs, stream);
     const int factor = covs/2;
-    sinc.execute(*in, *out, *shifts, factor);
-    auto r = download(*out);
+    sinc.execute(in, out, shifts, factor);
+    auto r = download(out);
     for (int k = 0; k < count; k++)
         check(r, k, shiftV[k], factor);
 }

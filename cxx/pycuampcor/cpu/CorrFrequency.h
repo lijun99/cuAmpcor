@@ -7,6 +7,7 @@
 
 #include "forward.h"
 #include "ArraysView.h"
+#include "Arrays.h"
 #include "fftwUtil.h"
 
 // dependencies
@@ -20,9 +21,9 @@ private:
     FftwPlan forwardPlan;
     FftwPlan backwardPlan;
     // work data
-    std::unique_ptr<array_type<complex_type>> workFM;
-    std::unique_ptr<array_type<complex_type>> workFS;
-    std::unique_ptr<array_type<real_type>> workT;
+    array_type<complex_type> workFM;
+    array_type<complex_type> workFS;
+    array_type<real_type> workT;
     // stream (not used)
     stream_t stream;
 

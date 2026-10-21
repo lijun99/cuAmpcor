@@ -20,6 +20,7 @@
 
 #include "forward.h"
 #include "cuAmpcorArrayTraits.h"
+#include "ArraysView.h"
 
 namespace pycuampcor {
 
@@ -87,23 +88,24 @@ protected:
     int nWindowsAcross = 0;    ///< the number of windows in the chunk, across
 
     // the starting pixels of the windows relative to the loaded chunk
-    std::unique_ptr<array_type<int>> chunkOffsetDown;    ///< down
-    std::unique_ptr<array_type<int>> chunkOffsetAcross;  ///< across
+    std::vector<int> chunkOffsetHost;        ///< computed on the host (down, then across)
+    array_type<int> chunkOffsetDown;         ///< down
+    array_type<int> chunkOffsetAcross;       ///< across
 
     // the per-window results, shared by the workflows
-    std::unique_ptr<array_type<int2_type>> offsetInit;      ///< the peak of the first correlation surface
-    std::unique_ptr<array_type<int2_type>> offsetZoomIn;    ///< the peak of the oversampled correlation surface
-    std::unique_ptr<array_type<real2_type>> offsetFinal;    ///< the offsets
-    std::unique_ptr<array_type<real_type>> r_maxval;        ///< the value of the first peak
-    std::unique_ptr<array_type<real_type>> corrMaxValue;    ///< the value of the oversampled peak
-    std::unique_ptr<array_type<real3_type>> r_covValue;     ///< the covariance of the offsets
-    std::unique_ptr<array_type<real_type>> r_snrValue;      ///< the SNR
+    array_type<int2_type> offsetInit;        ///< the peak of the first correlation surface
+    array_type<int2_type> offsetZoomIn;      ///< the peak of the oversampled correlation surface
+    array_type<real2_type> offsetFinal;      ///< the offsets
+    array_type<real_type> r_maxval;          ///< the value of the first peak
+    array_type<real_type> corrMaxValue;      ///< the value of the oversampled peak
+    array_type<real3_type> r_covValue;       ///< the covariance of the offsets
+    array_type<real_type> r_snrValue;        ///< the SNR
     // the SNR estimation: the correlation surface around the peak (at the raw pixel spacing),
     // its valid pixels, their sum and count
-    std::unique_ptr<array_type<real_type>> r_corrBatchRawZoomIn;    ///< the surface around the peak
-    std::unique_ptr<array_type<int>> i_corrBatchZoomInValid;        ///< its valid pixels
-    std::unique_ptr<array_type<real_type>> r_corrBatchSum;          ///< their sum
-    std::unique_ptr<array_type<int>> i_corrBatchValidCount;         ///< their count
+    array_type<real_type> r_corrBatchRawZoomIn;  ///< the surface around the peak
+    array_type<int> i_corrBatchZoomInValid;      ///< its valid pixels
+    array_type<real_type> r_corrBatchSum;        ///< their sum
+    array_type<int> i_corrBatchValidCount;       ///< their count
 
     /// the oversampler of the correlation surfaces around the peaks (FFT or sinc)
     std::unique_ptr<surface_oversampler_type> surfaceOverSampler;
@@ -125,7 +127,7 @@ protected:
     /// @param[out] batch the windows
     void copyToBatch(const loaded_chunk_type &chunk,
         const std::vector<int> &startDown, const std::vector<int> &startAcross,
-        array_type<complex_type> *batch);
+        array_type<complex_type> &batch);
 
     /// cross-correlate the reference windows with the secondary windows (in the frequency or time
     /// domain), and normalize the correlation surfaces
@@ -134,8 +136,8 @@ protected:
     /// @param freqCorrelator the correlator in the frequency domain (if algorithm is frequency)
     /// @param normalizer the normalizer of the correlation surfaces
     /// @param name the name of the surfaces in the debug dumps
-    void correlate(array_type<real_type> *reference, array_type<real_type> *secondary,
-        array_type<real_type> *surface, freq_correlator_type *freqCorrelator,
+    void correlate(array_type<real_type> &reference, array_type<real_type> &secondary,
+        array_type<real_type> &surface, freq_correlator_type *freqCorrelator,
         normalizer_type *normalizer, const std::string &name);
 
     /// create the oversampler of the correlation surfaces of height x width around the peak,
@@ -146,16 +148,16 @@ protected:
     /// @param surface the correlation surfaces around the peaks
     /// @param[out] oversampled the oversampled correlation surfaces
     /// @param shift the shift of each peak from the center of its surface (the sinc oversampler
-    ///     computes only around the peak), or nullptr if the peaks are at the centers
-    void oversampleSurface(array_type<real_type> *surface, array_type<real_type> *oversampled,
-        array_type<int2_type> *shift);
+    ///     computes only around the peak), or empty if the peaks are at the centers
+    void oversampleSurface(array_type<real_type> &surface, array_type<real_type> &oversampled,
+        ArraysView<const int2_type> shift);
 
     /// write the results of the current chunk (offsets, SNR, covariance, peak) to the output images
     void writeResults();
 
     /// write an intermediate array to a file named name (debug builds only)
     template <typename T>
-    void dump(array_type<T> *array, const std::string &name);
+    void dump(const array_type<T> &array, const std::string &name);
 };
 
 } // namespace

@@ -23,14 +23,10 @@ cuAmpcorChunkLoader::Source::Source(const cuAmpcorChunkFootprint &footprint_, Da
     // allocate the buffer once, for the largest chunk
     const int height = std::max(footprint.maxHeight, 1);
     const int width = std::max(footprint.maxWidth, 1);
-    if (dataType == DataType::Complex64) {
-        complexBuffer = std::make_unique<array_type<image_complex_type>>(height, width);
-        complexBuffer->allocate();
-    }
-    else {
-        realBuffer = std::make_unique<array_type<image_real_type>>(height, width);
-        realBuffer->allocate();
-    }
+    if (dataType == DataType::Complex64)
+        complexBuffer = array_type<image_complex_type>(height, width);
+    else
+        realBuffer = array_type<image_real_type>(height, width);
 }
 
 /**
@@ -45,15 +41,15 @@ void cuAmpcorChunkLoader::Source::load(int idxChunk, cuAmpcorLoadedChunk &chunk)
     chunk.height = footprint.height[idxChunk];
     chunk.width = footprint.width[idxChunk];
     // the chunk, contiguous in the buffer
-    if (complexBuffer)
-        chunk.complexData = ArraysView<const image_complex_type>(complexBuffer->devData, chunk.height, chunk.width);
+    if (!complexBuffer.empty())
+        chunk.complexData = ArraysView<const image_complex_type>(complexBuffer.data_handle(), chunk.height, chunk.width);
     else
-        chunk.realData = ArraysView<const image_real_type>(realBuffer->devData, chunk.height, chunk.width);
+        chunk.realData = ArraysView<const image_real_type>(realBuffer.data_handle(), chunk.height, chunk.width);
     // nothing to load for chunks outside the image (their windows are set to zero)
     if (chunk.empty()) return;
     // the work memory is host memory: read the chunk directly into the buffer
-    void *buffer = complexBuffer ? static_cast<void *>(complexBuffer->devData)
-                                 : static_cast<void *>(realBuffer->devData);
+    void *buffer = !complexBuffer.empty() ? static_cast<void *>(complexBuffer.data_handle())
+                                         : static_cast<void *>(realBuffer.data_handle());
     image.loadToHost(buffer, chunk.startDown, chunk.startAcross, chunk.height, chunk.width);
 }
 

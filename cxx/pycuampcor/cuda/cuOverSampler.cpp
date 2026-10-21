@@ -37,10 +37,8 @@ cuOverSamplerC2C::cuOverSamplerC2C(int inNX, int inNY, int outNX, int outNY, int
     int outNYp2 = outNY;
 
     // set up work arrays
-    workIn = std::make_unique<cuArrays<complex_type>>(inNXp2, inNYp2, nImages);
-    workIn->allocate();
-    workOut = std::make_unique<cuArrays<complex_type>>(outNXp2, outNYp2, nImages);
-    workOut->allocate();
+    workIn = cuArrays<complex_type>(inNXp2, inNYp2, nImages);
+    workOut = cuArrays<complex_type>(outNXp2, outNYp2, nImages);
 
     // set up fft plans
     int imageSize = inNXp2*inNYp2;
@@ -83,19 +81,19 @@ void cuOverSamplerC2C::execute(ArraysView<const complex_type> imagesIn, ArraysVi
     // FFT to frequency domain, with exp(+i) and back with exp(-i) as the isce3 (v1) pycuampcor:
     // the Nyquist frequency of even lengths is then positive (see cuArraysFFTPaddingMany)
  #ifdef CUAMPCOR_DOUBLE
-    checkCudaErrors(cufftExecZ2Z(forwardPlan, input, workIn->devData, CUFFT_INVERSE));
+    checkCudaErrors(cufftExecZ2Z(forwardPlan, input, workIn.data_handle(), CUFFT_INVERSE));
  #else
-    checkCudaErrors(cufftExecC2C(forwardPlan, input, workIn->devData, CUFFT_INVERSE));
+    checkCudaErrors(cufftExecC2C(forwardPlan, input, workIn.data_handle(), CUFFT_INVERSE));
  #endif
 
     // padding zeros in the middle
-    cuArraysFFTPaddingMany(*workIn, *workOut, stream);
+    cuArraysFFTPaddingMany(workIn, workOut, stream);
 
     // iFFT back to time domain
 #ifdef CUAMPCOR_DOUBLE
-    checkCudaErrors(cufftExecZ2Z(backwardPlan, workOut->devData, imagesOut.data_handle(), CUFFT_FORWARD));
+    checkCudaErrors(cufftExecZ2Z(backwardPlan, workOut.data_handle(), imagesOut.data_handle(), CUFFT_FORWARD));
 #else
-    checkCudaErrors(cufftExecC2C(backwardPlan, workOut->devData, imagesOut.data_handle(), CUFFT_FORWARD));
+    checkCudaErrors(cufftExecC2C(backwardPlan, workOut.data_handle(), imagesOut.data_handle(), CUFFT_FORWARD));
 #endif
 }
 
@@ -124,10 +122,8 @@ cuOverSamplerR2R::cuOverSamplerR2R(int inNX, int inNY, int outNX, int outNY, int
     int fImageSize = inNXp2*inNYp2;
     int nUpSample[NRANK] = {outNXp2, outNYp2};
     int fImageUpSampleSize = outNXp2*outNYp2;
-    workSizeIn = std::make_unique<cuArrays<complex_type>>(inNXp2, inNYp2, nImages);
-    workSizeIn->allocate();
-    workSizeOut = std::make_unique<cuArrays<complex_type>>(outNXp2, outNYp2, nImages);
-    workSizeOut->allocate();
+    workSizeIn = cuArrays<complex_type>(inNXp2, inNYp2, nImages);
+    workSizeOut = cuArrays<complex_type>(outNXp2, outNYp2, nImages);
 #ifdef CUAMPCOR_DOUBLE
     forwardPlan.planMany(NRANK, n, nullptr, 1, imageSize, nullptr, 1, fImageSize, CUFFT_Z2Z, nImages);
     backwardPlan.planMany(NRANK, nUpSample, nullptr, 1, fImageUpSampleSize, nullptr, 1, outNX*outNY, CUFFT_Z2Z, nImages);
@@ -153,24 +149,24 @@ void cuOverSamplerR2R::setStream(cudaStream_t stream_)
 void cuOverSamplerR2R::execute(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut)
 {
 
-    cuArraysCopyPadded(imagesIn, *workSizeIn, stream);
+    cuArraysCopyPadded(imagesIn, workSizeIn, stream);
 
     // exp(+i) to the frequency domain and exp(-i) back, as cuOverSamplerC2C
 #ifdef CUAMPCOR_DOUBLE
-    checkCudaErrors(cufftExecZ2Z(forwardPlan, workSizeIn->devData, workSizeIn->devData, CUFFT_INVERSE));
+    checkCudaErrors(cufftExecZ2Z(forwardPlan, workSizeIn.data_handle(), workSizeIn.data_handle(), CUFFT_INVERSE));
 #else
-    checkCudaErrors(cufftExecC2C(forwardPlan, workSizeIn->devData, workSizeIn->devData, CUFFT_INVERSE));
+    checkCudaErrors(cufftExecC2C(forwardPlan, workSizeIn.data_handle(), workSizeIn.data_handle(), CUFFT_INVERSE));
 #endif
 
-    cuArraysFFTPaddingMany(*workSizeIn, *workSizeOut, stream);
+    cuArraysFFTPaddingMany(workSizeIn, workSizeOut, stream);
 
 #ifdef CUAMPCOR_DOUBLE
-    checkCudaErrors(cufftExecZ2Z(backwardPlan, workSizeOut->devData, workSizeOut->devData, CUFFT_FORWARD));
+    checkCudaErrors(cufftExecZ2Z(backwardPlan, workSizeOut.data_handle(), workSizeOut.data_handle(), CUFFT_FORWARD));
 #else
-    checkCudaErrors(cufftExecC2C(backwardPlan, workSizeOut->devData, workSizeOut->devData, CUFFT_FORWARD));
+    checkCudaErrors(cufftExecC2C(backwardPlan, workSizeOut.data_handle(), workSizeOut.data_handle(), CUFFT_FORWARD));
 #endif
 
-    cuArraysCopyExtract(*workSizeOut, imagesOut, make_int2(0,0), stream);
+    cuArraysCopyExtract(workSizeOut, imagesOut, make_int2(0,0), stream);
 }
 
 /// destructor

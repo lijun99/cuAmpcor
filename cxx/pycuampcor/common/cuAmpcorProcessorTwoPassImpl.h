@@ -31,92 +31,92 @@ void cuAmpcorProcessorTwoPass<arrayT>::run(int idxDown, int idxAcross, const chu
 
     // the reference windows: their amplitudes, with the mean subtracted
     copyToBatch(chunk.reference, param.referenceStartPixelDown, param.referenceStartPixelAcross,
-        c_referenceBatchRaw.get());
-    cuArraysAbs(*c_referenceBatchRaw, *r_referenceBatchRaw, stream);
-    dump(c_referenceBatchRaw.get(), "c_referenceBatchRaw");
-    dump(r_referenceBatchRaw.get(), "r_referenceBatchRaw");
-    cuArraysSubtractMean(*r_referenceBatchRaw, stream);
-    dump(r_referenceBatchRaw.get(), "r_referenceBatchRawSubMean");
+        c_referenceBatchRaw);
+    cuArraysAbs(c_referenceBatchRaw, r_referenceBatchRaw, stream);
+    dump(c_referenceBatchRaw, "c_referenceBatchRaw");
+    dump(r_referenceBatchRaw, "r_referenceBatchRaw");
+    cuArraysSubtractMean(r_referenceBatchRaw, stream);
+    dump(r_referenceBatchRaw, "r_referenceBatchRawSubMean");
 
     // the secondary windows: their amplitudes
     copyToBatch(chunk.secondary, param.secondaryStartPixelDown, param.secondaryStartPixelAcross,
-        c_secondaryBatchRaw.get());
-    cuArraysAbs(*c_secondaryBatchRaw, *r_secondaryBatchRaw, stream);
-    dump(c_secondaryBatchRaw.get(), "c_secondaryBatchRaw");
-    dump(r_secondaryBatchRaw.get(), "r_secondaryBatchRaw");
+        c_secondaryBatchRaw);
+    cuArraysAbs(c_secondaryBatchRaw, r_secondaryBatchRaw, stream);
+    dump(c_secondaryBatchRaw, "c_secondaryBatchRaw");
+    dump(r_secondaryBatchRaw, "r_secondaryBatchRaw");
 
     // the normalized correlation surfaces, e.g., 41 x 41 for a half search range of 20
-    correlate(r_referenceBatchRaw.get(), r_secondaryBatchRaw.get(), r_corrBatchRaw.get(),
+    correlate(r_referenceBatchRaw, r_secondaryBatchRaw, r_corrBatchRaw,
         cuCorrFreqDomain.get(), corrNormalizerRaw.get(), "r_corrBatchRaw");
 
     // the peaks, to the pixel
-    cuArraysMaxloc2D(*r_corrBatchRaw, *offsetInit, *r_maxval, stream);
+    cuArraysMaxloc2D(r_corrBatchRaw, offsetInit, r_maxval, stream);
     // the covariance of the offsets
-    cuEstimateVariance(*r_corrBatchRaw, *offsetInit, *r_maxval, r_referenceBatchRaw->size,
-        1, *r_covValue, stream);
+    cuEstimateVariance(r_corrBatchRaw, offsetInit, r_maxval, r_referenceBatchRaw.arraySize(),
+        1, r_covValue, stream);
     // the SNR: the peak over the mean of the correlation surface around it
-    cuArraysCopyExtractCorr(*r_corrBatchRaw, *r_corrBatchRawZoomIn, *i_corrBatchZoomInValid,
-        *offsetInit, stream);
-    cuArraysSumCorr(*r_corrBatchRawZoomIn, *i_corrBatchZoomInValid, *r_corrBatchSum,
-        *i_corrBatchValidCount, stream);
-    dump(r_maxval.get(), "r_maxval");
-    dump(r_corrBatchRawZoomIn.get(), "r_corrBatchRawStatZoomIn");
-    dump(i_corrBatchZoomInValid.get(), "i_corrBatchZoomInValid");
-    dump(r_corrBatchSum.get(), "r_corrBatchSum");
-    dump(i_corrBatchValidCount.get(), "i_corrBatchValidCount");
-    cuEstimateSnr(*r_corrBatchSum, *i_corrBatchValidCount, *r_maxval, *r_snrValue, stream);
-    dump(offsetInit.get(), "i_offsetInit");
-    dump(r_snrValue.get(), "r_snrValue");
-    dump(r_covValue.get(), "r_covValue");
+    cuArraysCopyExtractCorr(r_corrBatchRaw, r_corrBatchRawZoomIn, i_corrBatchZoomInValid,
+        offsetInit, stream);
+    cuArraysSumCorr(r_corrBatchRawZoomIn, i_corrBatchZoomInValid, r_corrBatchSum,
+        i_corrBatchValidCount, stream);
+    dump(r_maxval, "r_maxval");
+    dump(r_corrBatchRawZoomIn, "r_corrBatchRawStatZoomIn");
+    dump(i_corrBatchZoomInValid, "i_corrBatchZoomInValid");
+    dump(r_corrBatchSum, "r_corrBatchSum");
+    dump(i_corrBatchValidCount, "i_corrBatchValidCount");
+    cuEstimateSnr(r_corrBatchSum, i_corrBatchValidCount, r_maxval, r_snrValue, stream);
+    dump(offsetInit, "i_offsetInit");
+    dump(r_snrValue, "r_snrValue");
+    dump(r_covValue, "r_covValue");
 
     // ==== second pass, oversampled, around the first peak ====
 
     // the starting pixels of the secondary windows around the peaks, with a half search range of
     // halfZoomWindowSizeRaw (e.g., 4 pixels) instead of halfSearchRange*Raw
-    cuDetermineSecondaryExtractOffset(*offsetInit, *maxLocShift,
+    cuDetermineSecondaryExtractOffset(offsetInit, maxLocShift,
         param.halfSearchRangeDownRaw, param.halfSearchRangeAcrossRaw,   // old range
         param.halfZoomWindowSizeRaw, param.halfZoomWindowSizeRaw,       // new range
         stream);
-    dump(offsetInit.get(), "i_offsetInitAdjusted");
-    dump(maxLocShift.get(), "i_maxLocShift");
+    dump(offsetInit, "i_offsetInitAdjusted");
+    dump(maxLocShift, "i_maxLocShift");
 
     // the reference windows: deramped, oversampled, their amplitudes with the mean subtracted
-    cuDeramp(param.derampMethod, *c_referenceBatchRaw, param.derampAxis, stream);
-    dump(c_referenceBatchRaw.get(), "c_referenceBatchRawDeramped");
-    referenceBatchOverSampler.execute(*c_referenceBatchRaw, *c_referenceBatchOverSampled);
-    cuArraysAbs(*c_referenceBatchOverSampled, *r_referenceBatchOverSampled, stream);
-    dump(c_referenceBatchOverSampled.get(), "c_referenceBatchOverSampled");
-    dump(r_referenceBatchOverSampled.get(), "r_referenceBatchOverSampled");
-    cuArraysSubtractMean(*r_referenceBatchOverSampled, stream);
-    dump(r_referenceBatchOverSampled.get(), "r_referenceBatchOverSampledSubMean");
+    cuDeramp(param.derampMethod, c_referenceBatchRaw, param.derampAxis, stream);
+    dump(c_referenceBatchRaw, "c_referenceBatchRawDeramped");
+    referenceBatchOverSampler.execute(c_referenceBatchRaw, c_referenceBatchOverSampled);
+    cuArraysAbs(c_referenceBatchOverSampled, r_referenceBatchOverSampled, stream);
+    dump(c_referenceBatchOverSampled, "c_referenceBatchOverSampled");
+    dump(r_referenceBatchOverSampled, "r_referenceBatchOverSampled");
+    cuArraysSubtractMean(r_referenceBatchOverSampled, stream);
+    dump(r_referenceBatchOverSampled, "r_referenceBatchOverSampledSubMean");
 
     // the secondary windows around the peaks: deramped, oversampled, their amplitudes
-    cuArraysCopyExtract(*c_secondaryBatchRaw, *c_secondaryBatchZoomIn, *offsetInit, stream);
-    dump(c_secondaryBatchZoomIn.get(), "c_secondaryBatchZoomInRaw");
-    cuDeramp(param.derampMethod, *c_secondaryBatchZoomIn, param.derampAxis, stream);
-    dump(c_secondaryBatchZoomIn.get(), "c_secondaryBatchZoomInDeramped");
-    secondaryBatchOverSampler.execute(*c_secondaryBatchZoomIn, *c_secondaryBatchOverSampled);
-    cuArraysAbs(*c_secondaryBatchOverSampled, *r_secondaryBatchOverSampled, stream);
-    dump(c_secondaryBatchOverSampled.get(), "c_secondaryBatchOverSampled");
-    dump(r_secondaryBatchOverSampled.get(), "r_secondaryBatchOverSampled");
+    cuArraysCopyExtract(c_secondaryBatchRaw, c_secondaryBatchZoomIn, offsetInit, stream);
+    dump(c_secondaryBatchZoomIn, "c_secondaryBatchZoomInRaw");
+    cuDeramp(param.derampMethod, c_secondaryBatchZoomIn, param.derampAxis, stream);
+    dump(c_secondaryBatchZoomIn, "c_secondaryBatchZoomInDeramped");
+    secondaryBatchOverSampler.execute(c_secondaryBatchZoomIn, c_secondaryBatchOverSampled);
+    cuArraysAbs(c_secondaryBatchOverSampled, r_secondaryBatchOverSampled, stream);
+    dump(c_secondaryBatchOverSampled, "c_secondaryBatchOverSampled");
+    dump(r_secondaryBatchOverSampled, "r_secondaryBatchOverSampled");
 
     // the normalized correlation surfaces of the oversampled windows
-    correlate(r_referenceBatchOverSampled.get(), r_secondaryBatchOverSampled.get(), r_corrBatchZoomIn.get(),
+    correlate(r_referenceBatchOverSampled, r_secondaryBatchOverSampled, r_corrBatchZoomIn,
         cuCorrFreqDomain_OverSampled.get(), corrNormalizerOverSampled.get(), "r_corrBatchZoomIn");
 
     // without the last row and column, of even size, oversampled again around the peak
-    cuArraysCopyExtract(*r_corrBatchZoomIn, *r_corrBatchZoomInAdjust, traits::make_int2(0, 0), stream);
-    dump(r_corrBatchZoomInAdjust.get(), "r_corrBatchZoomInAdjust");
-    oversampleSurface(r_corrBatchZoomInAdjust.get(), r_corrBatchZoomInOverSampled.get(), maxLocShift.get());
+    cuArraysCopyExtract(r_corrBatchZoomIn, r_corrBatchZoomInAdjust, traits::make_int2(0, 0), stream);
+    dump(r_corrBatchZoomInAdjust, "r_corrBatchZoomInAdjust");
+    oversampleSurface(r_corrBatchZoomInAdjust, r_corrBatchZoomInOverSampled, maxLocShift);
 
     // the peaks of the oversampled surfaces
-    cuArraysMaxloc2D(*r_corrBatchZoomInOverSampled, *offsetZoomIn, *corrMaxValue, stream);
-    dump(offsetZoomIn.get(), "i_offsetZoomIn");
-    dump(corrMaxValue.get(), "r_maxvalZoomInOversampled");
+    cuArraysMaxloc2D(r_corrBatchZoomInOverSampled, offsetZoomIn, corrMaxValue, stream);
+    dump(offsetZoomIn, "i_offsetZoomIn");
+    dump(corrMaxValue, "r_maxvalZoomInOversampled");
 
     // the offsets: the pixel peak (relative to the half search range) plus the sub-pixel peak,
     // (Init - HalfSearchRange) + ZoomIn/(2*ovs)
-    cuSubPixelOffset2Pass(*offsetInit, *offsetZoomIn, *offsetFinal,
+    cuSubPixelOffset2Pass(offsetInit, offsetZoomIn, offsetFinal,
         param.corrSurfaceOverSamplingFactor, param.rawDataOversamplingFactor,
         param.halfSearchRangeDownRaw, param.halfSearchRangeAcrossRaw, stream);
 
@@ -145,9 +145,7 @@ cuAmpcorProcessorTwoPass<arrayT>::cuAmpcorProcessorTwoPass(const cuAmpcorParamet
     const int across = param.windowsAcrossInChunk;
     // a batch of windows of height x width (one per window in a chunk)
     auto batch = [down, across](auto &array, int height, int width) {
-        using array_t = typename std::remove_reference_t<decltype(array)>::element_type;
-        array = std::make_unique<array_t>(height, width, down, across);
-        array->allocate();
+        array = std::decay_t<decltype(array)>(height, width, down*across);
     };
 
     // first pass
@@ -160,8 +158,7 @@ cuAmpcorProcessorTwoPass<arrayT>::cuAmpcorProcessorTwoPass(const cuAmpcorParamet
 
     // second pass
     batch(c_secondaryBatchZoomIn, param.searchWindowSizeHeightRawZoomIn, param.searchWindowSizeWidthRawZoomIn);
-    maxLocShift = std::make_unique<array_type<int2_type>>(down, across);
-    maxLocShift->allocate();
+    maxLocShift = array_type<int2_type>(down, across);
     batch(c_referenceBatchOverSampled, param.windowSizeHeight, param.windowSizeWidth);
     batch(c_secondaryBatchOverSampled, param.searchWindowSizeHeight, param.searchWindowSizeWidth);
     batch(r_referenceBatchOverSampled, param.windowSizeHeight, param.windowSizeWidth);

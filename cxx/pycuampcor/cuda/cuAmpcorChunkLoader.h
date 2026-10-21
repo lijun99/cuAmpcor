@@ -12,6 +12,7 @@
 
 #include "forward.h"
 #include "ArraysView.h"
+#include "cuArrays.h"
 #include "cuAmpcorLayers.h"
 
 namespace pycuampcor::cuda {
@@ -55,8 +56,8 @@ private:
     struct Source {
         const cuAmpcorChunkFootprint &footprint;   ///< the chunks to load
         SlcImage &image;                           ///< the image
-        std::unique_ptr<cuArrays<image_complex_type>> complexBuffer;  ///< for complex images
-        std::unique_ptr<cuArrays<image_real_type>> realBuffer;        ///< for real images
+        cuArrays<image_complex_type> complexBuffer;  ///< for complex images (empty otherwise)
+        cuArrays<image_real_type> realBuffer;        ///< for real images (empty otherwise)
         /// page-locked host memory for the largest chunk, copied asynchronously to the device;
         /// nullptr if it can't be allocated (then the chunks are copied from pageable memory)
         void *staging = nullptr;

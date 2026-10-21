@@ -1,14 +1,12 @@
 /**
  * @file  Arrays.h
- * @brief Header file for Arrays class (CPU backend)
+ * @brief A batch of 2D arrays in the work memory (CPU)
  *
- * A class describes a batch of images (in 2d arrays).
- * Each image has size (height, width)
- * The number of images (countH, countW) or (1, count).
- *
- * For the CPU backend, the "device" data (devData) are also in host memory;
- * the interface is kept the same as the CUDA backend.
- **/
+ * Arrays owns count arrays of height x width (row-major, one after the other) in the work (host)
+ * memory, aligned for SIMD instructions: allocated when constructed, freed when destroyed. It can
+ * be moved, not copied. The kernels and workers take views of the arrays (ArraysView.h), to which
+ * the arrays convert. Its interface is that of cuda::cuArrays (the streams are not used).
+ */
 
 #pragma once
 
@@ -17,102 +15,65 @@
 
 namespace pycuampcor::cpu {
 
+/// count 2D arrays of height x width of T in the work memory
 template <typename T>
-class Arrays{
-
+class Arrays {
 public:
-    int height; ///< x, row, down, length, azimuth, along the track
-    int width;  // y, col, across, range, along the sight
-    int size;   // one image size, height*width
-    int countH; // number of images along height direction
-    int countW; // number of images along width direction
-    int count;  // countW*countH, number of images
+    using value_type = T;
+    using view_type = ArraysView<T>;
+    using const_view_type = ArraysView<const T>;
 
-    bool is_allocated; // whether the data is allocated in (device) work memory
-    bool is_allocatedHost; // whether the data is allocated in host memory
+    /// no arrays (e.g., to be assigned later)
+    Arrays() = default;
+    /// count arrays of height x width, allocated in the work memory (not initialized)
+    Arrays(int height, int width, int count = 1);
+    /// free the memory
+    ~Arrays();
+    /// the arrays of other, which is left empty
+    Arrays(Arrays &&other) noexcept;
+    /// free the memory, and take the arrays of other, which is left empty
+    Arrays &operator=(Arrays &&other) noexcept;
+    Arrays(const Arrays &) = delete;
+    Arrays &operator=(const Arrays &) = delete;
 
-    T* devData; // pointer to data in (device) work memory
-    T* hostData; // pointer to data in host memory
+    /// the number of arrays
+    int count() const { return data.count(); }
+    /// the number of rows of an array (down, azimuth)
+    int height() const { return data.height(); }
+    /// the number of columns of an array (across, range)
+    int width() const { return data.width(); }
+    /// the number of elements of an array, height*width
+    int arraySize() const { return data.arraySize(); }
+    /// the number of elements, count*height*width
+    std::size_t size() const { return data.size(); }
+    /// whether there are no elements
+    bool empty() const { return data.empty(); }
+    /// the first element
+    T *data_handle() { return data.data_handle(); }
+    /// the first element (read-only)
+    const T *data_handle() const { return data.data_handle(); }
 
-    // default constructor, empty
-    Arrays() : height(0), width(0), size(0), countH(0), countW(0), count(0),
-        is_allocated(0), is_allocatedHost(0),
-        devData(nullptr), hostData(nullptr) {}
-
-    // constructor for single image
-    Arrays(size_t h, size_t w) : height(h), width(w), size(h*w), countH(1), countW(1), count(1),
-        is_allocated(0), is_allocatedHost(0),
-        devData(nullptr), hostData(nullptr) {}
-
-    // constructor for multiple images with a total count
-    Arrays(size_t h, size_t w, size_t n) : height(h), width(w), size(h*w), countH(1), countW(n), count(n),
-        is_allocated(0), is_allocatedHost(0),
-        devData(nullptr), hostData(nullptr) {}
-
-    // constructor for multiple images with (countH, countW)
-    Arrays(size_t h, size_t w, size_t ch, size_t cw) : height(h), width(w), size(h*w), countH(ch), countW(cw), count(ch*cw),
-        is_allocated(0), is_allocatedHost(0),
-        devData(nullptr), hostData(nullptr) {}
-
-    // disable copying
-    Arrays(const Arrays&) = delete;
-    Arrays& operator=(const Arrays&) = delete;
-
-    // memory allocation
-    void allocate();
-    void allocateHost();
-    void deallocate();
-    void deallocateHost();
-
-    // copy data between (device) work and host memories
-    void copyToHost(stream_t stream);
-    void copyToDevice(stream_t stream);
-
-    // get the total size
-    size_t getSize()
-    {
-        return (size_t)size*count;
-    }
-
-    // get the total size in byte
-    inline size_t getByteSize()
-    {
-        return getSize()*sizeof(T);
-    }
-
-    // destructor
-    ~Arrays()
-    {
-        if(is_allocated)
-            deallocate();
-        if(is_allocatedHost)
-            deallocateHost();
-    }
-
-    /// a view of the data in the (device) work memory
-    ArraysView<T> view() { return ArraysView<T>(devData, height, width, count); }
-    /// a read-only view of the data in the (device) work memory
-    ArraysView<const T> view() const { return ArraysView<const T>(devData, height, width, count); }
-    /// the arrays as a view, e.g., for the kernels
-    operator ArraysView<T>() { return view(); }
+    /// a view of the arrays, e.g., for the kernels
+    view_type view() { return data; }
+    /// a read-only view of the arrays
+    const_view_type view() const { return data; }
+    /// the arrays as a view
+    operator view_type() { return data; }
     /// the arrays as a read-only view
-    operator ArraysView<const T>() const { return view(); }
+    operator const_view_type() const { return data; }
 
-    // set zeroes
+    /// set the elements to zero
     void setZero(stream_t stream);
-    // output when debugging
-    void debuginfo(stream_t stream) ;
-    // write to files
-    void outputToFile(std::string fn, stream_t stream);
-    void outputHostToFile(std::string fn);
+    /// copy size() elements from host
+    void copyFromHost(const T *host, stream_t stream);
+    /// a copy of the elements
+    std::vector<T> toHost(stream_t stream) const;
+    /// write the arrays to the binary file fn
+    void outputToFile(const std::string &fn, stream_t stream) const;
 
+private:
+    view_type data;   ///< the work memory, and the extents of the arrays
 };
-
-std::ostream& operator<<(std::ostream& os, const float2& p);
-std::ostream& operator<<(std::ostream& os, const float3& p);
-std::ostream& operator<<(std::ostream& os, const double2& p);
-std::ostream& operator<<(std::ostream& os, const double3& p);
-std::ostream& operator<<(std::ostream& os, const int2& p);
 
 } // namespace
 //end of file

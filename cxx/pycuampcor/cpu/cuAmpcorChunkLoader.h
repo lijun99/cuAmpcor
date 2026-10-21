@@ -11,6 +11,7 @@
 
 #include "forward.h"
 #include "ArraysView.h"
+#include "Arrays.h"
 #include "cuAmpcorLayers.h"
 
 namespace pycuampcor::cpu {
@@ -53,8 +54,8 @@ private:
     struct Source {
         const cuAmpcorChunkFootprint &footprint;   ///< the chunks to load
         SlcImage &image;                           ///< the image
-        std::unique_ptr<array_type<image_complex_type>> complexBuffer;  ///< for complex images
-        std::unique_ptr<array_type<image_real_type>> realBuffer;        ///< for real images
+        array_type<image_complex_type> complexBuffer;  ///< for complex images (empty otherwise)
+        array_type<image_real_type> realBuffer;        ///< for real images (empty otherwise)
 
         /// a source with a buffer for the largest chunk of the footprint
         Source(const cuAmpcorChunkFootprint &footprint, DataType dataType, SlcImage &image);

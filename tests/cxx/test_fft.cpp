@@ -37,13 +37,13 @@ TEST_F(FFTTest, OverSamplerC2C)
         auto e = exponential(nx, ny, kx[k], ky[k], k+1);
         v.insert(v.end(), e.begin(), e.end());
     }
-    auto in = makeFrom(v, nx, ny, 1, n);
-    auto out = make<complex_type>(nx*ratio, ny*ratio, 1, n);
+    auto in = makeFrom(v, nx, ny, n);
+    auto out = make<complex_type>(nx*ratio, ny*ratio, n);
     cuOverSamplerC2C oversampler(nx, ny, nx*ratio, ny*ratio, n, stream);
-    oversampler.execute(*in, *out);
-    auto r = download(*out);
+    oversampler.execute(in, out);
+    auto r = download(out);
     // the input is unchanged (out-of-place)
-    auto v2 = download(*in);
+    auto v2 = download(in);
     EXPECT_EQ(v2[5].x, v[5].x);
     for (int k = 0; k < n; k++) {
         auto ref = exponential(nx*ratio, ny*ratio, kx[k], ky[k], k+1);
@@ -61,11 +61,11 @@ TEST_F(FFTTest, OverSamplerNyquistPositive)
     const int nx = 8, ny = 7, ratio = 2;
     // Nyquist along x (kx = nx/2); a regular frequency along the odd y
     auto v = exponential(nx, ny, nx/2, 2);
-    auto in = makeFrom(v, nx, ny, 1, 1);
-    auto out = make<complex_type>(nx*ratio, ny*ratio, 1, 1);
+    auto in = makeFrom(v, nx, ny);
+    auto out = make<complex_type>(nx*ratio, ny*ratio);
     cuOverSamplerC2C oversampler(nx, ny, nx*ratio, ny*ratio, 1, stream);
-    oversampler.execute(*in, *out);
-    auto r = download(*out);
+    oversampler.execute(in, out);
+    auto r = download(out);
     auto ref = exponential(nx*ratio, ny*ratio, nx/2, 2);
     for (size_t i = 0; i < ref.size(); i++) {
         EXPECT_NEAR(r[i].x, ref[i].x, 100*tol);
@@ -84,8 +84,8 @@ TEST_F(FFTTest, OverSamplerR2R)
     auto in = makeFrom(v, nx, ny);
     auto out = make<real_type>(nx*ratio, ny*ratio);
     cuOverSamplerR2R oversampler(nx, ny, nx*ratio, ny*ratio, 1, stream);
-    oversampler.execute(*in, *out);
-    auto r = download(*out);
+    oversampler.execute(in, out);
+    auto r = download(out);
     for (int x = 0; x < nx*ratio; x++)
         for (int y = 0; y < ny*ratio; y++)
             EXPECT_NEAR(r[x*ny*ratio + y], f(double(x)/(nx*ratio), double(y)/(ny*ratio)), 100*tol);
@@ -116,15 +116,15 @@ TEST_F(FFTTest, Correlators)
     auto tv = randomReal(h*w*n, 3);
     auto sv = randomReal(H*W*n, 4);
     auto ref = naiveCorrelation(tv, h, w, sv, H, W, n);
-    auto t = makeFrom(tv, h, w, 1, n);
-    auto s = makeFrom(sv, H, W, 1, n);
-    auto c = make<real_type>(ch, cw, 1, n);
+    auto t = makeFrom(tv, h, w, n);
+    auto s = makeFrom(sv, H, W, n);
+    auto c = make<real_type>(ch, cw, n);
 
     cuFreqCorrelator correlator(H, W, n, stream);
-    correlator.execute(*t, *s, *c);
-    auto rf = download(*c);
-    cuCorrTimeDomain(*t, *s, *c, stream);
-    auto rt = download(*c);
+    correlator.execute(t, s, c);
+    auto rf = download(c);
+    cuCorrTimeDomain(t, s, c, stream);
+    auto rt = download(c);
     for (size_t i = 0; i < ref.size(); i++) {
         EXPECT_NEAR(rf[i], ref[i], 1e3*tol) << i;
         EXPECT_NEAR(rt[i], ref[i], 1e2*tol) << i;
@@ -153,8 +153,8 @@ void FFTTest::checkNormalizer(int h, int w, int H, int W, int2 lag)
     auto s = makeFrom(sv, H, W);
     auto c = makeFrom(cv, ch, cw);
     auto normalizer = newCuNormalizer(H, W, n);
-    normalizer->execute(*c, *t, *s, stream);
-    auto r = download(*c);
+    normalizer->execute(c, t, s, stream);
+    auto r = download(c);
 
     double t2 = 0;
     for (auto x : tv) t2 += double(x)*x;

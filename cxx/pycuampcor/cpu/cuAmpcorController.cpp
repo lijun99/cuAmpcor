@@ -10,6 +10,7 @@
 #include "arrayTraits.h"
 #include "cuAmpcorProcessor.h"
 #include "Arrays.h"
+#include "ArraysFile.h"
 #include "ArraysCopy.h"
 #include "float2.h"
 #include "logging.h"
@@ -26,63 +27,60 @@ namespace {
 /// the output images of a layer; the run images, written by the processors, are padded to
 /// whole chunks, and extracted to the output images at the end
 struct LayerImages {
-    std::unique_ptr<array_type<real2_type>> offsetRun, offset;        ///< the dense offsets
-    std::unique_ptr<array_type<real_type>> snrRun, snr;               ///< the SNR
-    std::unique_ptr<array_type<real3_type>> covRun, cov;              ///< the covariance
-    std::unique_ptr<array_type<real_type>> peakValueRun, peakValue;   ///< the correlation peak
+    array_type<real2_type> offsetRun, offset;        ///< the dense offsets
+    array_type<real_type> snrRun, snr;               ///< the SNR
+    array_type<real3_type> covRun, cov;              ///< the covariance
+    array_type<real_type> peakValueRun, peakValue;   ///< the correlation peak
 
-    /// allocate the run and output images of a layer
+    /// allocate the run and output images of a layer; the run images cover whole chunks: they may
+    /// be larger than the output images
     explicit LayerImages(const cuAmpcorParameter &param)
-    {
-        // the run images cover whole chunks: they may be larger than the output images
-        const int nWindowsDownRun = param.numberChunkDown * param.windowsDownInChunk;
-        const int nWindowsAcrossRun = param.numberChunkAcross * param.windowsAcrossInChunk;
-        newArray(offsetRun, nWindowsDownRun, nWindowsAcrossRun);
-        newArray(snrRun, nWindowsDownRun, nWindowsAcrossRun);
-        newArray(covRun, nWindowsDownRun, nWindowsAcrossRun);
-        newArray(peakValueRun, nWindowsDownRun, nWindowsAcrossRun);
-        newArray(offset, param.numberWindowDown, param.numberWindowAcross);
-        newArray(snr, param.numberWindowDown, param.numberWindowAcross);
-        newArray(cov, param.numberWindowDown, param.numberWindowAcross);
-        newArray(peakValue, param.numberWindowDown, param.numberWindowAcross);
-    }
+        : offsetRun(runHeight(param), runWidth(param)), offset(param.numberWindowDown, param.numberWindowAcross),
+          snrRun(runHeight(param), runWidth(param)), snr(param.numberWindowDown, param.numberWindowAcross),
+          covRun(runHeight(param), runWidth(param)), cov(param.numberWindowDown, param.numberWindowAcross),
+          peakValueRun(runHeight(param), runWidth(param)), peakValue(param.numberWindowDown, param.numberWindowAcross)
+    {}
 
-    /// allocate an array of height x width in the work memory
-    template <typename T>
-    static void newArray(std::unique_ptr<array_type<T>> &ptr, int height, int width)
+    /// the height of the run images: the windows down in whole chunks
+    static int runHeight(const cuAmpcorParameter &param)
     {
-        ptr = std::make_unique<array_type<T>>(height, width);
-        ptr->allocate();
+        return param.numberChunkDown * param.windowsDownInChunk;
+    }
+    /// the width of the run images: the windows across in whole chunks
+    static int runWidth(const cuAmpcorParameter &param)
+    {
+        return param.numberChunkAcross * param.windowsAcrossInChunk;
     }
 
     /// extract the run images to the output images, and write them (and the gross offsets) to files
     void write(const cuAmpcorParameter &param)
     {
         const stream_t stream{};
-        cuArraysCopyExtract(*offsetRun, *offset, make_int2(0,0), stream);
-        cuArraysCopyExtract(*snrRun, *snr, make_int2(0,0), stream);
-        cuArraysCopyExtract(*covRun, *cov, make_int2(0,0), stream);
-        cuArraysCopyExtract(*peakValueRun, *peakValue, make_int2(0,0), stream);
+        cuArraysCopyExtract(offsetRun, offset, make_int2(0,0), stream);
+        cuArraysCopyExtract(snrRun, snr, make_int2(0,0), stream);
+        cuArraysCopyExtract(covRun, cov, make_int2(0,0), stream);
+        cuArraysCopyExtract(peakValueRun, peakValue, make_int2(0,0), stream);
 
+        // the dense offsets, to the host
+        std::vector<real2_type> offsetHost = offset.toHost(stream);
         // the gross offsets of the windows
-        offset->allocateHost();
-        offset->copyToHost(stream);
-        array_type<real2_type> grossOffset(param.numberWindowDown, param.numberWindowAcross);
-        grossOffset.allocateHost();
+        std::vector<real2_type> grossOffset(offsetHost.size());
         for(int i=0; i< param.numberWindows; i++)
-            grossOffset.hostData[i] = make_real2(param.grossOffsetDown[i], param.grossOffsetAcross[i]);
+            grossOffset[i] = make_real2(param.grossOffsetDown[i], param.grossOffsetAcross[i]);
         // the dense offsets, with the gross offsets added if they are merged
         if (param.mergeGrossOffset) {
             for(int i=0; i< param.numberWindows; i++)
-                offset->hostData[i] += grossOffset.hostData[i];
+                offsetHost[i] += grossOffset[i];
         }
-        offset->outputHostToFile(param.offsetImageName);
-        grossOffset.outputHostToFile(param.grossOffsetImageName);
+        writeArraysToFile(param.offsetImageName, ArraysView<const real2_type>(offsetHost.data(),
+            offset.height(), offset.width()));
+        writeArraysToFile(param.grossOffsetImageName, ArraysView<const real2_type>(grossOffset.data(),
+            offset.height(), offset.width()));
 
         // the statistics
-        snr->outputToFile(param.snrImageName, stream);
-        cov->outputToFile(param.covImageName, stream);
-        peakValue->outputToFile(param.peakValueImageName, stream);
+        snr.outputToFile(param.snrImageName, stream);
+        cov.outputToFile(param.covImageName, stream);
+        peakValue.outputToFile(param.peakValueImageName, stream);
     }
 };
 
@@ -197,7 +195,7 @@ void cuAmpcorController::runAmpcorLayers(const std::vector<cuAmpcorController *>
         for (int l = 0; l < nLayers; l++) {
             LayerImages &im = *images[l];
             worker->processors.push_back(processor_t::create(params[l]->workflow, *params[l],
-                *im.offsetRun, *im.snrRun, *im.covRun, *im.peakValueRun, stream_t{}));
+                im.offsetRun, im.snrRun, im.covRun, im.peakValueRun, stream_t{}));
         }
     }
 

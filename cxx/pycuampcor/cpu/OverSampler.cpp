@@ -8,12 +8,13 @@
 #include "float2.h"
 #include "ArraysCopy.h"
 #include "ArraysPadding.h"
-#include "indexing.h"
 #include "Arrays.h"
 #include "SincOverSampler.h"
 #include "cuSurfaceOverSampler.h"
 #include "arrayTraits.h"
 #include "cuAmpcorOptions.h"
+
+#include <utility>
 // dependencies
 
 namespace pycuampcor::cpu {
@@ -40,21 +41,17 @@ cuOverSamplerC2C::cuOverSamplerC2C(int inNX, int inNY, int outNX, int outNY, int
     : stream(stream_)
 {
     // set up work arrays
-    workIn = std::make_unique<array_type<complex_type>>(inNX, inNY, nImages);
-    workIn->allocate();
-    workOut = std::make_unique<array_type<complex_type>>(outNX, outNY, nImages);
-    workOut->allocate();
+    workIn = array_type<complex_type>(inNX, inNY, nImages);
+    workOut = array_type<complex_type>(outNX, outNY, nImages);
 
     // set up fft plans (out-of-place), with temporary arrays in place of the input/output images
     array_type<complex_type> planIn(inNX, inNY, nImages);
-    planIn.allocate();
     array_type<complex_type> planOut(outNX, outNY, nImages);
-    planOut.allocate();
     std::lock_guard<std::mutex> lock(fftwPlannerMutex());
     // exp(+i) to the frequency domain and exp(-i) back, as the isce3 (v1) pycuampcor:
     // the Nyquist frequency of even lengths is then positive (see cuArraysFFTPaddingMany)
-    forwardPlan = planMany2D(inNX, inNY, nImages, planIn.devData, workIn->devData, FFTW_BACKWARD);
-    backwardPlan = planMany2D(outNX, outNY, nImages, workOut->devData, planOut.devData, FFTW_FORWARD);
+    forwardPlan = planMany2D(inNX, inNY, nImages, planIn.data_handle(), workIn.data_handle(), FFTW_BACKWARD);
+    backwardPlan = planMany2D(outNX, outNY, nImages, workOut.data_handle(), planOut.data_handle(), FFTW_FORWARD);
 }
 
 /**
@@ -75,11 +72,11 @@ void cuOverSamplerC2C::execute(ArraysView<const complex_type> imagesIn, ArraysVi
     // FFT to frequency domain (the input of the out-of-place transform is not written,
     // fftw takes it as non-const)
     PYCUAMPCOR_FFTW(execute_dft)(forwardPlan, fftwCast(const_cast<complex_type *>(imagesIn.data_handle())),
-        fftwCast(workIn->devData));
+        fftwCast(workIn.data_handle()));
     // padding zeros in the middle
-    cuArraysFFTPaddingMany(*workIn, *workOut, stream);
+    cuArraysFFTPaddingMany(workIn, workOut, stream);
     // iFFT back to time domain
-    PYCUAMPCOR_FFTW(execute_dft)(backwardPlan, fftwCast(workOut->devData), fftwCast(imagesOut.data_handle()));
+    PYCUAMPCOR_FFTW(execute_dft)(backwardPlan, fftwCast(workOut.data_handle()), fftwCast(imagesOut.data_handle()));
 }
 
 /// destructor
@@ -97,15 +94,11 @@ cuOverSamplerC2C::~cuOverSamplerC2C() = default;
 cuOverSamplerR2R::cuOverSamplerR2R(int inNX, int inNY, int outNX, int outNY, int nImages, stream_t stream_)
     : stream(stream_)
 {
-    workSizeIn = std::make_unique<array_type<complex_type>>(inNX, inNY, nImages);
-    workSizeIn->allocate();
+    workSizeIn = array_type<complex_type>(inNX, inNY, nImages);
     // work arrays for one image
-    workColumns = std::make_unique<array_type<complex_type>>(outNX, inNY, 1);
-    workColumns->allocate();
-    workPadded = std::make_unique<array_type<complex_type>>(outNX, outNY, 1);
-    workPadded->allocate();
-    workSizeOut = std::make_unique<array_type<complex_type>>(outNX, outNY, 1);
-    workSizeOut->allocate();
+    workColumns = array_type<complex_type>(outNX, inNY, 1);
+    workPadded = array_type<complex_type>(outNX, outNY, 1);
+    workSizeOut = array_type<complex_type>(outNX, outNY, 1);
 
     // the numbers of the positive and negative frequency columns, as in cuArraysFFTPaddingMany
     const int nColumns[2] = {(inNY+1)/2, inNY/2};
@@ -118,23 +111,23 @@ cuOverSamplerR2R::cuOverSamplerR2R(int inNX, int inNY, int outNX, int outNY, int
         // exp(+i) to the frequency domain and exp(-i) back, as the isce3 (v1) pycuampcor:
         // the Nyquist frequency of even lengths is then positive (see cuArraysFFTPaddingMany)
         // forward fft (in-place) of all images
-        forwardPlan = planMany2D(inNX, inNY, nImages, workSizeIn->devData, workSizeIn->devData, FFTW_BACKWARD);
+        forwardPlan = planMany2D(inNX, inNY, nImages, workSizeIn.data_handle(), workSizeIn.data_handle(), FFTW_BACKWARD);
         // inverse fft along the columns, from workColumns to the non-zero columns of workPadded
         for(int k = 0; k < 2; k++)
             backwardPlanColumns[k] = (nColumns[k] == 0) ? nullptr : PYCUAMPCOR_FFTW(plan_many_dft)(1, &outNX, nColumns[k],
-                fftwCast(workColumns->devData + columnIn[k]), nullptr, inNY, 1,
-                fftwCast(workPadded->devData + columnOut[k]), nullptr, outNY, 1,
+                fftwCast(workColumns.data_handle() + columnIn[k]), nullptr, inNY, 1,
+                fftwCast(workPadded.data_handle() + columnOut[k]), nullptr, outNY, 1,
                 FFTW_FORWARD, fftwFlags | FFTW_PRESERVE_INPUT);
         // inverse fft along the rows, out-of-place to keep the zero columns of workPadded
         backwardPlanRows = PYCUAMPCOR_FFTW(plan_many_dft)(1, &outNY, outNX,
-            fftwCast(workPadded->devData), nullptr, 1, outNY,
-            fftwCast(workSizeOut->devData), nullptr, 1, outNY,
+            fftwCast(workPadded.data_handle()), nullptr, 1, outNY,
+            fftwCast(workSizeOut.data_handle()), nullptr, 1, outNY,
             FFTW_FORWARD, fftwFlags | FFTW_PRESERVE_INPUT);
     }
 
     // the zeros padded in the middle, set once (only the non-zero parts are written in execute)
-    workColumns->setZero(stream);
-    workPadded->setZero(stream);
+    workColumns.setZero(stream);
+    workPadded.setZero(stream);
 }
 
 void cuOverSamplerR2R::setStream(stream_t stream_)
@@ -150,22 +143,24 @@ void cuOverSamplerR2R::setStream(stream_t stream_)
 void cuOverSamplerR2R::execute(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut)
 {
     // forward fft of all images
-    cuArraysCopyPadded(imagesIn, *workSizeIn, stream);
+    cuArraysCopyPadded(imagesIn, workSizeIn, stream);
     PYCUAMPCOR_FFTW(execute)(forwardPlan);
 
-    const int inNX = workSizeIn->height, inNY = workSizeIn->width;
-    const int outNX = workSizeOut->height, outNY = workSizeOut->width;
+    const int inNX = workSizeIn.height(), inNY = workSizeIn.width();
+    const int outNX = workSizeOut.height();
     const int imagesOutNX = imagesOut.height(), imagesOutNY = imagesOut.width();
+    const ArraysView<complex_type> columns = workColumns;
+    const ArraysView<const complex_type> oversampled = workSizeOut;
     // fftw doesn't normalize
-    const real_type factor = real_type(1)/workSizeIn->size;
-    for(int imageIdx = 0; imageIdx < workSizeIn->count; imageIdx++) {
+    const real_type factor = real_type(1)/workSizeIn.arraySize();
+    for(int imageIdx = 0; imageIdx < workSizeIn.count(); imageIdx++) {
         // pad zeros in the middle of the columns (as cuArraysFFTPaddingMany), with the spectrum
         // rows moved to the top and bottom; the zero rows are not changed
-        const complex_type *spectrum = workSizeIn->devData + static_cast<size_t>(imageIdx)*workSizeIn->size;
+        const ArraysView<const complex_type> spectrum = std::as_const(workSizeIn).view().array(imageIdx);
         for(int x1 = 0; x1 < inNX; x1++) {
             const int x2 = (x1 < (inNX+1)/2) ? x1 : outNX - inNX + x1;
             for(int y = 0; y < inNY; y++)
-                workColumns->devData[idx2r(x2, y, inNY)] = spectrum[idx2r(x1, y, inNY)]*factor;
+                columns(x2, y) = spectrum(x1, y)*factor;
         }
         // inverse fft along the columns, then along the rows
         for(int k = 0; k < 2; k++)
@@ -173,10 +168,10 @@ void cuOverSamplerR2R::execute(ArraysView<const real_type> imagesIn, ArraysView<
                 PYCUAMPCOR_FFTW(execute)(backwardPlanColumns[k]);
         PYCUAMPCOR_FFTW(execute)(backwardPlanRows);
         // take the real part
-        real_type *imageOut = imagesOut.array(imageIdx).data_handle();
+        const ArraysView<real_type> imageOut = imagesOut.array(imageIdx);
         for(int x = 0; x < imagesOutNX; x++)
             for(int y = 0; y < imagesOutNY; y++)
-                imageOut[idx2r(x, y, imagesOutNY)] = workSizeOut->devData[idx2r(x, y, outNY)].x;
+                imageOut(x, y) = oversampled(x, y).x;
     }
 }
 

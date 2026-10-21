@@ -71,19 +71,19 @@ private:
     using base_type::dump;
 
     // the windows, and their oversampled amplitudes
-    std::unique_ptr<array_type<window_type>> c_referenceBatchRaw;           ///< the reference windows (enlarged)
-    std::unique_ptr<array_type<window_type>> c_secondaryBatchRaw;           ///< the secondary windows
-    std::unique_ptr<array_type<window_type>> c_referenceBatchOverSampled;   ///< the oversampled reference windows
-    std::unique_ptr<array_type<window_type>> c_secondaryBatchOverSampled;   ///< the oversampled secondary windows
-    std::unique_ptr<array_type<real_type>> r_referenceBatchOverSampled;     ///< the amplitudes of the reference windows (not enlarged)
-    std::unique_ptr<array_type<real_type>> r_secondaryBatchOverSampled;     ///< the amplitudes of the secondary windows
+    array_type<window_type> c_referenceBatchRaw;                            ///< the reference windows (enlarged)
+    array_type<window_type> c_secondaryBatchRaw;                            ///< the secondary windows
+    array_type<window_type> c_referenceBatchOverSampled;                    ///< the oversampled reference windows
+    array_type<window_type> c_secondaryBatchOverSampled;                    ///< the oversampled secondary windows
+    array_type<real_type> r_referenceBatchOverSampled;                      ///< the amplitudes of the reference windows (not enlarged)
+    array_type<real_type> r_secondaryBatchOverSampled;                      ///< the amplitudes of the secondary windows
     oversampler_c2c_type referenceBatchOverSampler;                         ///< the oversampler of the reference windows
     oversampler_c2c_type secondaryBatchOverSampler;                         ///< the oversampler of the secondary windows
 
     // the correlation surfaces
-    std::unique_ptr<array_type<real_type>> r_corrBatch;                     ///< the correlation surfaces
-    std::unique_ptr<array_type<real_type>> r_corrBatchZoomIn;               ///< the surfaces around the peak
-    std::unique_ptr<array_type<real_type>> r_corrBatchZoomInOverSampled;    ///< the oversampled surfaces
+    array_type<real_type> r_corrBatch;                                      ///< the correlation surfaces
+    array_type<real_type> r_corrBatchZoomIn;                                ///< the surfaces around the peak
+    array_type<real_type> r_corrBatchZoomInOverSampled;                     ///< the oversampled surfaces
     std::unique_ptr<freq_correlator_type> cuCorrFreqDomain_OverSampled;     ///< the correlator (frequency domain)
     std::unique_ptr<normalizer_type> corrNormalizerOverSampled;             ///< the normalizer
 };

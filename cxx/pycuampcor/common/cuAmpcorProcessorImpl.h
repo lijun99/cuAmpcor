@@ -59,22 +59,17 @@ cuAmpcorProcessor<arrayT>::cuAmpcorProcessor(const cuAmpcorParameter &param_,
     const int across = param.windowsAcrossInChunk;
     // a batch of count windows of height x width (one per window in a chunk), in the work memory
     auto batch = [down, across](auto &array, int height, int width) {
-        using array_t = typename std::remove_reference_t<decltype(array)>::element_type;
-        array = std::make_unique<array_t>(height, width, down, across);
-        array->allocate();
+        array = std::decay_t<decltype(array)>(height, width, down*across);
     };
     // one value per window in a chunk
     auto values = [down, across](auto &array) {
-        using array_t = typename std::remove_reference_t<decltype(array)>::element_type;
-        array = std::make_unique<array_t>(down, across);
-        array->allocate();
+        array = std::decay_t<decltype(array)>(down, across);
     };
 
     // the starting pixels of the windows relative to the loaded chunk, computed on the host
+    chunkOffsetHost.resize(down*across);
     values(chunkOffsetDown);
-    chunkOffsetDown->allocateHost();
     values(chunkOffsetAcross);
-    chunkOffsetAcross->allocateHost();
 
     // the per-window results
     values(offsetInit);
@@ -137,34 +132,35 @@ void cuAmpcorProcessor<arrayT>::getRelativeOffset(int *relative, const std::vect
 template <template <typename> class arrayT>
 void cuAmpcorProcessor<arrayT>::copyToBatch(const loaded_chunk_type &chunk,
     const std::vector<int> &startDown, const std::vector<int> &startAcross,
-    array_type<complex_type> *batch)
+    array_type<complex_type> &batch)
 {
     // a chunk entirely outside the image: its windows are zeros
     if (chunk.empty()) {
-        batch->setZero(stream);
+        batch.setZero(stream);
         return;
     }
 
-    // the starting pixels of the windows relative to the chunk, computed on the host
-    getRelativeOffset(chunkOffsetDown->hostData, startDown, chunk.startDown);
-    chunkOffsetDown->copyToDevice(stream);
-    getRelativeOffset(chunkOffsetAcross->hostData, startAcross, chunk.startAcross);
-    chunkOffsetAcross->copyToDevice(stream);
+    // the starting pixels of the windows relative to the chunk, computed on the host (the host
+    // memory can be reused once copyFromHost returns)
+    getRelativeOffset(chunkOffsetHost.data(), startDown, chunk.startDown);
+    chunkOffsetDown.copyFromHost(chunkOffsetHost.data(), stream);
+    getRelativeOffset(chunkOffsetHost.data(), startAcross, chunk.startAcross);
+    chunkOffsetAcross.copyFromHost(chunkOffsetHost.data(), stream);
 
     // windows outside the chunk (image) are padded with zeros
     if (!chunk.complexData.empty()) {
         // complex image (e.g., SLC): amplitudes if not deramped, the complex values otherwise
         if (param.derampMethod == DerampMethod::Magnitude)
-            cuArraysCopyToBatchAbsWithOffset(chunk.complexData, *batch, *chunkOffsetDown,
-                *chunkOffsetAcross, stream);
+            cuArraysCopyToBatchAbsWithOffset(chunk.complexData, batch, chunkOffsetDown,
+                chunkOffsetAcross, stream);
         else
-            cuArraysCopyToBatchWithOffset(chunk.complexData, *batch, *chunkOffsetDown,
-                *chunkOffsetAcross, stream);
+            cuArraysCopyToBatchWithOffset(chunk.complexData, batch, chunkOffsetDown,
+                chunkOffsetAcross, stream);
     }
     else {
         // real image (e.g., TIFF), copied to complex
-        cuArraysCopyToBatchWithOffsetR2C(chunk.realData, *batch, *chunkOffsetDown,
-            *chunkOffsetAcross, stream);
+        cuArraysCopyToBatchWithOffsetR2C(chunk.realData, batch, chunkOffsetDown,
+            chunkOffsetAcross, stream);
     }
 }
 
@@ -172,17 +168,17 @@ void cuAmpcorProcessor<arrayT>::copyToBatch(const loaded_chunk_type &chunk,
  * Cross-correlate the reference windows with the secondary windows, and normalize
  */
 template <template <typename> class arrayT>
-void cuAmpcorProcessor<arrayT>::correlate(array_type<real_type> *reference,
-    array_type<real_type> *secondary, array_type<real_type> *surface,
+void cuAmpcorProcessor<arrayT>::correlate(array_type<real_type> &reference,
+    array_type<real_type> &secondary, array_type<real_type> &surface,
     freq_correlator_type *freqCorrelator, normalizer_type *normalizer, const std::string &name)
 {
     if (param.algorithm == Algorithm::Frequency)
-        freqCorrelator->execute(*reference, *secondary, *surface);
+        freqCorrelator->execute(reference, secondary, surface);
     else
-        cuCorrTimeDomain(*reference, *secondary, *surface, stream);
+        cuCorrTimeDomain(reference, secondary, surface, stream);
     dump(surface, name + "UnNorm");
 
-    normalizer->execute(*surface, *reference, *secondary, stream);
+    normalizer->execute(surface, reference, secondary, stream);
     dump(surface, name);
 }
 
@@ -201,11 +197,10 @@ void cuAmpcorProcessor<arrayT>::createSurfaceOversampler(int height, int width)
  * Oversample the correlation surfaces around the peak
  */
 template <template <typename> class arrayT>
-void cuAmpcorProcessor<arrayT>::oversampleSurface(array_type<real_type> *surface,
-    array_type<real_type> *oversampled, array_type<int2_type> *shift)
+void cuAmpcorProcessor<arrayT>::oversampleSurface(array_type<real_type> &surface,
+    array_type<real_type> &oversampled, ArraysView<const int2_type> shift)
 {
-    surfaceOverSampler->execute(*surface, *oversampled,
-        shift ? ArraysView<const int2_type>(*shift) : ArraysView<const int2_type>());
+    surfaceOverSampler->execute(surface, oversampled, shift);
     dump(oversampled, "r_corrBatchZoomInOverSampled");
 }
 
@@ -218,10 +213,10 @@ void cuAmpcorProcessor<arrayT>::writeResults()
     // the first window of the chunk in the output images
     const int down = idxChunkDown*param.windowsDownInChunk;
     const int across = idxChunkAcross*param.windowsAcrossInChunk;
-    cuArraysCopyInsert(*offsetFinal, offsetImage, down, across, stream);
-    cuArraysCopyInsert(*r_snrValue, snrImage, down, across, stream);
-    cuArraysCopyInsert(*r_covValue, covImage, down, across, stream);
-    cuArraysCopyInsert(*corrMaxValue, peakValueImage, down, across, stream);
+    cuArraysCopyInsert(offsetFinal, offsetImage, down, across, stream);
+    cuArraysCopyInsert(r_snrValue, snrImage, down, across, stream);
+    cuArraysCopyInsert(r_covValue, covImage, down, across, stream);
+    cuArraysCopyInsert(corrMaxValue, peakValueImage, down, across, stream);
 }
 
 /**
@@ -229,11 +224,11 @@ void cuAmpcorProcessor<arrayT>::writeResults()
  */
 template <template <typename> class arrayT>
 template <typename T>
-void cuAmpcorProcessor<arrayT>::dump([[maybe_unused]] array_type<T> *array,
+void cuAmpcorProcessor<arrayT>::dump([[maybe_unused]] const array_type<T> &array,
     [[maybe_unused]] const std::string &name)
 {
 #ifdef CUAMPCOR_DEBUG
-    array->outputToFile(name, stream);
+    array.outputToFile(name, stream);
 #endif
 }
 

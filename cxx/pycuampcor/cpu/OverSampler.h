@@ -11,6 +11,7 @@
 
 #include "forward.h"
 #include "ArraysView.h"
+#include "Arrays.h"
 #include "fftwUtil.h"
 
 namespace pycuampcor::cpu {
@@ -22,8 +23,8 @@ private:
      FftwPlan forwardPlan;   // forward fft handle
      FftwPlan backwardPlan;  // backward fft handle
      stream_t stream;              // stream (not used)
-     std::unique_ptr<array_type<complex_type>> workIn;  // work array to hold forward fft data
-     std::unique_ptr<array_type<complex_type>> workOut; // work array to hold padded data
+     array_type<complex_type> workIn;  // work array to hold forward fft data
+     array_type<complex_type> workOut; // work array to hold padded data
 public:
      // disable the default constructor
      cuOverSamplerC2C() = delete;
@@ -47,10 +48,10 @@ private:
      FftwPlan backwardPlanColumns[2]; // for the positive and negative frequency columns
      FftwPlan backwardPlanRows;
      stream_t stream;
-     std::unique_ptr<array_type<complex_type>> workSizeIn;   // the spectra of the input images
-     std::unique_ptr<array_type<complex_type>> workColumns;  // the spectrum of one image, padded along the columns
-     std::unique_ptr<array_type<complex_type>> workPadded;   // the inverse fft along the columns, padded along the rows
-     std::unique_ptr<array_type<complex_type>> workSizeOut;  // the oversampled image
+     array_type<complex_type> workSizeIn;   // the spectra of the input images
+     array_type<complex_type> workColumns;  // the spectrum of one image, padded along the columns
+     array_type<complex_type> workPadded;   // the inverse fft along the columns, padded along the rows
+     array_type<complex_type> workSizeOut;  // the oversampled image
 
 public:
     cuOverSamplerR2R() = delete;

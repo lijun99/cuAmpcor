@@ -7,6 +7,7 @@
 
 #include "forward.h"
 #include "ArraysView.h"
+#include "cuArrays.h"
 #include "cufftPlan.h"
 
 // dependencies
@@ -20,9 +21,9 @@ private:
     CufftPlan forwardPlan;
     CufftPlan backwardPlan;
     // work data
-    std::unique_ptr<cuArrays<complex_type>> workFM;
-    std::unique_ptr<cuArrays<complex_type>> workFS;
-    std::unique_ptr<cuArrays<real_type>> workT;
+    cuArrays<complex_type> workFM;
+    cuArrays<complex_type> workFS;
+    cuArrays<real_type> workT;
     // cuda stream
     cudaStream_t stream;
 

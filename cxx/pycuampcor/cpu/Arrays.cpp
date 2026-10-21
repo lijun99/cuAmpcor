@@ -1,16 +1,16 @@
 /**
- * \file  Arrays.cpp
- * \brief  Implementations for Arrays class (CPU backend)
- *
+ * @file  Arrays.cpp
+ * @brief A batch of 2D arrays in the work memory (CPU): allocation, copies, output
  */
 
 // dependencies
 #include "Arrays.h"
-#include "logging.h"
+#include "ArraysFile.h"
 #include "float2.h"
 
-#include <fstream>
+#include <cstring>
 #include <new>
+#include <utility>
 
 namespace pycuampcor::cpu {
 
@@ -27,126 +27,82 @@ static void * alignedAlloc(size_t bytes)
     return ptr;
 }
 
-// allocate arrays in (device) work memory
+/**
+ * Count arrays of height x width, allocated in the work memory
+ */
 template <typename T>
-void Arrays<T>::allocate()
+Arrays<T>::Arrays(int height, int width, int count)
 {
-    devData = (T *)alignedAlloc(getByteSize());
-    is_allocated = 1;
+    T *ptr = static_cast<T *>(alignedAlloc(
+        std::size_t(count)*std::size_t(height)*std::size_t(width)*sizeof(T)));
+    data = view_type(ptr, height, width, count);
 }
 
-// allocate arrays in host memory
+/**
+ * Free the memory
+ */
 template <typename T>
-void Arrays<T>::allocateHost()
+Arrays<T>::~Arrays()
 {
-    hostData = (T *)alignedAlloc(getByteSize());
-    is_allocatedHost = 1;
+    std::free(data.data_handle());
 }
 
-// deallocate arrays in (device) work memory
+/**
+ * The arrays of other, which is left empty
+ */
 template <typename T>
-void Arrays<T>::deallocate()
+Arrays<T>::Arrays(Arrays &&other) noexcept
+    : data(std::exchange(other.data, view_type()))
 {
-    std::free(devData);
-    devData = nullptr;
-    is_allocated = 0;
 }
 
-// deallocate arrays in host memory
+/**
+ * Free the memory, and take the arrays of other, which is left empty
+ */
 template <typename T>
-void Arrays<T>::deallocateHost()
+Arrays<T> &Arrays<T>::operator=(Arrays &&other) noexcept
 {
-    std::free(hostData);
-    hostData = nullptr;
-    is_allocatedHost = 0;
+    if (this != &other) {
+        std::free(data.data_handle());
+        data = std::exchange(other.data, view_type());
+    }
+    return *this;
 }
 
-// copy arrays from (device) work memory to host
-template <typename T>
-void Arrays<T>::copyToHost(stream_t)
-{
-    std::memcpy(hostData, devData, getByteSize());
-}
-
-// copy arrays from host to (device) work memory
-template <typename T>
-void Arrays<T>::copyToDevice(stream_t)
-{
-    std::memcpy(devData, hostData, getByteSize());
-}
-
-// set to 0
+/**
+ * Set the elements to zero
+ */
 template <typename T>
 void Arrays<T>::setZero(stream_t)
 {
-    std::memset((void *)devData, 0, getByteSize());
+    std::memset(static_cast<void *>(data.data_handle()), 0, size()*sizeof(T));
 }
 
-// Overloaded << operator for composite type
-std::ostream& operator<<(std::ostream& os, const float2& p) {
-        return os << "(" << p.x << ", " << p.y << ")";
-}
-
-std::ostream& operator<<(std::ostream& os, const float3& p) {
-        return os << "(" << p.x << ", " << p.y << ", " << p.z << ")";
-}
-
-std::ostream& operator<<(std::ostream& os, const double2& p) {
-        return os << "(" << p.x << ", " << p.y << ")";
-}
-
-std::ostream& operator<<(std::ostream& os, const double3& p) {
-        return os << "(" << p.x << ", " << p.y << ", " << p.z << ")";
-}
-
-std::ostream& operator<<(std::ostream& os, const int2& p) {
-        return os << "(" << p.x << ", " << p.y << ")";
-}
-
-// output (partial) data when debugging
+/**
+ * Copy size() elements from host
+ */
 template <typename T>
-void Arrays<T>::debuginfo(stream_t stream) {
-    // output size info
-    std::cout << "Image height,width,count: " << height << "," << width << "," << count << std::endl;
-    // check whether host data is allocated
-    if( !is_allocatedHost)
-        allocateHost();
-    // copy to host
-    copyToHost(stream);
-
-    // set a max output range
-    int range = std::min(10, size*count);
-    // first 10 data
-    for(int i=0; i<range; i++)
-        std::cout << "(" <<hostData[i]  << ")" ;
-    std::cout << std::endl;
-    // last 10 data
-    if(size*count>range) {
-        for(int i=size*count-range; i<size*count; i++)
-            std::cout << "(" <<hostData[i] << ")" ;
-        std::cout << std::endl;
-    }
-}
-
-// output to file by copying to host at first
-template<typename T>
-void Arrays<T>::outputToFile(std::string fn, stream_t stream)
+void Arrays<T>::copyFromHost(const T *host, stream_t)
 {
-    if( !is_allocatedHost)
-        allocateHost();
-    copyToHost(stream);
-    outputHostToFile(fn);
+    std::memcpy(static_cast<void *>(data.data_handle()), host, size()*sizeof(T));
 }
 
-// save the host data to (binary) file
+/**
+ * A copy of the elements
+ */
 template <typename T>
-void Arrays<T>::outputHostToFile(std::string fn)
+std::vector<T> Arrays<T>::toHost(stream_t) const
 {
-    std::ofstream file;
-    file.open(fn.c_str(),  std::ios_base::binary);
-    file.write((char *)hostData, getByteSize());
-    file.close();
-    logInfo(fn, " size: height ", height, " width ", width, " count ", count);
+    return std::vector<T>(data.data_handle(), data.data_handle() + size());
+}
+
+/**
+ * Write the arrays to a binary file
+ */
+template <typename T>
+void Arrays<T>::outputToFile(const std::string &fn, stream_t) const
+{
+    writeArraysToFile(fn, view());
 }
 
 // instantiations

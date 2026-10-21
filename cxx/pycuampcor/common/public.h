@@ -21,8 +21,9 @@
 #include "indexing.h"
 #include "logging.h"
 #include "cuAmpcorOptions.h"
-// the views of batches of 2D arrays
+// the views of batches of 2D arrays, and their output to files
 #include "ArraysView.h"
+#include "ArraysFile.h"
 
 // the parameters
 #include "cuAmpcorParameter.h"

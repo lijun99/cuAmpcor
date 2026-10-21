@@ -9,6 +9,7 @@
 #pragma once
 
 #include "forward.h"
+#include "cuArrays.h"
 #include "arrayTraits.h"
 #include "cuNormalizer.h"
 
@@ -39,9 +40,9 @@ public:
         ArraysView<const real_type> secondary, cudaStream_t stream) override;
 
 private:
-    std::unique_ptr<cuArrays<real_type>> referenceSum2;   ///< the sums of the squares of the reference windows
-    std::unique_ptr<cuArrays<real_type>> secondarySAT;    ///< the sum area tables of the secondary windows
-    std::unique_ptr<cuArrays<real_type>> secondarySAT2;   ///< the same, of their squares
+    cuArrays<real_type> referenceSum2;   ///< the sums of the squares of the reference windows
+    cuArrays<real_type> secondarySAT;    ///< the sum area tables of the secondary windows
+    cuArrays<real_type> secondarySAT2;   ///< the same, of their squares
 };
 
 } // namespace

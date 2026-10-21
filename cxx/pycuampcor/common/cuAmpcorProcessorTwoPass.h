@@ -72,26 +72,26 @@ private:
     using base_type::dump;
 
     // first pass: the windows at the raw pixel spacing, and their amplitudes
-    std::unique_ptr<array_type<window_type>> c_referenceBatchRaw;   ///< the reference windows
-    std::unique_ptr<array_type<window_type>> c_secondaryBatchRaw;   ///< the secondary windows
-    std::unique_ptr<array_type<real_type>> r_referenceBatchRaw;     ///< their amplitudes
-    std::unique_ptr<array_type<real_type>> r_secondaryBatchRaw;     ///< their amplitudes
-    std::unique_ptr<array_type<real_type>> r_corrBatchRaw;          ///< the correlation surfaces
+    array_type<window_type> c_referenceBatchRaw;                    ///< the reference windows
+    array_type<window_type> c_secondaryBatchRaw;                    ///< the secondary windows
+    array_type<real_type> r_referenceBatchRaw;                      ///< their amplitudes
+    array_type<real_type> r_secondaryBatchRaw;                      ///< their amplitudes
+    array_type<real_type> r_corrBatchRaw;                           ///< the correlation surfaces
     std::unique_ptr<freq_correlator_type> cuCorrFreqDomain;         ///< the correlator (frequency domain)
     std::unique_ptr<normalizer_type> corrNormalizerRaw;             ///< the normalizer
 
     // second pass: the oversampled windows (the secondary ones around the first peak)
-    std::unique_ptr<array_type<window_type>> c_secondaryBatchZoomIn;        ///< the secondary windows around the peak
-    std::unique_ptr<array_type<int2_type>> maxLocShift;                     ///< the shift of the peak from the center of the extracted windows
-    std::unique_ptr<array_type<window_type>> c_referenceBatchOverSampled;   ///< the oversampled reference windows
-    std::unique_ptr<array_type<window_type>> c_secondaryBatchOverSampled;   ///< the oversampled secondary windows
-    std::unique_ptr<array_type<real_type>> r_referenceBatchOverSampled;     ///< their amplitudes
-    std::unique_ptr<array_type<real_type>> r_secondaryBatchOverSampled;     ///< their amplitudes
+    array_type<window_type> c_secondaryBatchZoomIn;                         ///< the secondary windows around the peak
+    array_type<int2_type> maxLocShift;                                      ///< the shift of the peak from the center of the extracted windows
+    array_type<window_type> c_referenceBatchOverSampled;                    ///< the oversampled reference windows
+    array_type<window_type> c_secondaryBatchOverSampled;                    ///< the oversampled secondary windows
+    array_type<real_type> r_referenceBatchOverSampled;                      ///< their amplitudes
+    array_type<real_type> r_secondaryBatchOverSampled;                      ///< their amplitudes
     oversampler_c2c_type referenceBatchOverSampler;                         ///< the oversampler of the reference windows
     oversampler_c2c_type secondaryBatchOverSampler;                         ///< the oversampler of the secondary windows
-    std::unique_ptr<array_type<real_type>> r_corrBatchZoomIn;               ///< the correlation surfaces
-    std::unique_ptr<array_type<real_type>> r_corrBatchZoomInAdjust;         ///< the same, of even size
-    std::unique_ptr<array_type<real_type>> r_corrBatchZoomInOverSampled;    ///< the oversampled surfaces
+    array_type<real_type> r_corrBatchZoomIn;                                ///< the correlation surfaces
+    array_type<real_type> r_corrBatchZoomInAdjust;                          ///< the same, of even size
+    array_type<real_type> r_corrBatchZoomInOverSampled;                     ///< the oversampled surfaces
     std::unique_ptr<freq_correlator_type> cuCorrFreqDomain_OverSampled;     ///< the correlator (frequency domain)
     std::unique_ptr<normalizer_type> corrNormalizerOverSampled;             ///< the normalizer
 };

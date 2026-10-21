@@ -1,146 +1,107 @@
 /**
- * \file  cuArrays.cu
- * \brief  Implementations for cuArrays class
- *
+ * @file  cuArrays.cpp
+ * @brief A batch of 2D arrays in the device memory (CUDA): allocation, transfers, output
  */
 
 // dependencies
 #include "cuArrays.h"
-#include "logging.h"
+#include "ArraysFile.h"
 #include "cudaError.h"
 #include "float2.h"
 
-#include <fstream>
+#include <utility>
 
 namespace pycuampcor::cuda {
 
-// allocate arrays in device memory
+/**
+ * Count arrays of height x width, allocated in the device memory
+ */
 template <typename T>
-void cuArrays<T>::allocate()
+cuArrays<T>::cuArrays(int height, int width, int count)
 {
-    checkCudaErrors(cudaMalloc((void **)&devData, getByteSize()));
-    is_allocated = 1;
+    T *ptr = nullptr;
+    checkCudaErrors(cudaMalloc(reinterpret_cast<void **>(&ptr),
+        std::size_t(count)*std::size_t(height)*std::size_t(width)*sizeof(T)));
+    data = view_type(ptr, height, width, count);
 }
 
-// allocate arrays in host memory
+/**
+ * Free the device memory
+ */
 template <typename T>
-void cuArrays<T>::allocateHost()
+cuArrays<T>::~cuArrays()
 {
-    hostData = (T *)malloc(getByteSize());
-    is_allocatedHost = 1;
+    if (data.data_handle())
+        checkCudaErrors(cudaFree(data.data_handle()));
 }
 
-// deallocate arrays in device memory
+/**
+ * The arrays of other, which is left empty
+ */
 template <typename T>
-void cuArrays<T>::deallocate()
+cuArrays<T>::cuArrays(cuArrays &&other) noexcept
+    : data(std::exchange(other.data, view_type()))
 {
-    checkCudaErrors(cudaFree(devData));
-    is_allocated = 0;
 }
 
-// deallocate arrays in host memory
+/**
+ * Free the device memory, and take the arrays of other, which is left empty
+ */
 template <typename T>
-void cuArrays<T>::deallocateHost()
+cuArrays<T> &cuArrays<T>::operator=(cuArrays &&other) noexcept
 {
-    free(hostData);
-    is_allocatedHost = 0;
+    if (this != &other) {
+        if (data.data_handle())
+            cudaFree(data.data_handle());
+        data = std::exchange(other.data, view_type());
+    }
+    return *this;
 }
 
-// copy arrays from device to host
-// use asynchronous for possible overlaps between data copying and kernel execution
-template <typename T>
-void cuArrays<T>::copyToHost(cudaStream_t stream)
-{
-    checkCudaErrors(cudaMemcpyAsync(hostData, devData, getByteSize(), cudaMemcpyDeviceToHost, stream));
-}
-
-// copy arrays from host to device
-template <typename T>
-void cuArrays<T>::copyToDevice(cudaStream_t stream)
-{
-    checkCudaErrors(cudaMemcpyAsync(devData, hostData, getByteSize(), cudaMemcpyHostToDevice, stream));
-}
-
-// set to 0
+/**
+ * Set the elements to zero (queued on the stream)
+ */
 template <typename T>
 void cuArrays<T>::setZero(cudaStream_t stream)
 {
-    checkCudaErrors(cudaMemsetAsync(devData, 0, getByteSize(), stream));
+    checkCudaErrors(cudaMemsetAsync(data.data_handle(), 0, size()*sizeof(T), stream));
 }
 
-// Overloaded << operator for composite type
-std::ostream& operator<<(std::ostream& os, const float2& p) {
-
-        return os << "(" << p.x << ", " << p.y << ")";
-}
-
-std::ostream& operator<<(std::ostream& os, const float3& p) {
-
-        return os << "(" << p.x << ", " << p.y << ", " << p.z << ")";
-}
-
-std::ostream& operator<<(std::ostream& os, const double2& p) {
-
-        return os << "(" << p.x << ", " << p.y << ")";
-}
-
-std::ostream& operator<<(std::ostream& os, const double3& p) {
-
-        return os << "(" << p.x << ", " << p.y << ", " << p.z << ")";
-}
-
-std::ostream& operator<<(std::ostream& os, const int2& p) {
-
-        return os << "(" << p.x << ", " << p.y << ")";
-}
-
-// output (partial) data when debugging
+/**
+ * Copy size() elements from the host memory (queued on the stream)
+ * @note from pageable memory, the copy returns once host can be reused
+ */
 template <typename T>
-void cuArrays<T>::debuginfo(cudaStream_t stream) {
-    // output size info
-    std::cout << "Image height,width,count: " << height << "," << width << "," << count << std::endl;
-    // check whether host data is allocated
-    if( !is_allocatedHost)
-        allocateHost();
-    // copy to host
-    copyToHost(stream);
-
-    // set a max output range
-    int range = std::min(10, size*count);
-    // first 10 data
-    for(int i=0; i<range; i++)
-        std::cout << "(" <<hostData[i]  << ")" ;
-    std::cout << std::endl;
-    // last 10 data
-    if(size*count>range) {
-        for(int i=size*count-range; i<size*count; i++)
-            std::cout << "(" <<hostData[i] << ")" ;
-        std::cout << std::endl;
-    }
-}
-
-// output to file by copying to host at first
-template<typename T>
-void cuArrays<T>::outputToFile(std::string fn, cudaStream_t stream)
+void cuArrays<T>::copyFromHost(const T *host, cudaStream_t stream)
 {
-    if( !is_allocatedHost)
-        allocateHost();
-    copyToHost(stream);
-    outputHostToFile(fn);
+    checkCudaErrors(cudaMemcpyAsync(data.data_handle(), host, size()*sizeof(T),
+        cudaMemcpyHostToDevice, stream));
 }
 
-// save the host data to (binary) file
+/**
+ * The elements, copied to the host memory once the work queued on the stream is done
+ */
 template <typename T>
-void cuArrays<T>::outputHostToFile(std::string fn)
+std::vector<T> cuArrays<T>::toHost(cudaStream_t stream) const
 {
-    std::ofstream file;
-    file.open(fn.c_str(),  std::ios_base::binary);
-    file.write((char *)hostData, getByteSize());
-    file.close();
-    logInfo(fn, " size: height ", height, " width ", width, " count ", count);
+    std::vector<T> host(size());
+    checkCudaErrors(cudaMemcpyAsync(host.data(), data.data_handle(), size()*sizeof(T),
+        cudaMemcpyDeviceToHost, stream));
+    checkCudaErrors(cudaStreamSynchronize(stream));
+    return host;
 }
 
-// instantiations, required by python extensions
+/**
+ * Write the arrays to a binary file (copied to the host memory first)
+ */
+template <typename T>
+void cuArrays<T>::outputToFile(const std::string &fn, cudaStream_t stream) const
+{
+    const std::vector<T> host = toHost(stream);
+    writeArraysToFile(fn, ArraysView<const T>(host.data(), height(), width(), count()));
+}
+
+// instantiations
 template class cuArrays<float>;
 template class cuArrays<float2>;
 template class cuArrays<float3>;
@@ -150,6 +111,5 @@ template class cuArrays<double3>;
 template class cuArrays<int2>;
 template class cuArrays<int>;
 
-// end of file
-
 } // namespace
+// end of file

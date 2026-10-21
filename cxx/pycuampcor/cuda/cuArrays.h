@@ -1,118 +1,79 @@
 /**
  * @file  cuArrays.h
- * @brief Header file for cuArrays class
+ * @brief A batch of 2D arrays in the device memory (CUDA)
  *
- * A class describes a batch of images (in 2d arrays).
- * Each image has size (height, width)
- * The number of images (countH, countW) or (1, count).
- **/
+ * cuArrays owns count arrays of height x width (row-major, one after the other) in the device
+ * memory: allocated when constructed, freed when destroyed. It can be moved, not copied. The
+ * kernels and workers take views of the arrays (ArraysView.h), to which the arrays convert.
+ */
 
 #pragma once
 
 #include "forward.h"
 #include "ArraysView.h"
 
-// cuda dependencies
-
 namespace pycuampcor::cuda {
 
+/// count 2D arrays of height x width of T in the device memory
 template <typename T>
-class cuArrays{
-
+class cuArrays {
 public:
-    int height; ///< x, row, down, length, azimuth, along the track
-    int width;  // y, col, across, range, along the sight
-    int size;   // one image size, height*width
-    int countH; // number of images along height direction
-    int countW; // number of images along width direction
-    int count;  // countW*countH, number of images
+    using value_type = T;
+    using view_type = ArraysView<T>;
+    using const_view_type = ArraysView<const T>;
 
-    bool is_allocated; // whether the data is allocated in device memory
-    bool is_allocatedHost; // whether the data is allocated in host memory
+    /// no arrays (e.g., to be assigned later)
+    cuArrays() = default;
+    /// count arrays of height x width, allocated in the device memory (not initialized)
+    cuArrays(int height, int width, int count = 1);
+    /// free the device memory
+    ~cuArrays();
+    /// the arrays of other, which is left empty
+    cuArrays(cuArrays &&other) noexcept;
+    /// free the device memory, and take the arrays of other, which is left empty
+    cuArrays &operator=(cuArrays &&other) noexcept;
+    cuArrays(const cuArrays &) = delete;
+    cuArrays &operator=(const cuArrays &) = delete;
 
-    T* devData; // pointer to data in device (gpu) memory
-    T* hostData; // pointer to data in host (cpu) memory
+    /// the number of arrays
+    int count() const { return data.count(); }
+    /// the number of rows of an array (down, azimuth)
+    int height() const { return data.height(); }
+    /// the number of columns of an array (across, range)
+    int width() const { return data.width(); }
+    /// the number of elements of an array, height*width
+    int arraySize() const { return data.arraySize(); }
+    /// the number of elements, count*height*width
+    std::size_t size() const { return data.size(); }
+    /// whether there are no elements
+    bool empty() const { return data.empty(); }
+    /// the first element, in the device memory
+    T *data_handle() { return data.data_handle(); }
+    /// the first element, in the device memory (read-only)
+    const T *data_handle() const { return data.data_handle(); }
 
-    // default constructor, empty
-    cuArrays() : height(0), width(0), size(0), countH(0), countW(0), count(0),
-        is_allocated(0), is_allocatedHost(0),
-        devData(nullptr), hostData(nullptr) {}
-
-    // constructor for single image
-    cuArrays(size_t h, size_t w) : height(h), width(w), size(h*w), countH(1), countW(1), count(1),
-        is_allocated(0), is_allocatedHost(0),
-        devData(nullptr), hostData(nullptr) {}
-
-    // constructor for multiple images with a total count
-    cuArrays(size_t h, size_t w, size_t n) : height(h), width(w), size(h*w), countH(1), countW(n), count(n),
-        is_allocated(0), is_allocatedHost(0),
-        devData(nullptr), hostData(nullptr) {}
-
-    // constructor for multiple images with (countH, countW)
-    cuArrays(size_t h, size_t w, size_t ch, size_t cw) : height(h), width(w), size(h*w), countH(ch), countW(cw), count(ch*cw),
-        is_allocated(0), is_allocatedHost(0),
-        devData(nullptr), hostData(nullptr) {}
-
-    // disable copying
-    cuArrays(const cuArrays&) = delete;
-    cuArrays& operator=(const cuArrays&) = delete;
-
-    // memory allocation
-    void allocate();
-    void allocateHost();
-    void deallocate();
-    void deallocateHost();
-
-    // copy data between device and host memories
-    void copyToHost(cudaStream_t stream);
-    void copyToDevice(cudaStream_t stream);
-
-    // get the total size
-    size_t getSize()
-    {
-        return size*count;
-    }
-
-    // get the total size in byte
-    inline long getByteSize()
-    {
-        return width*height*count*sizeof(T);
-    }
-
-    // destructor
-    ~cuArrays()
-    {
-        if(is_allocated)
-            deallocate();
-        if(is_allocatedHost)
-            deallocateHost();
-    }
-
-    /// a view of the data in the device memory
-    ArraysView<T> view() { return ArraysView<T>(devData, height, width, count); }
-    /// a read-only view of the data in the device memory
-    ArraysView<const T> view() const { return ArraysView<const T>(devData, height, width, count); }
-    /// the arrays as a view, e.g., for the kernels
-    operator ArraysView<T>() { return view(); }
+    /// a view of the arrays, e.g., for the kernels
+    view_type view() { return data; }
+    /// a read-only view of the arrays
+    const_view_type view() const { return data; }
+    /// the arrays as a view
+    operator view_type() { return data; }
     /// the arrays as a read-only view
-    operator ArraysView<const T>() const { return view(); }
+    operator const_view_type() const { return data; }
 
-    // set zeroes
+    /// set the elements to zero (queued on the stream)
     void setZero(cudaStream_t stream);
-    // output when debugging
-    void debuginfo(cudaStream_t stream) ;
-    void debuginfo(cudaStream_t stream, float factor);
-    // write to files
-    void outputToFile(std::string fn, cudaStream_t stream);
-    void outputHostToFile(std::string fn);
+    /// copy size() elements from the host memory (queued on the stream; host can be reused when
+    /// this returns)
+    void copyFromHost(const T *host, cudaStream_t stream);
+    /// the elements, copied to the host memory once the work queued on the stream is done
+    std::vector<T> toHost(cudaStream_t stream) const;
+    /// write the arrays to the binary file fn (copied to the host memory as toHost)
+    void outputToFile(const std::string &fn, cudaStream_t stream) const;
 
+private:
+    view_type data;   ///< the device memory, and the extents of the arrays
 };
-
-std::ostream& operator<<(std::ostream& os, const float2& p);
-std::ostream& operator<<(std::ostream& os, const float3& p);
-std::ostream& operator<<(std::ostream& os, const double2& p);
-std::ostream& operator<<(std::ostream& os, const float3& p);
-std::ostream& operator<<(std::ostream& os, const int2& p);
 
 } // namespace
 //end of file

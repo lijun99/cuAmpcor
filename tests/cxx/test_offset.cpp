@@ -18,22 +18,22 @@ TEST_F(OffsetTest, Maxloc2D)
     for (int k = 0; k < n; k++)
         v[(k*H + peaks[k].x)*W + peaks[k].y] = 2 + k;
     v[(2*H + 0)*W + 1] = 10;
-    auto images = makeFrom(v, H, W, 1, n);
+    auto images = makeFrom(v, H, W, n);
     auto loc = make<int2>(1, n);
     auto val = make<real_type>(1, n);
 
     // whole image
-    cuArraysMaxloc2D(*images, *loc, *val, stream);
-    auto l = download(*loc);
-    auto m = download(*val);
+    cuArraysMaxloc2D(images, loc, val, stream);
+    auto l = download(loc);
+    auto m = download(val);
     EXPECT_EQ(l[0].x, 0); EXPECT_EQ(l[0].y, 0); EXPECT_EQ(m[0], 2);
     EXPECT_EQ(l[1].x, 8); EXPECT_EQ(l[1].y, 10); EXPECT_EQ(m[1], 3);
     EXPECT_EQ(l[2].x, 0); EXPECT_EQ(l[2].y, 1); EXPECT_EQ(m[2], 10);
 
     // in a range, excluding the first row
-    cuArraysMaxloc2D(*images, make_int2(1, 0), make_int2(H-1, W), *loc, *val, stream);
-    l = download(*loc);
-    m = download(*val);
+    cuArraysMaxloc2D(images, make_int2(1, 0), make_int2(H-1, W), loc, val, stream);
+    l = download(loc);
+    m = download(val);
     EXPECT_EQ(l[2].x, 4); EXPECT_EQ(l[2].y, 5); EXPECT_EQ(m[2], 4);
     EXPECT_EQ(l[1].x, 8); EXPECT_EQ(l[1].y, 10);
     // image 0: its max is excluded; check against a reference search
@@ -54,8 +54,8 @@ TEST_F(OffsetTest, SubPixelOffset)
     auto final_ = make<real2_type>(1, 2);
     const int2 initOrigin = make_int2(10, 10), zoomOrigin = make_int2(256, 256);
     const int initFactor = 2, zoomFactor = 128;
-    cuSubPixelOffset(*init, *zoom, *final_, initOrigin, initFactor, zoomOrigin, zoomFactor, stream);
-    auto f = download(*final_);
+    cuSubPixelOffset(init, zoom, final_, initOrigin, initFactor, zoomOrigin, zoomFactor, stream);
+    auto f = download(final_);
     for (int k = 0; k < 2; k++) {
         double x = double(initV[k].x - initOrigin.x)/initFactor + double(zoomV[k].x - zoomOrigin.x)/zoomFactor;
         double y = double(initV[k].y - initOrigin.y)/initFactor + double(zoomV[k].y - zoomOrigin.y)/zoomFactor;
@@ -72,8 +72,8 @@ TEST_F(OffsetTest, SubPixelOffset2Pass)
     auto zoom = makeFrom(zoomV, 1, 2);
     auto final_ = make<real2_type>(1, 2);
     const int zoomOS = 64, rawOS = 2, halfX = 20, halfY = 22;
-    cuSubPixelOffset2Pass(*init, *zoom, *final_, zoomOS, rawOS, halfX, halfY, stream);
-    auto f = download(*final_);
+    cuSubPixelOffset2Pass(init, zoom, final_, zoomOS, rawOS, halfX, halfY, stream);
+    auto f = download(final_);
     for (int k = 0; k < 2; k++) {
         EXPECT_NEAR(f[k].x, double(zoomV[k].x)/(zoomOS*rawOS) + initV[k].x - halfX, tol*100);
         EXPECT_NEAR(f[k].y, double(zoomV[k].y)/(zoomOS*rawOS) + initV[k].y - halfY, tol*100);
@@ -89,9 +89,9 @@ TEST_F(OffsetTest, DetermineSecondaryExtractOffset)
     std::vector<int2> locV = {make_int2(10, 1), make_int2(0, 24), make_int2(24, 12)};
     auto loc = makeFrom(locV, 1, 3);
     auto shift = make<int2>(1, 3);
-    cuDetermineSecondaryExtractOffset(*loc, *shift, oldRange, oldRange, newRange, newRange, stream);
-    auto start = download(*loc);
-    auto s = download(*shift);
+    cuDetermineSecondaryExtractOffset(loc, shift, oldRange, oldRange, newRange, newRange, stream);
+    auto start = download(loc);
+    auto s = download(shift);
     auto expect = [&](int maxloc, int st, int sh) {
         int refStart = maxloc - newRange, refShift = 0;
         if (refStart < 0) { refShift = refStart; refStart = 0; }
