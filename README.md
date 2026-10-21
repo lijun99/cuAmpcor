@@ -55,7 +55,7 @@ conda install pycuampcor=*=cpu*   # CPU only
 conda install pycuampcor=*=cuda*  # CPU + GPU
 ```
 
-The recipe for conda-forge (building from a tagged release, with the variants defined by the conda-forge global pinning, e.g., cpu, cuda 12 and cuda 13) is in *conda/conda-forge*.
+The packages are on the conda-forge channel (`conda install -c conda-forge pycuampcor`), for Linux (x86_64, aarch64) and macOS (x86_64, arm64). They are built from tagged releases by the [pycuampcor-feedstock](https://github.com/conda-forge/pycuampcor-feedstock), which maintains the recipe.
 
 ### 2.2 Installation with pip
 
