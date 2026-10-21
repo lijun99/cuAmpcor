@@ -14,21 +14,27 @@ namespace pycuampcor {
 template <>
 struct array_traits<cuda::cuArrays> {
     // the element types
-    using real_type = cuda::real_type;
-    using complex_type = cuda::complex_type;
-    using real2_type = cuda::real2_type;
-    using real3_type = cuda::real3_type;
-    using int2_type = ::int2;
-    // the stream on which the kernels are queued
+    using real_type = cuda::real_type;         ///< the real type
+    using complex_type = cuda::complex_type;   ///< the complex type
+    using real2_type = cuda::real2_type;       ///< a pair of reals (e.g., the offsets)
+    using real3_type = cuda::real3_type;       ///< a triple of reals (e.g., the covariances)
+    using int2_type = ::int2;                  ///< a pair of ints (e.g., the window positions)
+    /// the stream on which the kernels are queued
     using stream_type = cuda::stream_t;
     // the chunks of the images loaded by the chunk loader
+    /// a chunk of an image loaded to the device memory
     using loaded_chunk_type = cuda::cuAmpcorLoadedChunk;
+    /// the chunks of the reference and secondary images loaded to the device memory
     using chunk_type = cuda::cuAmpcorChunk;
     // the workers
+    /// the cross-correlation of the windows in the frequency domain
     using freq_correlator_type = cuda::cuFreqCorrelator;
+    /// the FFT oversampler of complex windows
     using oversampler_c2c_type = cuda::cuOverSamplerC2C;
     // the interfaces of the normalizer and of the surface oversampler (common/), implemented by the package
+    /// the normalizer of the correlation surfaces
     using normalizer_type = cuNormalizer<cuda::cuArrays>;
+    /// the oversampler of the correlation surfaces around their peaks
     using surface_oversampler_type = cuSurfaceOverSampler<cuda::cuArrays>;
 
     /// an int2_type (x: down, y: across)

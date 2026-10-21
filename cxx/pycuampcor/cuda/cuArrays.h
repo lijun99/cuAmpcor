@@ -18,9 +18,9 @@ namespace pycuampcor::cuda {
 template <typename T>
 class cuArrays {
 public:
-    using value_type = T;
-    using view_type = ArraysView<T>;
-    using const_view_type = ArraysView<const T>;
+    using value_type = T;                          ///< the element type
+    using view_type = ArraysView<T>;               ///< a view of the arrays
+    using const_view_type = ArraysView<const T>;   ///< a read-only view of the arrays
 
     /// no arrays (e.g., to be assigned later)
     cuArrays() = default;

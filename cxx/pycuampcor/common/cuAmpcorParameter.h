@@ -39,7 +39,6 @@ struct Index2 {
 /// 4. optionally, checkPixelInImageRange(): warn about windows outside the images (debug builds).
 /// setupParameters() does not change the inputs: it may be called again after changing them,
 /// followed by setStartPixels().
-
 class cuAmpcorParameter {
 public:
     // ==== inputs (not changed by setupParameters) ====
@@ -171,12 +170,17 @@ public:
     /// @param defaultWindowsAcrossInChunk the same across
     void setupParameters(int defaultWindowsDownInChunk, int defaultWindowsAcrossInChunk);
 
-    /// set the starting pixels of the windows and their gross offsets (after setupParameters):
-    /// (int *, int *, int *, int *): varying reference start pixels and gross offsets
-    /// (int, int, int *, int *): first reference start pixel and varying gross offsets
-    /// (int, int, int, int): first reference start pixel and constant gross offsets
+    /// set the starting pixels of the windows and their gross offsets (after setupParameters),
+    /// and the areas of the chunks to load: varying reference start pixels and gross offsets,
+    /// one per window
     void setStartPixels(const int*, const int*, const int*, const int*);
+    /// set the starting pixels of the windows and their gross offsets (after setupParameters),
+    /// and the areas of the chunks to load: the first reference start pixel (the windows spaced
+    /// by skipSampleDownRaw/skipSampleAcrossRaw) and varying gross offsets, one per window
     void setStartPixels(int, int, const int*, const int*);
+    /// set the starting pixels of the windows and their gross offsets (after setupParameters),
+    /// and the areas of the chunks to load: the first reference start pixel (the windows spaced
+    /// by skipSampleDownRaw/skipSampleAcrossRaw) and a constant gross offset
     void setStartPixels(int, int, int, int);
 
     /// warn about windows outside the images (debug builds only)

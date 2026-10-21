@@ -20,8 +20,8 @@ namespace pycuampcor {
 template <template <typename> class arrayT>
 class cuSurfaceOverSampler {
 public:
-    using real_type = typename array_traits<arrayT>::real_type;
-    using int2_type = typename array_traits<arrayT>::int2_type;
+    using real_type = typename array_traits<arrayT>::real_type;  ///< the real type
+    using int2_type = typename array_traits<arrayT>::int2_type;  ///< a pair of ints (e.g., the peak shifts)
 
     virtual ~cuSurfaceOverSampler() = default;
 

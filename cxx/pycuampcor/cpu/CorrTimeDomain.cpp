@@ -1,4 +1,4 @@
-/*
+/**
  * @file  CorrTimeDomain.cpp
  * @brief Correlation between two sets of images in time domain (CPU backend)
  *

@@ -1,3 +1,9 @@
+/**
+ * @file  Hdf5SlcImage.cpp
+ * @brief An image source for a 2D dataset in an HDF5 file: chunks decoded directly (in parallel) or read
+ *     with the library
+ */
+
 #include "Hdf5SlcImage.h"
 #include "logging.h"
 
@@ -12,21 +18,28 @@ namespace pycuampcor {
 
 namespace {
 
-// the HDF5 library may be built without thread safety; serialize all calls into it
+/**
+ * The mutex serializing all calls into the HDF5 library (which may be built without thread
+ * safety)
+ */
 std::mutex &hdf5Mutex()
 {
     static std::mutex mutex;
     return mutex;
 }
 
-// whether the type is a little-endian 32-bit float
+/**
+ * Whether the type is a little-endian 32-bit float
+ */
 bool isFloat32(hid_t type)
 {
     return H5Tget_class(type) == H5T_FLOAT && H5Tget_size(type) == 4
         && H5Tget_order(type) == H5T_ORDER_LE && H5Tequal(type, H5T_IEEE_F32LE) > 0;
 }
 
-// whether the type is a compound of two float32 at offsets 0 and 4 (complex64)
+/**
+ * Whether the type is a compound of two float32 at offsets 0 and 4 (complex64)
+ */
 bool isComplex64(hid_t type)
 {
     if (H5Tget_class(type) != H5T_COMPOUND || H5Tget_size(type) != 8 || H5Tget_nmembers(type) != 2)
@@ -40,7 +53,10 @@ bool isComplex64(hid_t type)
     return true;
 }
 
-// read exactly n bytes at offset from a file descriptor
+/**
+ * Read exactly n bytes at offset from a file descriptor
+ * @param filename the name of the file, for the error message
+ */
 void preadAll(int fd, void *buffer, size_t n, off_t offset, const std::string &filename)
 {
     char *p = static_cast<char *>(buffer);
@@ -55,14 +71,17 @@ void preadAll(int fd, void *buffer, size_t n, off_t offset, const std::string &f
     }
 }
 
-// collect the stored chunks from H5Dchunk_iter
+/// the data to collect the stored chunks from H5Dchunk_iter
 struct ChunkIterData {
-    size_t chunkHeight, chunkWidth, nChunksAcross;
-    void *infos; // std::vector<ChunkInfo> of the image, opaque here
+    size_t chunkHeight, chunkWidth, nChunksAcross; ///< the chunk size and the chunks across
+    void *infos; ///< std::vector<ChunkInfo> of the image, opaque here
 };
 
 } // namespace
 
+/**
+ * The default number of threads to decode chunks: PYCUAMPCOR_HDF5_THREADS if set, or 8
+ */
 size_t Hdf5SlcImage::defaultMaxThreads()
 {
     if (const char *value = std::getenv("PYCUAMPCOR_HDF5_THREADS")) {
@@ -72,6 +91,10 @@ size_t Hdf5SlcImage::defaultMaxThreads()
     return 8;
 }
 
+/**
+ * Open a 2D dataset of an HDF5 file: check its size and type, and decide whether to read its
+ * chunks directly
+ */
 Hdf5SlcImage::Hdf5SlcImage(const std::string& file, const std::string& dataset,
                            size_t image_height, size_t image_width, size_t pixel_size_, size_t buffer_size,
                            size_t max_threads)
@@ -146,7 +169,12 @@ Hdf5SlcImage::Hdf5SlcImage(const std::string& file, const std::string& dataset,
     }
 }
 
-/// check whether the dataset can be read directly, and locate its chunks if so
+/**
+ * Check whether the dataset can be read directly, and locate its chunks and size the cache if so
+ *
+ * Direct reading needs a chunked layout, no user block, a zero fill value, and the filters
+ * none, deflate, or shuffle then deflate (and HDF5 >= 1.14 for H5Dchunk_iter).
+ */
 void Hdf5SlcImage::inspectLayout(hid_t dcpl, size_t buffer_size)
 {
     direct = false;
@@ -230,6 +258,9 @@ void Hdf5SlcImage::inspectLayout(hid_t dcpl, size_t buffer_size)
 #endif
 }
 
+/**
+ * Close the file descriptor, the dataset and the file
+ */
 Hdf5SlcImage::~Hdf5SlcImage()
 {
     if (fd >= 0) ::close(fd);
@@ -239,7 +270,11 @@ Hdf5SlcImage::~Hdf5SlcImage()
     if (fileId >= 0) H5Fclose(fileId);
 }
 
-/// read a chunk from the file and undo its filters (in the reverse order of the pipeline)
+/**
+ * Read a chunk from the file and undo its filters (in the reverse order of the pipeline)
+ *
+ * An unallocated chunk is all zeros.
+ */
 Hdf5SlcImage::Chunk Hdf5SlcImage::decodeChunk(size_t index) const
 {
     const size_t chunkBytes = chunkHeight * chunkWidth * pixel_size;
@@ -281,7 +316,12 @@ Hdf5SlcImage::Chunk Hdf5SlcImage::decodeChunk(size_t index) const
     return out;
 }
 
-/// get the decoded chunks from the cache, decoding the missing ones in parallel
+/**
+ * Get the decoded chunks from the cache, decoding the missing ones in parallel
+ *
+ * The missing chunks are inserted in the cache as futures, so that other workers needing them
+ * wait for them instead of decoding them again.
+ */
 std::vector<Hdf5SlcImage::Chunk> Hdf5SlcImage::getChunks(const std::vector<size_t>& indices)
 {
     std::vector<std::shared_future<Chunk>> futures;
@@ -338,7 +378,9 @@ std::vector<Hdf5SlcImage::Chunk> Hdf5SlcImage::getChunks(const std::vector<size_
     return chunks;
 }
 
-/// assemble a tile from the decoded chunks
+/**
+ * Load a tile to host memory, assembled from the decoded chunks
+ */
 void Hdf5SlcImage::loadDirect(char* host, size_t h_offset, size_t w_offset, size_t h_tile, size_t w_tile)
 {
     const size_t r0 = h_offset / chunkHeight, r1 = (h_offset + h_tile - 1) / chunkHeight;
@@ -367,7 +409,9 @@ void Hdf5SlcImage::loadDirect(char* host, size_t h_offset, size_t w_offset, size
     }
 }
 
-/// read a tile with the HDF5 library
+/**
+ * Load a tile to host memory with the HDF5 library (H5Dread)
+ */
 void Hdf5SlcImage::loadLibrary(char* host, size_t h_offset, size_t w_offset, size_t h_tile, size_t w_tile)
 {
     std::lock_guard<std::mutex> lock(hdf5Mutex());
@@ -384,7 +428,9 @@ void Hdf5SlcImage::loadLibrary(char* host, size_t h_offset, size_t w_offset, siz
         throw std::runtime_error("Failed to read a tile from " + filename);
 }
 
-/// load a tile of h_tile x w_tile pixels to host memory
+/**
+ * Load a tile of h_tile x w_tile pixels to host memory, directly or with the HDF5 library
+ */
 void Hdf5SlcImage::loadToHost(void* host, size_t h_offset, size_t w_offset, size_t h_tile, size_t w_tile)
 {
     if (h_tile == 0 || w_tile == 0) return;

@@ -39,12 +39,15 @@ void logAt(LogLevel level, const Args &...args)
     logMessage(level, message.str());
 }
 
+/// write a warning made of the arguments (streamed), if warnings are enabled
 template <typename... Args>
 void logWarning(const Args &...args) { logAt(LogLevel::Warning, args...); }
 
+/// write a progress message made of the arguments (streamed), if info messages are enabled
 template <typename... Args>
 void logInfo(const Args &...args) { logAt(LogLevel::Info, args...); }
 
+/// write a debugging message made of the arguments (streamed), if debug messages are enabled
 template <typename... Args>
 void logDebug(const Args &...args) { logAt(LogLevel::Debug, args...); }
 

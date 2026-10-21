@@ -1,5 +1,5 @@
 /**
- * @file debug.h
+ * @file  debug.h
  * @brief Define flags to control the debugging
  *
  * CUAMPCOR_DEBUG is used to output debugging information and intermediate results,

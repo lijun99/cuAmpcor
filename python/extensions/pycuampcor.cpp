@@ -1,3 +1,9 @@
+/**
+ * @file  pycuampcor.cpp
+ * @brief The python bindings: the controller class of a package (CPU or CUDA), with the parameters as
+ *     properties
+ */
+
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
@@ -20,31 +26,38 @@ using namespace pycuampcor;
 using namespace pycuampcor::PYCUAMPCOR_BACKEND;
 using cls = cuAmpcorController;
 
-// setters of the parameters by their python names, for the keyword constructor
+/// setters of the parameters by their python names, for the keyword constructor
 using Setters = std::map<std::string, std::function<void(cls&, pybind11::handle)>>;
 
-// convert a python value to a parameter value; file names may be path-like objects
+/**
+ * A python value as a parameter value of type T
+ */
 template <typename T>
 T toParam(pybind11::handle value)
 {
     return value.cast<T>();
 }
 
+/**
+ * A python value as a string parameter: file names may be path-like objects (os.fspath)
+ */
 template <>
 std::string toParam<std::string>(pybind11::handle value)
 {
     return pybind11::module_::import("os").attr("fspath")(value).cast<std::string>();
 }
 
-// the python module with the options (enums) of the parameters
+/**
+ * The python module with the options (enums) of the parameters, pycuampcor.options
+ */
 pybind11::module_ options()
 {
     return pybind11::module_::import("pycuampcor.options");
 }
 
-// define a getter/setter for a controller parameter, converting the values with
-// toPython (parameter -> python) and fromPython (python -> parameter), and register the setter
-// a C++ value or a python object, as a python object
+/**
+ * A C++ value or a python object, as a python object
+ */
 template <typename V>
 pybind11::object asObject(V &&value)
 {
@@ -54,7 +67,9 @@ pybind11::object asObject(V &&value)
         return pybind11::cast(std::forward<V>(value));
 }
 
-// the default value of a parameter, for the docstrings
+/**
+ * The default value of a parameter, for the docstrings (an option as Option.MEMBER)
+ */
 std::string defaultText(pybind11::handle value)
 {
     // an option as Option.MEMBER
@@ -64,6 +79,16 @@ std::string defaultText(pybind11::handle value)
     return pybind11::repr(value);
 }
 
+/**
+ * Define a property (getter/setter) for a controller parameter, and register its setter
+ * @param c the python class
+ * @param[out] setters the setters by python name, for the keyword constructor
+ * @param name the python name of the property
+ * @param member the parameter
+ * @param doc the docstring (the default value is appended)
+ * @param toPython,fromPython the conversions of the values, parameter -> python and
+ *     python -> parameter
+ */
 template <typename T, typename ToPython, typename FromPython>
 void defParam(pybind11::class_<cls> &c, Setters &setters, const char *name,
               T cuAmpcorParameter::*member, const char *doc,
@@ -97,7 +122,9 @@ void defParam(pybind11::class_<cls> &c, Setters &setters, const char *name,
     setters[name] = setter;
 }
 
-// a parameter of type T
+/**
+ * Define a property for a parameter of type T (see defParam above)
+ */
 template <typename T>
 void defParam(pybind11::class_<cls> &c, Setters &setters, const char *name,
               T cuAmpcorParameter::*member, const char *doc)
@@ -105,8 +132,11 @@ void defParam(pybind11::class_<cls> &c, Setters &setters, const char *name,
     defParam(c, setters, name, member, doc, [](const T &value) { return value; }, toParam<T>);
 }
 
-// an option (a C++ enum), read as a member of the python enum pycuampcor.options.<option>
-// (with the same values), set by the member, the integer value, or the name
+/**
+ * Define a property for an option (a C++ enum), read as a member of the python enum
+ * pycuampcor.options.<option> (with the same values), set by the member, the integer value, or
+ * the name
+ */
 template <typename E>
 void defOption(pybind11::class_<cls> &c, Setters &setters, const char *name,
                E cuAmpcorParameter::*member, const char *option, const char *doc)
@@ -118,7 +148,9 @@ void defOption(pybind11::class_<cls> &c, Setters &setters, const char *name,
         });
 }
 
-// a boolean flag, set by a bool or an integer
+/**
+ * Define a property for a boolean flag, set by a bool or an integer
+ */
 void defFlag(pybind11::class_<cls> &c, Setters &setters, const char *name,
              bool cuAmpcorParameter::*member, const char *doc)
 {
@@ -127,6 +159,9 @@ void defFlag(pybind11::class_<cls> &c, Setters &setters, const char *name,
         [](pybind11::handle value) { return options().attr("_to_flag")(value).cast<bool>(); });
 }
 
+/**
+ * Set a constant gross offset (down, across) for all windows
+ */
 void setConstantGrossOffset(cls& self, const int goDown, const int goAcross)
 {
     self.param->setStartPixels(
@@ -135,6 +170,9 @@ void setConstantGrossOffset(cls& self, const int goDown, const int goAcross)
             goDown, goAcross);
 }
 
+/**
+ * Set a gross offset for each window (down vD, across vA, one per window)
+ */
 void setVaryingGrossOffset(cls& self, const std::vector<int> &vD, const std::vector<int> &vA)
 {
     if ((int)vD.size() != self.param->numberWindows || (int)vA.size() != self.param->numberWindows)
@@ -145,7 +183,9 @@ void setVaryingGrossOffset(cls& self, const std::vector<int> &vD, const std::vec
             vD.data(), vA.data());
 }
 
-// set a constant (two numbers) or varying (two sequences, or a number and a sequence) gross offset
+/**
+ * Set a constant (two numbers) or varying (two sequences, or a number and a sequence) gross offset
+ */
 void setGrossOffset(cls& self, pybind11::handle goDown, pybind11::handle goAcross)
 {
     const bool varyingDown = pybind11::isinstance<pybind11::sequence>(goDown);
@@ -177,6 +217,10 @@ void setGrossOffset(cls& self, pybind11::handle goDown, pybind11::handle goAcros
 
 } // namespace
 
+/**
+ * The python module (pycuampcor._cpu or pycuampcor._cuda): the controller class, with the
+ * parameters as properties, and the logging level
+ */
 PYBIND11_MODULE(PYCUAMPCOR_MODULE, m)
 {
     m.doc() = "Python module controller for underlying ampcor code";
@@ -187,8 +231,10 @@ PYBIND11_MODULE(PYCUAMPCOR_MODULE, m)
     m.attr("has_hdf5") = SlcImage::hasHdf5();
 
     // the level of the messages (pycuampcor.set_log_level sets it for both backends)
-    m.def("_set_log_level", [](int level) { setLogLevel(static_cast<LogLevel>(level)); });
-    m.def("_get_log_level", [] { return static_cast<int>(logLevel()); });
+    m.def("_set_log_level", [](int level) { setLogLevel(static_cast<LogLevel>(level)); },
+        "Set the level of the messages (an integer LogLevel; see pycuampcor.set_log_level).");
+    m.def("_get_log_level", [] { return static_cast<int>(logLevel()); },
+        "The level of the messages (an integer LogLevel; see pycuampcor.get_log_level).");
 
     pybind11::class_<cls> c(m, PYBIND11_TOSTRING(PYCUAMPCOR_CLASS),
         "Amplitude cross-correlation (ampcor) of a reference and a secondary image\n\n"

@@ -15,9 +15,14 @@
 
 namespace pycuampcor::cuda {
 
-// report an error with the failed call and its location
+/// check the result of a CUDA runtime call: report an error with the failed call and its location
+/// @param call,file,line the call (as text), and its location
 void checkCudaErrorsImpl(cudaError_t result, const char *call, const char *file, int line);
+/// check the result of a cuFFT call: report an error with the failed call and its location
+/// @param call,file,line the call (as text), and its location
 void checkCudaErrorsImpl(cufftResult result, const char *call, const char *file, int line);
+/// check the kernel launches (and, with CUAMPCOR_DEBUG, their execution): report an error
+/// with the location file:line of the check
 void checkCudaAsyncErrorsImpl(const char *file, int line);
 
 #define checkCudaErrors(call) \

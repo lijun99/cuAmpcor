@@ -1,5 +1,5 @@
-/*
- * @file cuOverSampler.cu
+/**
+ * @file  cuOverSampler.cpp
  * @brief Implementations of cuOverSamplerR2R (C2C) class
  */
 
@@ -22,11 +22,11 @@
 namespace pycuampcor::cuda {
 
 /**
- * Constructor for cuOversamplerC2C
- * @param input image size inNX x inNY
- * @param output image size outNX x outNY
- * @param nImages batches
- * @param stream_ cuda stream
+ * Constructor for cuOverSamplerC2C
+ * @param inNX,inNY the size of the input images
+ * @param outNX,outNY the size of the output (oversampled) images
+ * @param nImages the number of images
+ * @param stream_ the CUDA stream of the transforms
  */
 cuOverSamplerC2C::cuOverSamplerC2C(int inNX, int inNY, int outNX, int outNY, int nImages, cudaStream_t stream_)
     : stream(stream_)
@@ -63,8 +63,6 @@ cuOverSamplerC2C::cuOverSamplerC2C(int inNX, int inNY, int outNX, int outNY, int
  * Execute fft oversampling
  * @param[in] imagesIn input batch of images
  * @param[out] imagesOut output batch of images
- * @param[in] method phase deramping method
- * @param[in] axis deramping axis
  */
 void cuOverSamplerC2C::execute(ArraysView<const complex_type> imagesIn, ArraysView<complex_type> imagesOut)
 {
@@ -89,17 +87,19 @@ void cuOverSamplerC2C::execute(ArraysView<const complex_type> imagesIn, ArraysVi
 #endif
 }
 
-/// destructor
+/**
+ * Release the cufft plans and the work arrays
+ */
 cuOverSamplerC2C::~cuOverSamplerC2C() = default;
 
 // end of cuOverSamplerC2C
 
 /**
- * Constructor for cuOversamplerR2R
- * @param input image size inNX x inNY
- * @param output image size outNX x outNY
+ * Constructor for cuOverSamplerR2R
+ * @param inNX,inNY the size of the input images
+ * @param outNX,outNY the size of the output (oversampled) images
  * @param nImages the number of images
- * @param stream_ cuda stream
+ * @param stream_ the CUDA stream of the transforms
  */
 cuOverSamplerR2R::cuOverSamplerR2R(int inNX, int inNY, int outNX, int outNY, int nImages, cudaStream_t stream_)
     : stream(stream_)
@@ -157,7 +157,9 @@ void cuOverSamplerR2R::execute(ArraysView<const real_type> imagesIn, ArraysView<
     cuArraysCopyExtract(workSizeOut, imagesOut, make_int2(0,0), stream);
 }
 
-/// destructor
+/**
+ * Release the cufft plans and the work arrays
+ */
 cuOverSamplerR2R::~cuOverSamplerR2R() = default;
 
 // end of file

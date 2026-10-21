@@ -1,3 +1,8 @@
+/**
+ * @file  SlcImage.cpp
+ * @brief Image sources: a raw binary file read with a memory map, and the choice of the reader
+ */
+
 #include "SlcImage.h"
 #ifdef PYCUAMPCOR_WITH_HDF5
 #include "Hdf5SlcImage.h"
@@ -12,6 +17,12 @@
 
 namespace pycuampcor {
 
+/**
+ * Split an image name HDF5:<file>:<dataset> into the file and the dataset
+ *
+ * The file may be quoted; otherwise the dataset starts at the last ":/" (an absolute path), or
+ * else after the last ':'. The dataset is returned as an absolute path.
+ */
 bool SlcImage::parseHdf5Name(const std::string& name, std::string& file, std::string& dataset)
 {
     const std::string prefix = "HDF5:";
@@ -45,6 +56,9 @@ bool SlcImage::parseHdf5Name(const std::string& name, std::string& file, std::st
     return true;
 }
 
+/**
+ * Whether HDF5 datasets are supported (built with HDF5)
+ */
 bool SlcImage::hasHdf5()
 {
 #ifdef PYCUAMPCOR_WITH_HDF5
@@ -54,6 +68,10 @@ bool SlcImage::hasHdf5()
 #endif
 }
 
+/**
+ * Open an image with the given reader: an HDF5 dataset (Hdf5SlcImage) or a raw binary file
+ * (MmapSlcImage)
+ */
 std::unique_ptr<SlcImage> SlcImage::open(const std::string& filepath, const std::string& reader,
                                          size_t img_height, size_t img_width,
                                          size_t pixel_size, size_t buffer_size)
@@ -75,6 +93,11 @@ std::unique_ptr<SlcImage> SlcImage::open(const std::string& filepath, const std:
     return std::make_unique<MmapSlcImage>(filepath, img_height, img_width, pixel_size, buffer_size);
 }
 
+/**
+ * Open a raw binary file, checking that it is large enough for the image size
+ *
+ * The file is mapped on demand, by the first tile loaded.
+ */
 MmapSlcImage::MmapSlcImage(const std::string& filepath, size_t img_height, size_t img_width, size_t pixel_size, size_t buffer_size)
     : width(img_width), height(img_height), pixel_size(pixel_size), fd(-1), mapped_data(nullptr),
       mapped_offset(0), mapped_size(0)
@@ -99,6 +122,12 @@ MmapSlcImage::MmapSlcImage(const std::string& filepath, size_t img_height, size_
     }
 }
 
+/**
+ * Remap the window if the byte range [required_start, required_end) of the file is not in it
+ *
+ * The new window starts at the page containing required_start, and has the buffer size (enlarged
+ * if needed for the range), or up to the end of the file.
+ */
 void MmapSlcImage::remapIfNeeded(size_t required_start, size_t required_end)
 {
 
@@ -133,12 +162,14 @@ void MmapSlcImage::remapIfNeeded(size_t required_start, size_t required_end)
     // else - in range, do nothing
 }
 
-/// load a tile of data h_tile x w_tile from CPU (mmap) to the device (GPU) or work (CPU) memory
-/// @param dArray pointer for array in device memory
-/// @param h_offset Down/Height offset
-/// @param w_offset Across/Width offset
-/// @param h_tile Down/Height tile size
-/// @param w_tile Across/Width tile size
+/**
+ * Load a tile of h_tile x w_tile pixels from the mapped file to host memory
+ * @param host the tile in host memory, row major with a pitch of w_tile pixels
+ * @param h_offset Down/Height offset
+ * @param w_offset Across/Width offset
+ * @param h_tile Down/Height tile size
+ * @param w_tile Across/Width tile size
+ */
 void MmapSlcImage::loadToHost(void *host, size_t h_offset, size_t w_offset, size_t h_tile, size_t w_tile)
 {
     size_t tileStartAddress = (h_offset*width + w_offset)*pixel_size;
@@ -158,6 +189,9 @@ void MmapSlcImage::loadToHost(void *host, size_t h_offset, size_t w_offset, size
         std::memcpy(static_cast<char *>(host) + i*w_tile*pixel_size, startPtr + i*width*pixel_size, w_tile*pixel_size);
 }
 
+/**
+ * Unmap the window and close the file
+ */
 MmapSlcImage::~MmapSlcImage()
 {
     if (mapped_data!=nullptr) {

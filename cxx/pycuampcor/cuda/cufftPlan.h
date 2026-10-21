@@ -15,8 +15,10 @@ namespace pycuampcor::cuda {
 class CufftPlan {
 public:
     CufftPlan() = default;
+    /// the plan of other, which is left empty
     CufftPlan(CufftPlan &&other) noexcept
         : handle_(other.handle_), valid_(std::exchange(other.valid_, false)) {}
+    /// destroy the plan, and take the plan of other, which is left empty
     CufftPlan &operator=(CufftPlan &&other) noexcept
     {
         if (this != &other) {
@@ -28,6 +30,7 @@ public:
     }
     CufftPlan(const CufftPlan &) = delete;
     CufftPlan &operator=(const CufftPlan &) = delete;
+    /// destroy the plan
     ~CufftPlan() { reset(); }
 
     /// create a batched plan (as cufftPlanMany), replacing the current one
@@ -42,9 +45,11 @@ public:
         valid_ = true;
     }
 
+    /// the plan, for the cuFFT execute functions (valid once planned)
     operator cufftHandle() const { return handle_; }
 
 private:
+    /// destroy the plan, if any (a failure is logged, not thrown)
     void reset() noexcept
     {
         // not throwing (called by the destructor)
@@ -52,8 +57,8 @@ private:
             logWarning("failed to destroy a cuFFT plan");
         valid_ = false;
     }
-    cufftHandle handle_ = 0;
-    bool valid_ = false;
+    cufftHandle handle_ = 0;   ///< the plan (valid if valid_)
+    bool valid_ = false;       ///< whether handle_ is a plan (to destroy)
 };
 
 } // namespace

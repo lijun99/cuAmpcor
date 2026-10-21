@@ -1,5 +1,5 @@
-/*
- * @file cuCorrNormalization.cu
+/**
+ * @file  cuCorrNormalization.cu
  * @brief Utilities to normalize the correlation surface
  *
  * The mean and variance of the normalization factor can be computed from the
@@ -26,9 +26,14 @@
 
 namespace pycuampcor::cuda {
 
- // sum reduction within a block
- // the following implementation is compatible for sm_20 and above
- // newer architectures may support faster implementations, such as warp shuffle, cooperative groups
+/**
+ * Sum reduction within a block (of Nthreads >= 64 threads), with the result returned to all threads
+ *
+ * The following implementation is compatible with sm_20 and above; newer architectures may
+ * support faster implementations, such as warp shuffle, cooperative groups.
+ * @param sum the value of this thread
+ * @param shmem the shared memory to use, of Nthreads values
+ */
 template <const int Nthreads>
 __device__ real_type sumReduceBlock(real_type sum, real_type *shmem)
 {
@@ -60,7 +65,9 @@ __device__ real_type sumReduceBlock(real_type sum, real_type *shmem)
     return result;
 }
 
-// cuda kernel to compute and subtracts mean value from the images
+/**
+ * Cuda kernel to compute and subtract the mean value from the images (one block per image)
+ */
 template<const int Nthreads>
 __global__ void cuArraysSubtractMean_kernel(ArraysView<real_type> images, real_type invSize)
 {
@@ -91,7 +98,6 @@ __global__ void cuArraysSubtractMean_kernel(ArraysView<real_type> images, real_t
 /**
  * Compute and subtract mean values from images
  * @param[in,out] images Input/Output images
- * @param[out] mean Output mean values
  * @param[in] stream cudaStream
  */
 void cuArraysSubtractMean(ArraysView<real_type> images, cudaStream_t stream)
@@ -104,7 +110,10 @@ void cuArraysSubtractMean(ArraysView<real_type> images, cudaStream_t stream)
     checkCudaAsyncErrors();
 }
 
-// cuda kernel to compute summation on extracted correlation surface (Minyan)
+/**
+ * Cuda kernel to compute the sums of the squares and the counts of valid pixels of the extracted
+ * correlation surfaces (Minyan), one block per image
+ */
 template<const int Nthreads>
 __global__ void cuArraysSumCorr_kernel(ArraysView<const real_type> images,
     ArraysView<const int> imagesValid, ArraysView<real_type> imagesSum,
@@ -157,7 +166,10 @@ void cuArraysSumCorr(ArraysView<const real_type> images, ArraysView<const int> i
     checkCudaAsyncErrors();
 }
 
-// intra-block inclusive prefix sum
+/**
+ * Intra-block inclusive prefix sum, in shmem, with 2^Nthreads2 threads
+ * @param sum the value of this thread
+ */
 template<int Nthreads2>
 __device__ void inclusive_prefix_sum(real_type sum, real_type *shmem)
 {
@@ -176,7 +188,10 @@ __device__ void inclusive_prefix_sum(real_type sum, real_type *shmem)
     }
 }
 
-// prefix sum of pixel value and pixel value^2
+/**
+ * Prefix sum of pixel value and pixel value^2
+ * @return the sums of v and v^2 over the stride threads from this one
+ */
 template<const int Nthreads2>
 __device__ real2_type partialSums(const real_type v, real_type* shmem, const int stride)
 {
@@ -194,7 +209,11 @@ __device__ real2_type partialSums(const real_type v, real_type* shmem, const int
     return make_real2(Sum, Sum2);
 }
 
-// cuda kernel for cuCorrNormalize
+/**
+ * Cuda kernel for cuCorrNormalizeFixed, with the sums over the secondary windows updated row by
+ * row (see the notes above); one block of 2^Nthreads2 threads per image
+ * @param templateCoeff the inverse of the size of the reference windows
+ */
 template<const int Nthreads2>
 __global__ void cuCorrNormalize_kernel(ArraysView<const real_type> templates,
     ArraysView<const real_type> images, ArraysView<real_type> results, real_type templateCoeff)
@@ -278,6 +297,7 @@ __global__ void cuCorrNormalize_kernel(ArraysView<const real_type> templates,
     }
 }
 
+/// the base 2 logarithm of N, for the block sizes of cuCorrNormalizeFixed
 template<int N> struct Log2;
 template<> struct Log2<64> { static const int value = 6; };
 template<> struct Log2<128> { static const int value = 7; };
@@ -285,6 +305,9 @@ template<> struct Log2<256> { static const int value = 8; };
 template<> struct Log2<512> { static const int value = 9; };
 template<> struct Log2<1024> { static const int value = 10; };
 
+/**
+ * Normalize the correlation surfaces, with blocks of Size threads (summing in shared memory)
+ */
 template<int Size>
 void cuCorrNormalizeFixed(ArraysView<real_type> correlation, ArraysView<const real_type> reference,
     ArraysView<const real_type> secondary, cudaStream_t stream)

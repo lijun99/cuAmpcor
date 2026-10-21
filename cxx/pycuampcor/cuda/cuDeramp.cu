@@ -1,4 +1,4 @@
-/*
+/**
  * @file  cuDeramp.cu
  * @brief Derampling a batch of 2D complex images with GPU
  *
@@ -21,19 +21,32 @@
 
 namespace pycuampcor::cuda {
 
-// cuda does not have a good support on vector structure, e.g. complex type (float2 or double2)
-// shared memory holds real_type values; real2_type values are stored as two halves, a block apart
-// the following methods are defined to operate real2_type objects through real_type
+/**
+ * Store the real2_type value x at the index i of the shared memory s
+ * @note cuda does not have a good support on vector structure, e.g. complex type (float2 or double2);
+ *   shared memory holds real_type values; real2_type values are stored as two halves, a block apart;
+ *   copyToShared, copyFromShared and addInShared operate real2_type objects through real_type
+ */
 inline static __device__ void copyToShared(real_type *s, const int i, const real2_type x, const int block)
 { s[i] = x.x; s[i+block] = x.y; }
 
+/**
+ * Load the real2_type value x from the index i of the shared memory s (the halves a block apart)
+ */
 inline static __device__ void copyFromShared(real2_type &x, real_type *s, const int i, const int block)
 { x.x = s[i]; x.y = s[i+block]; }
 
+/**
+ * Add the real2_type value at the index i+j of the shared memory s to the value at the index i
+ */
 inline static __device__ void addInShared(real_type *s, const int i, const int j, const int block)
 { s[i] += s[i+j]; s[i+block] += s[i+j+block];}
 
-// kernel to do sum reduction for real2_type within a block
+/**
+ * Sum reduction of real2_type values within a block of nthreads threads
+ * @param[in,out] sum the value of the thread as input, the sum over the block as output (all threads)
+ * @param shmem the shared memory of 2*nthreads real_type values
+ */
 template <const int nthreads>
 __device__ void complexSumReduceBlock(real2_type& sum, real_type *shmem)
 {
@@ -65,8 +78,12 @@ __device__ void complexSumReduceBlock(real2_type& sum, real_type *shmem)
     __syncthreads();
 }
 
-// cuda kernel for cuDerampMethod1
-// @param[in] axis 0: deramp along x-axis; 1: deramp along y-axis; others: deramp along both axes
+/**
+ * CUDA kernel for cuLinearDeramp: one block per window (blockIdx.x), its threads striding over the
+ * pixels to sum the phase differences and to remove the phase ramp
+ * @param[in] normCoef the normalization coefficient (unused)
+ * @param[in] axis 0: deramp along x-axis; 1: deramp along y-axis; others: deramp along both axes
+ */
 template<const int nthreads>
 __global__ void cuLinearDeramp_kernel(ArraysView<real2_type> images, const real_type normCoef, int axis)
 {
@@ -136,9 +153,8 @@ __global__ void cuLinearDeramp_kernel(ArraysView<real2_type> images, const real_
 }
 
 /**
- * Deramp a complex signal with Method 1
- * @brief Each signal is decomposed into real and imaginary parts,
- *   and the average phase shift is obtained as atan(\sum imag / \sum real).
+ * Deramp complex signals (the method DerampMethod::Complex): each signal is decomposed into real
+ * and imaginary parts, and the average phase shift is obtained as atan(\sum imag / \sum real)
  * @param[in,out] images input/output complex signals
  * @param[in] stream cuda stream
  */
@@ -161,6 +177,10 @@ static void cuLinearDeramp(ArraysView<real2_type> images, const int axis, cudaSt
 
 }
 
+/**
+ * Remove the phase ramps of the complex windows (in place), along the axis, with the method
+ * @note only DerampMethod::Complex deramps (with cuLinearDeramp); the other methods do nothing
+ */
 void cuDeramp(DerampMethod method, ArraysView<complex_type> images, DerampAxis axis, cudaStream_t stream)
 {
     // the axis values (down 0, across 1, both 2) are those of cuLinearDeramp

@@ -9,6 +9,9 @@
 
 namespace pycuampcor::cuda {
 
+/**
+ * Select the device (devID) for the calling thread, and return its id
+ */
 int gpuDeviceInit(int devID)
 {
     int count = 0;
@@ -22,6 +25,9 @@ int gpuDeviceInit(int devID)
     return devID;
 }
 
+/**
+ * List the available devices
+ */
 std::vector<DeviceInfo> gpuDeviceList()
 {
     int count = 0;
@@ -37,6 +43,9 @@ std::vector<DeviceInfo> gpuDeviceList()
     return devices;
 }
 
+/**
+ * The number of streaming multiprocessors of the device devID (of the current device if devID < 0)
+ */
 int getSMCount(int devID)
 {
     // use the currently active CUDA device if devID < 0

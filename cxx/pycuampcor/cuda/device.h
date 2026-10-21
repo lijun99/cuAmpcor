@@ -10,30 +10,30 @@
 
 namespace pycuampcor::cuda {
 
-// for 2D FFT
+/// the rank of the FFTs (2D FFT)
 constexpr int NRANK = 2;
 
-// typical choices of number of threads in a block
-// for processing 1D and 2D arrays
+/// a typical choice of the number of threads in a block, for processing 1D arrays
 constexpr int NTHREADS = 512;
+/// a typical choice of the number of threads in a block in each dimension, for processing 2D arrays
 constexpr int NTHREADS2D = 16;
 
-// a CUDA device
+/// a CUDA device
 struct DeviceInfo {
-    int id;
-    std::string name;
+    int id;                    ///< the device id
+    std::string name;          ///< the device name
     int smCount;               ///< number of streaming multiprocessors
     int major, minor;          ///< compute capability
     std::size_t totalMemory;   ///< global memory in bytes
 };
 
-// select the device (devID) for the calling thread, and return its id
+/// select the device (devID) for the calling thread, and return its id (throws if not available)
 int gpuDeviceInit(int devID=0);
 
-// list the available devices
+/// list the available devices
 std::vector<DeviceInfo> gpuDeviceList();
 
-// Get the number of StreamMultiprocessor (of the current device if devID < 0)
+/// the number of streaming multiprocessors of the device devID (of the current device if devID < 0)
 int getSMCount(int devID=0);
 
 } // namespace

@@ -1,5 +1,5 @@
-/*
- * @file CorrNormalization.cpp
+/**
+ * @file  CorrNormalization.cpp
  * @brief Utilities to normalize the correlation surface (CPU backend)
  *
  * The normalization of the correlation surface itself is done with the

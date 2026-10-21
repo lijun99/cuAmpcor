@@ -86,7 +86,9 @@ cuAmpcorProcessor<arrayT>::cuAmpcorProcessor(const cuAmpcorParameter &param_,
     batch(i_corrBatchZoomInValid, param.corrRawZoomInHeight, param.corrRawZoomInWidth);
 }
 
-/// the buffers and workers are released with their owners
+/**
+ * Release the buffers and workers (they are released with their owners)
+ */
 template <template <typename> class arrayT>
 cuAmpcorProcessor<arrayT>::~cuAmpcorProcessor() = default;
 

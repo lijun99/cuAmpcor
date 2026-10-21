@@ -23,6 +23,7 @@ class cuNormalizeSAT : public cuNormalizer<Arrays> {
 public:
     /// a normalizer with the sum area tables for count secondary windows of secondaryNX x secondaryNY
     cuNormalizeSAT(int secondaryNX, int secondaryNY, int count);
+    /// destructor
     ~cuNormalizeSAT() override;
 
     /// normalize the correlation surfaces (see cuNormalizer::execute)

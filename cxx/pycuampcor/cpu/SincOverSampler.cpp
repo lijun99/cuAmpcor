@@ -1,5 +1,5 @@
 /**
- * @file SincOverSampler.cpp
+ * @file  SincOverSampler.cpp
  * @brief Implementation for cuSincOversampler class (CPU backend)
  *
  */
@@ -16,8 +16,8 @@ namespace pycuampcor::cpu {
 
 /**
  * cuSincOverSamplerR2R constructor
- * @param i_covs oversampling factor
- * @param stream (not used)
+ * @param i_covs_ oversampling factor
+ * @param stream_ the stream (not used)
  */
 cuSincOverSamplerR2R::cuSincOverSamplerR2R(const int i_covs_, stream_t stream_)
  : i_covs(i_covs_)
@@ -29,7 +29,9 @@ cuSincOverSamplerR2R::cuSincOverSamplerR2R(const int i_covs_, stream_t stream_)
     cuSetupSincKernel();
 }
 
-/// destructor
+/**
+ * Release the filter
+ */
 cuSincOverSamplerR2R::~cuSincOverSamplerR2R() = default;
 
 /**
@@ -63,7 +65,12 @@ void cuSincOverSamplerR2R::cuSetupSincKernel()
     }
 }
 
-// sinc interpolation for one image, with a given center shift
+/**
+ * Sinc interpolation for one image, with a given center shift
+ * @param centerShift,factor the window is shifted by centerShift*factor (oversampled pixels)
+ * @param r_filter_,i_covs_,i_decfactor_,i_intplength_ the sinc kernel and its parameters
+ * @param i_startX,i_startY,i_int_size the window of the oversampled image (before the shift)
+ */
 static void sincInterpolation(const real_type *imageIn, const int inNX, const int inNY,
     real_type *imageOut, const int outNX, const int outNY,
     int2 centerShift, int factor,
@@ -158,6 +165,9 @@ void cuSincOverSamplerR2R::execute(ArraysView<const real_type> imagesIn, ArraysV
             r_filter.data(), i_covs, i_decfactor, i_intplength, i_int_startX, i_int_startY, i_int_size);
 }
 
+/**
+ * Execute sinc interpolation, with the same center shift for all images
+ */
 void cuSincOverSamplerR2R::execute(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut,
     int2 centerShift, int rawOversamplingFactor)
 {

@@ -1,5 +1,5 @@
-/*
- * @file Offset.cpp
+/**
+ * @file  Offset.cpp
  * @brief Utilities used to determine the offset field (CPU backend)
  *
  */
@@ -67,8 +67,8 @@ void cuArraysMaxloc2D(ArraysView<const real_type> images,
  *   the cross-correlation before oversampling, in dimensions of pixel
  * @param[in] offsetZoomIn max location from the oversampled cross-correlation surface
  * @param[out] offsetFinal the combined offset value
- * @param[in] initOrigin, initFactor origin and scale factor of offsetInit
- * @param[in] zoomInOrigin, zoomInFactor origin and scale factor of offsetZoomIn
+ * @param[in] initOrigin,initFactor origin and scale factor of offsetInit
+ * @param[in] zoomInOrigin,zoomInFactor origin and scale factor of offsetZoomIn
  */
 void cuSubPixelOffset(ArraysView<const int2> offsetInit,
     ArraysView<const int2> offsetZoomIn,
@@ -94,10 +94,10 @@ void cuSubPixelOffset(ArraysView<const int2> offsetInit,
  *   the cross-correlation before oversampling, in dimensions of pixel
  * @param[in] offsetZoomIn max location from the oversampled cross-correlation surface
  * @param[out] offsetFinal the combined offset value
- * @param[in] OversampleRatioZoomIn the correlation surface oversampling factor
- * @param[in] OversampleRatioRaw the oversampling factor of reference/secondary windows before cross-correlation
- * @param[in] xHalfRangInit the original half search range along x, to be subtracted
- * @param[in] yHalfRangInit the original half search range along y, to be subtracted
+ * @param[in] OverSampleRatioZoomin the correlation surface oversampling factor
+ * @param[in] OverSampleRatioRaw the oversampling factor of reference/secondary windows before cross-correlation
+ * @param[in] xHalfRangeInit the original half search range along x, to be subtracted
+ * @param[in] yHalfRangeInit the original half search range along y, to be subtracted
  *
  * Final offset =  pixel size offset (offsetInit - half search range)
  *     + subpixel offset (offsetZoomIn / overall oversampling factor)
@@ -118,7 +118,10 @@ void cuSubPixelOffset2Pass(ArraysView<const int2> offsetInit, ArraysView<const i
     }
 }
 
-// compute the start of extraction and the shift of center, see the cuda version for details
+/**
+ * Compute the start of extraction and the shift of center, see the CUDA version for details
+ * @return the start (x) and the shift (y)
+ */
 static inline int2 adjustOffset(const int oldRange, const int newRange, const int maxloc)
 {
     // shift the max location by -newRange to find the start
@@ -146,8 +149,8 @@ static inline int2 adjustOffset(const int oldRange, const int newRange, const in
  * Determine the secondary window extract offset from the max location
  * @param[in,out] maxLoc the max locations as input, and the extraction starting pixels as output
  * @param[out] maxLocShift the shift of the max location from the extraction center
- * @param[in] xOldRange, yOldRange are (half) search ranges in first step
- * @param[in] xNewRange, yNewRange are (half) search range
+ * @param[in] xOldRange,yOldRange are (half) search ranges in first step
+ * @param[in] xNewRange,yNewRange are (half) search range
  */
 void cuDetermineSecondaryExtractOffset(ArraysView<int2> maxLoc, ArraysView<int2> maxLocShift,
     int xOldRange, int yOldRange, int xNewRange, int yNewRange, stream_t)

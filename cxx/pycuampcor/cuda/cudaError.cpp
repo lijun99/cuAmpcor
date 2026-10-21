@@ -1,3 +1,8 @@
+/**
+ * @file  cudaError.cpp
+ * @brief The reports of the CUDA and cuFFT errors
+ */
+
 #include "cudaError.h"
 #include "logging.h"
 
@@ -5,8 +10,10 @@ namespace pycuampcor::cuda {
 
 namespace {
 
-// report an error: throw an exception (translated to a python RuntimeError),
-// or print the message if an exception is already propagating (e.g., in destructors during unwinding)
+/**
+ * Report an error: throw an exception (translated to a python RuntimeError),
+ * or log the message if an exception is already propagating (e.g., in destructors during unwinding)
+ */
 void reportError(const std::string &message)
 {
     if (std::uncaught_exceptions() > 0) {
@@ -16,6 +23,9 @@ void reportError(const std::string &message)
     throw std::runtime_error(message);
 }
 
+/**
+ * The name of a cuFFT result code
+ */
 const char *cufftErrorName(cufftResult result)
 {
     switch (result) {
@@ -37,6 +47,9 @@ const char *cufftErrorName(cufftResult result)
     }
 }
 
+/**
+ * The location file:line, for the error messages
+ */
 std::string location(const char *file, int line)
 {
     return std::string(file) + ":" + std::to_string(line);
@@ -44,6 +57,9 @@ std::string location(const char *file, int line)
 
 } // namespace
 
+/**
+ * Check the result of a CUDA runtime call: clear and report an error
+ */
 void checkCudaErrorsImpl(cudaError_t result, const char *call, const char *file, int line)
 {
     if (result != cudaSuccess) {
@@ -54,6 +70,9 @@ void checkCudaErrorsImpl(cudaError_t result, const char *call, const char *file,
     }
 }
 
+/**
+ * Check the result of a cuFFT call: report an error
+ */
 void checkCudaErrorsImpl(cufftResult result, const char *call, const char *file, int line)
 {
     if (result != CUFFT_SUCCESS)
@@ -61,6 +80,9 @@ void checkCudaErrorsImpl(cufftResult result, const char *call, const char *file,
             + cufftErrorName(result) + ") in " + call + " at " + location(file, line));
 }
 
+/**
+ * Check the kernel launches, and with CUAMPCOR_DEBUG, their execution (synchronizing the device)
+ */
 void checkCudaAsyncErrorsImpl(const char *file, int line)
 {
     // launch errors (clearing the non-sticky ones)

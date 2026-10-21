@@ -1,5 +1,5 @@
 /**
- * @file ArraysCopy.cpp
+ * @file  ArraysCopy.cpp
  * @brief Utilities for copying/converting images to different format (CPU backend)
  *
  * All methods are declared in ArraysCopy.h
@@ -25,11 +25,22 @@
 
 namespace pycuampcor::cpu {
 
-// convert image data to the internal complex type
+/**
+ * Convert a complex image pixel to the internal complex type
+ */
 static inline complex_type toComplex(const image_complex_type &v) { return make_complex_type(v.x, v.y); }
+/**
+ * Convert a real image pixel to the internal complex type (with a zero imaginary part)
+ */
 static inline complex_type toComplex(const image_real_type &v) { return make_complex_type(v, 0); }
 
-// copy a chunk into a batch of chips with varying offsets, filling 0 for pixels outside the chunk
+/**
+ * Copy a chunk into a batch of chips with varying offsets, filling 0 for pixels outside the chunk
+ * @param chunk the input image chunk
+ * @param[out] windows the output windows
+ * @param offsetX,offsetY the starting pixels of the windows in the chunk
+ * @param op the conversion of a chunk pixel to a window pixel (complex_type)
+ */
 template<typename T_in, typename Op>
 static void copyToBatchWithOffset(ArraysView<const T_in> chunk, ArraysView<complex_type> windows,
     ArraysView<const int> offsetX, ArraysView<const int> offsetY, Op op)
@@ -92,7 +103,7 @@ void cuArraysCopyToBatchWithOffsetR2C(ArraysView<const image_real_type> chunk,
  * Copy a tile of images to another image, with starting pixels offsets
  * @param[in] imagesIn input images of dimension nImages*inNX*inNY
  * @param[out] imagesOut output images of dimension nImages*outNX*outNY
- * @param[in] offsets, varying offsets for extraction
+ * @param[in] offsets,varying offsets for extraction
  */
 template<typename T>
 static void copyExtract(ArraysView<const T> imagesIn, ArraysView<T> imagesOut,
@@ -107,12 +118,18 @@ static void copyExtract(ArraysView<const T> imagesIn, ArraysView<T> imagesOut,
     }
 }
 
+/**
+ * Extract the windows of imagesOut from imagesIn, starting at the varying pixels offsets (real arrays)
+ */
 void cuArraysCopyExtract(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut,
     ArraysView<const int2> offsets, stream_t)
 {
     copyExtract(imagesIn, imagesOut, offsets);
 }
 
+/**
+ * Extract the windows of imagesOut from imagesIn, starting at the varying pixels offsets (complex arrays)
+ */
 void cuArraysCopyExtract(ArraysView<const complex_type> imagesIn, ArraysView<complex_type> imagesOut,
     ArraysView<const int2> offsets, stream_t)
 {
@@ -120,7 +137,7 @@ void cuArraysCopyExtract(ArraysView<const complex_type> imagesIn, ArraysView<com
 }
 
 /**
- * copy a tile of images centered at the max locations to another image
+ * Copy a tile of images centered at the max locations to another image
  * @param[in] imagesIn input images
  * @param[out] imagesOut output images of dimension nImages*outNX*outNY
  * @param[in] maxloc the max locations (as centers)
@@ -142,7 +159,7 @@ void cuArraysCopyExtractCorr(ArraysView<const real_type> imagesIn, ArraysView<re
 }
 
 /**
- * copy a tile of images centered at the max locations to another image, accounting for boundary
+ * Copy a tile of images centered at the max locations to another image, accounting for boundary
  * @param[in] imagesIn input images
  * @param[out] imagesOut output images of dimension nImages*outNX*outNY
  * @param[out] imagesValid flags whether the pixels are within the input images (1) or not (0)
@@ -156,14 +173,14 @@ void cuArraysCopyExtractCorr(ArraysView<const real_type> imagesIn, ArraysView<re
 }
 
 /**
- * extract the surfaces around the max locations with a stride (e.g., a raw pixel spacing on an
+ * Extract the surfaces around the max locations with a stride (e.g., a raw pixel spacing on an
  * oversampled surface), marking the pixels outside of a valid region of the input as invalid
  * @param[in] imagesIn input images
  * @param[out] imagesOut output images, centered at the max locations
  * @param[out] imagesValid flags whether the pixels are within the valid region (1) or not (0)
  * @param[in] maxloc the max locations (as centers)
  * @param[in] stride the spacing of the extracted pixels in the input images
- * @param[in] validStart, validRange the valid region of the input images
+ * @param[in] validStart,validRange the valid region of the input images
  */
 void cuArraysCopyExtractCorr(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut,
     ArraysView<int> imagesValid, ArraysView<const int2> maxloc, int stride, int2 validStart,
@@ -191,16 +208,19 @@ void cuArraysCopyExtractCorr(ArraysView<const real_type> imagesIn, ArraysView<re
     }
 }
 
-// element conversion for cuArraysCopyExtract with a fixed offset
+/// element conversion for cuArraysCopyExtract with a fixed offset
 template<typename T_in, typename T_out> struct ExtractConverter {
+    /// the element as it is (implicitly converted to T_out)
     static T_out apply(const T_in &v) { return v; }
 };
+/// element conversion from complex to real: the real part
 template<> struct ExtractConverter<complex_type, real_type> {
+    /// the real part of the element
     static real_type apply(const complex_type &v) { return v.x; }
 };
 
 /**
- * copy/extract images from a large size to
+ * Copy/extract images from a large size to
  * a smaller size from the location (offsetX, offsetY)
  * @note for complex to real, the real part is taken
  */
@@ -215,24 +235,36 @@ static void copyExtract(ArraysView<const T_in> imagesIn, ArraysView<T_out> image
                     imagesIn(idxImage, outx + offset.x, outy + offset.y));
 }
 
+/**
+ * Extract the windows of imagesOut from imagesIn, starting at the fixed pixel offset (real arrays)
+ */
 void cuArraysCopyExtract(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut,
     int2 offset, stream_t)
 {
     copyExtract(imagesIn, imagesOut, offset);
 }
 
+/**
+ * Extract the windows of imagesOut from imagesIn, starting at the fixed pixel offset (the real parts of complex arrays)
+ */
 void cuArraysCopyExtract(ArraysView<const complex_type> imagesIn, ArraysView<real_type> imagesOut,
     int2 offset, stream_t)
 {
     copyExtract(imagesIn, imagesOut, offset);
 }
 
+/**
+ * Extract the windows of imagesOut from imagesIn, starting at the fixed pixel offset (complex arrays)
+ */
 void cuArraysCopyExtract(ArraysView<const complex_type> imagesIn, ArraysView<complex_type> imagesOut,
     int2 offset, stream_t)
 {
     copyExtract(imagesIn, imagesOut, offset);
 }
 
+/**
+ * Extract the windows of imagesOut from imagesIn, starting at the fixed pixel offset (arrays of real3_type)
+ */
 void cuArraysCopyExtract(ArraysView<const real3_type> imagesIn, ArraysView<real3_type> imagesOut,
     int2 offset, stream_t)
 {
@@ -240,7 +272,7 @@ void cuArraysCopyExtract(ArraysView<const real3_type> imagesIn, ArraysView<real3
 }
 
 /**
- * copy/extract images from a large size to
+ * Copy/extract images from a large size to
  * a smaller size from the location (offsetX, offsetY), take amplitude
  */
 void cuArraysCopyExtractAbs(ArraysView<const complex_type> imagesIn, ArraysView<real_type> imagesOut,
@@ -255,7 +287,7 @@ void cuArraysCopyExtractAbs(ArraysView<const complex_type> imagesIn, ArraysView<
 }
 
 /**
- * copy/insert images from a smaller size to a larger size from the location (offsetX, offsetY)
+ * Copy/insert images from a smaller size to a larger size from the location (offsetX, offsetY)
  */
 template<typename T>
 static void copyInsert(ArraysView<const T> imageIn, ArraysView<T> imageOut, int offsetX, int offsetY)
@@ -265,40 +297,55 @@ static void copyInsert(ArraysView<const T> imageIn, ArraysView<T> imageOut, int 
             imageOut(inx+offsetX, iny+offsetY) = imageIn(inx, iny);
 }
 
+/**
+ * Insert the (first) array imageIn into the (first) array imageOut at the pixel (offsetX, offsetY) (complex arrays)
+ */
 void cuArraysCopyInsert(ArraysView<const complex_type> imageIn, ArraysView<complex_type> imageOut,
     int offsetX, int offsetY, stream_t)
 {
     copyInsert(imageIn, imageOut, offsetX, offsetY);
 }
 
+/**
+ * Insert the (first) array imageIn into the (first) array imageOut at the pixel (offsetX, offsetY) (arrays of real3_type)
+ */
 void cuArraysCopyInsert(ArraysView<const real3_type> imageIn, ArraysView<real3_type> imageOut,
     int offsetX, int offsetY, stream_t)
 {
     copyInsert(imageIn, imageOut, offsetX, offsetY);
 }
 
+/**
+ * Insert the (first) array imageIn into the (first) array imageOut at the pixel (offsetX, offsetY) (real arrays)
+ */
 void cuArraysCopyInsert(ArraysView<const real_type> imageIn, ArraysView<real_type> imageOut,
     int offsetX, int offsetY, stream_t)
 {
     copyInsert(imageIn, imageOut, offsetX, offsetY);
 }
 
+/**
+ * Insert the (first) array imageIn into the (first) array imageOut at the pixel (offsetX, offsetY) (integer arrays)
+ */
 void cuArraysCopyInsert(ArraysView<const int> imageIn, ArraysView<int> imageOut,
     int offsetX, int offsetY, stream_t)
 {
     copyInsert(imageIn, imageOut, offsetX, offsetY);
 }
 
-// element conversion for cuArraysCopyPadded
+/// element conversion for cuArraysCopyPadded
 template<typename T_in, typename T_out> struct PaddedConverter {
+    /// the element as it is (implicitly converted to T_out)
     static T_out apply(const T_in &v) { return v; }
 };
+/// element conversion from real to complex: a zero imaginary part
 template<> struct PaddedConverter<real_type, complex_type> {
+    /// the element as a complex value with a zero imaginary part
     static complex_type apply(const real_type &v) { return make_complex_type(v, 0); }
 };
 
 /**
- * copy images from a smaller size to a larger size while padding 0 for extra elements
+ * Copy images from a smaller size to a larger size while padding 0 for extra elements
  */
 template<typename T_in, typename T_out>
 static void copyPadded(ArraysView<const T_in> imageIn, ArraysView<T_out> imageOut)
@@ -316,18 +363,27 @@ static void copyPadded(ArraysView<const T_in> imageIn, ArraysView<T_out> imageOu
             }
 }
 
+/**
+ * Copy the arrays imageIn to the (larger) arrays imageOut, padded with zeros (real arrays)
+ */
 void cuArraysCopyPadded(ArraysView<const real_type> imageIn, ArraysView<real_type> imageOut,
     stream_t)
 {
     copyPadded(imageIn, imageOut);
 }
 
+/**
+ * Copy the arrays imageIn to the (larger) arrays imageOut, padded with zeros (from real to complex arrays)
+ */
 void cuArraysCopyPadded(ArraysView<const real_type> imageIn, ArraysView<complex_type> imageOut,
     stream_t)
 {
     copyPadded(imageIn, imageOut);
 }
 
+/**
+ * Copy the arrays imageIn to the (larger) arrays imageOut, padded with zeros (complex arrays)
+ */
 void cuArraysCopyPadded(ArraysView<const complex_type> imageIn, ArraysView<complex_type> imageOut,
     stream_t)
 {

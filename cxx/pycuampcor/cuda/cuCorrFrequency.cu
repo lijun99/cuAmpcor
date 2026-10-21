@@ -1,4 +1,4 @@
-/*
+/**
  * @file  cuCorrFrequency.cu
  * @brief A class performs cross correlation in frequency domain
  */
@@ -13,16 +13,18 @@
 
 namespace pycuampcor::cuda {
 
-// coef*conj(image1)*image2, element-wise, in image1 (defined below)
+/**
+ * Multiply conj(image1) by image2 and coef, element-wise, in image1 (defined below)
+ */
 static void cuArraysElementMultiplyConjugate(ArraysView<complex_type> image1,
     ArraysView<const complex_type> image2, real_type coef, cudaStream_t stream);
 
-/*
- * cuFreqCorrelator Constructor
+/**
+ * cuFreqCorrelator constructor
  * @param imageNX height of each image
  * @param imageNY width of each image
  * @param nImages number of images in the batch
- * @param stream CUDA stream
+ * @param stream_ CUDA stream
  */
 cuFreqCorrelator::cuFreqCorrelator(int imageNX, int imageNY, int nImages, cudaStream_t stream_)
 {
@@ -61,7 +63,9 @@ cuFreqCorrelator::cuFreqCorrelator(int imageNX, int imageNY, int nImages, cudaSt
     workT = cuArrays<real_type>(imageNX, imageNY, nImages);
 }
 
-/// destructor
+/**
+ * Release the cufft plans and the work arrays
+ */
 cuFreqCorrelator::~cuFreqCorrelator() = default;
 
 /**
@@ -70,7 +74,6 @@ cuFreqCorrelator::~cuFreqCorrelator() = default;
  * @param[in] images the search windows
  * @param[out] results the correlation surfaces
  */
-
 void cuFreqCorrelator::execute(ArraysView<const real_type> templates, ArraysView<const real_type> images,
     ArraysView<real_type> results)
 {
@@ -102,13 +105,17 @@ void cuFreqCorrelator::execute(ArraysView<const real_type> templates, ArraysView
     // all done
 }
 
-// a = a^* * b
+/**
+ * The product f*conj(a)*b (a^* * b, scaled by f)
+ */
 inline __device__ complex_type cuMulConj(complex_type a, complex_type b, real_type f)
 {
     return make_complex_type(f*(a.x*b.x + a.y*b.y), f*(-a.y*b.x + a.x*b.y));
 }
 
-// cuda kernel for cuArraysElementMultiplyConjugate
+/**
+ * Cuda kernel for cuArraysElementMultiplyConjugate (one thread per element)
+ */
 __global__ void cudaKernel_elementMulConjugate(ArraysView<complex_type> ainout,
     ArraysView<const complex_type> bin, int size, real_type coef)
 {
@@ -121,8 +128,8 @@ __global__ void cudaKernel_elementMulConjugate(ArraysView<complex_type> ainout,
 /**
  * Perform multiplication of coef*Conjugate[image1]*image2 for each element
  * @param[in,out] image1, the first image
- * @param[in] image2, the secondary image
- * @param[in] coef, usually the normalization factor
+ * @param[in] image2,the secondary image
+ * @param[in] coef,usually the normalization factor
  */
 static void cuArraysElementMultiplyConjugate(ArraysView<complex_type> image1,
     ArraysView<const complex_type> image2, real_type coef, cudaStream_t stream)

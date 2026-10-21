@@ -1,4 +1,4 @@
-/*
+/**
  * @file  ArraysPadding.cpp
  * @brief Utilities for padding zeros to Arrays for FFT (zero padding in the middle), CPU backend
  */

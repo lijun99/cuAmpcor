@@ -40,7 +40,7 @@ public:
     /// @param reference the footprints of the reference chunks (see chunkFootprints)
     /// @param referenceDataType the pixel type of the reference image
     /// @param referenceImage the reference image
-    /// @param secondary, secondaryDataType, secondaryImage the same for the secondary image
+    /// @param secondary,secondaryDataType,secondaryImage the same for the secondary image
     cuAmpcorChunkLoader(const cuAmpcorChunkFootprint &reference, DataType referenceDataType,
         SlcImage &referenceImage, const cuAmpcorChunkFootprint &secondary,
         DataType secondaryDataType, SlcImage &secondaryImage);

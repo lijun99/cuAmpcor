@@ -1,5 +1,5 @@
-/*
- * @file cuSincOverSampler.h
+/**
+ * @file  cuSincOverSampler.h
  * @brief A class performs sinc interpolation/oversampling
  *
  * Oversample a given 2d signal by i_covs factor.
@@ -25,13 +25,14 @@
 
 namespace pycuampcor::cuda {
 
-constexpr float PI = 3.14159265359f;
+constexpr float PI = 3.14159265359f;   ///< the constant pi
 
+/// the sinc oversampler of real images (correlation surfaces), only within a window around
+/// their centers (or shifted centers, e.g., at the peaks)
 class cuSincOverSamplerR2R
 {
  private:
-    static const int i_sincwindow = 2;
-    ///< the oversampling is only performed within \pm i_sincwindow*i_covs around the peak
+    static const int i_sincwindow = 2;   ///< the oversampling is only performed within \pm i_sincwindow*i_covs around the peak
     static const int i_weight = 1;       ///< weight for cos() pedestal
     const real_type r_pedestal = 0.0;       ///< height of pedestal
     const real_type r_beta = 0.75f;          ///< a low-band pass
@@ -41,24 +42,27 @@ class cuSincOverSamplerR2R
 
     int i_covs;         ///< oversampling factor
     int i_intplength;   ///< actual filter length = r_relfiltlen/r_beta
-    int i_filtercoef;   //< length of the sinc kernel i_intplength*i_decfactor+1
+    int i_filtercoef;   ///< i_intplength*i_decfactor (the sinc kernel has i_filtercoef+1 coefficients)
 
-    real_type * r_filter;   // sinc kernel with size i_filtercoef
+    real_type * r_filter;   ///< the sinc kernel, of size i_filtercoef+1 (device memory)
 
-    cudaStream_t stream;
+    cudaStream_t stream;   ///< the cuda stream
 
  public:
-    // constructor
+    /// constructor, with the oversampling factor i_covs_
     cuSincOverSamplerR2R(const int i_covs_, cudaStream_t stream_);
-    // set up sinc interpolation coefficients
+    /// set up the sinc interpolation coefficients (r_filter)
     void cuSetupSincKernel();
-    // execute interface
+    /// oversample the images within the windows around their centers, shifted by
+    /// center*oversamplingFactor (oversampled pixels, one shift per image); the rest of
+    /// imagesOut is set to zero
     void execute(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut,
         ArraysView<const int2> center, int oversamplingFactor);
+    /// the same, with one shift (center) for all images
     void execute(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut, int2 center,
         int oversamplingFactor);
 
-    // destructor
+    /// destructor
     ~cuSincOverSamplerR2R();
 };
 

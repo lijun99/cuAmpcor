@@ -36,7 +36,7 @@ public:
 /// the default number of windows in a chunk on the device (deviceID): 2x the number of SMs, as
 /// (SM/4) x 8 windows (down x across)
 /// @param param the parameters
-/// @param[out] down, across the number of windows in a chunk, down and across
+/// @param[out] down,across the number of windows in a chunk, down and across
 void defaultWindowsInChunk(const cuAmpcorParameter &param, int &down, int &across);
 
 /// set up the parameters (cuAmpcorParameter::setupParameters), with the default number of

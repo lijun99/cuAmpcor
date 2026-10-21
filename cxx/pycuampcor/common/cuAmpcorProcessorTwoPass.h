@@ -22,7 +22,9 @@ namespace pycuampcor {
 template <template <typename> class arrayT>
 class cuAmpcorProcessorTwoPass : public cuAmpcorProcessor<arrayT> {
 public:
+    /// the base class: the processor of a chunk
     using base_type = cuAmpcorProcessor<arrayT>;
+    /// the arrays: batches of 2D arrays of T (as in the base class)
     template <typename T>
     using array_type = typename base_type::template array_type<T>;
     using typename base_type::real_type;
@@ -43,6 +45,7 @@ public:
         array_type<real2_type> &offsetImage, array_type<real_type> &snrImage,
         array_type<real3_type> &covImage, array_type<real_type> &peakValueImage,
         stream_type stream);
+    /// release the buffers and workers
     ~cuAmpcorProcessorTwoPass() override;
 
     /// process the chunk (idxDown, idxAcross), and write its results to the output images

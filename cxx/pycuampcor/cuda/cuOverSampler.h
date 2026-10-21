@@ -1,5 +1,5 @@
-/*
- * @file cuOverSampler.h
+/**
+ * @file  cuOverSampler.h
  * @brief Oversampling with FFT padding method
  *
  * Define cuOverSampler class, to save cufft plans and perform oversampling calculations
@@ -17,40 +17,43 @@
 
 namespace pycuampcor::cuda {
 
-// FFT Oversampler for complex images
+/// the FFT oversampler for complex images (windows), by zero padding their spectra
 class cuOverSamplerC2C
 {
 private:
-     CufftPlan forwardPlan;   // forward fft handle
-     CufftPlan backwardPlan;  // backward fft handle
-     cudaStream_t stream;       // cuda stream
-     cuArrays<complex_type> workIn;  // work array to hold forward fft data
-     cuArrays<complex_type> workOut; // work array to hold padded data
+     CufftPlan forwardPlan;              ///< the forward fft handle
+     CufftPlan backwardPlan;             ///< the backward fft handle
+     cudaStream_t stream;                ///< the cuda stream
+     cuArrays<complex_type> workIn;      ///< the work array to hold the forward fft data
+     cuArrays<complex_type> workOut;     ///< the work array to hold the padded data
 public:
      // disable the default constructor
      cuOverSamplerC2C() = delete;
-     // constructor
+     /// constructor, for nImages images of inNX x inNY oversampled to outNX x outNY
      cuOverSamplerC2C(int inNX, int inNY, int outNX, int outNY, int nImages, cudaStream_t stream_);
-     // execute oversampling
+     /// execute the oversampling (imagesOut of outNX x outNY)
      void execute(ArraysView<const complex_type> imagesIn, ArraysView<complex_type> imagesOut);
-     // destructor
+     /// destructor
      ~cuOverSamplerC2C();
 };
 
-// FFT Oversampler for complex images
+/// the FFT oversampler for real images (correlation surfaces), by zero padding their spectra
 class cuOverSamplerR2R
 {
 private:
-     CufftPlan forwardPlan;
-     CufftPlan backwardPlan;
-     cudaStream_t stream;
-     cuArrays<complex_type> workSizeIn;
-     cuArrays<complex_type> workSizeOut;
+     CufftPlan forwardPlan;                  ///< the forward fft (in place) of all images
+     CufftPlan backwardPlan;                 ///< the inverse fft (in place) of the padded spectra
+     cudaStream_t stream;                    ///< the cuda stream
+     cuArrays<complex_type> workSizeIn;      ///< the input images (as complex), then their spectra
+     cuArrays<complex_type> workSizeOut;     ///< the padded spectra, then the oversampled images
 
 public:
     cuOverSamplerR2R() = delete;
+    /// constructor, for nImages images of inNX x inNY oversampled to outNX x outNY
     cuOverSamplerR2R(int inNX, int inNY, int outNX, int outNY, int nImages, cudaStream_t stream_);
+    /// execute the oversampling (imagesOut takes the top left part of the oversampled images)
     void execute(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut);
+    /// destructor
     ~cuOverSamplerR2R();
 };
 

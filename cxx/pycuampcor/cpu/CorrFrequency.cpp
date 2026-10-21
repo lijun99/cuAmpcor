@@ -1,4 +1,4 @@
-/*
+/**
  * @file  CorrFrequency.cpp
  * @brief A class performs cross correlation in frequency domain (CPU backend)
  */
@@ -10,23 +10,27 @@
 
 namespace pycuampcor::cpu {
 
-// coef*conj(image1)*image2, element-wise, in image1 (defined below)
+/**
+ * Multiply conj(image1) by image2 and coef, element-wise, in image1 (defined below)
+ */
 static void cuArraysElementMultiplyConjugate(ArraysView<complex_type> image1,
     ArraysView<const complex_type> image2, real_type coef, stream_t stream);
 
-// the mutex to guard the fftw planner (shared by all fftw users in this backend)
+/**
+ * The mutex to guard the fftw planner (shared by all fftw users in this backend)
+ */
 std::mutex & fftwPlannerMutex()
 {
     static std::mutex mutex;
     return mutex;
 }
 
-/*
- * cuFreqCorrelator Constructor
+/**
+ * cuFreqCorrelator constructor
  * @param imageNX height of each image
  * @param imageNY width of each image
  * @param nImages number of images in the batch
- * @param stream (not used)
+ * @param stream_ (not used)
  */
 cuFreqCorrelator::cuFreqCorrelator(int imageNX, int imageNY, int nImages, stream_t stream_)
     : stream(stream_)
@@ -52,7 +56,9 @@ cuFreqCorrelator::cuFreqCorrelator(int imageNX, int imageNY, int nImages, stream
         fftwFlags);
 }
 
-/// destructor
+/**
+ * Release the fftw plans and the work arrays
+ */
 cuFreqCorrelator::~cuFreqCorrelator() = default;
 
 /**
@@ -85,8 +91,8 @@ void cuFreqCorrelator::execute(ArraysView<const real_type> templates, ArraysView
 /**
  * Perform multiplication of coef*Conjugate[image1]*image2 for each element
  * @param[in,out] image1, the first image
- * @param[in] image2, the secondary image
- * @param[in] coef, usually the normalization factor
+ * @param[in] image2,the secondary image
+ * @param[in] coef,usually the normalization factor
  */
 static void cuArraysElementMultiplyConjugate(ArraysView<complex_type> image1,
     ArraysView<const complex_type> image2, real_type coef, stream_t)

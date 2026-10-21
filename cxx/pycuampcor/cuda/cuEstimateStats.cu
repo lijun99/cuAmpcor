@@ -13,6 +13,10 @@
 
 namespace pycuampcor::cuda {
 
+/**
+ * CUDA kernel for cuEstimateSnr: one thread per correlation surface, the SNR as the squared peak
+ * over the mean of the squared surface without the peak
+ */
 __global__ void cudaKernel_estimateSnr(ArraysView<const real_type> corrSum,
     ArraysView<const int> corrValidCount, ArraysView<const real_type> maxval,
     ArraysView<real_type> snrValue, const int size)
@@ -44,7 +48,11 @@ void cuEstimateSnr(ArraysView<const real_type> corrSum, ArraysView<const int> co
     checkCudaAsyncErrors();
 }
 
-// cuda kernel for cuEstimateVariance
+/**
+ * CUDA kernel for cuEstimateVariance: one thread per correlation surface, the covariance (xx, yy, xy)
+ * of the offset from the curvature of the surface at the peak (99, 99, 0 if the peak is within
+ * distance of the margin, or the curvature is too small)
+ */
 __global__ void cudaKernel_estimateVar(ArraysView<const real_type> corrBatchRaw,
     ArraysView<const int2> maxloc, ArraysView<const real_type> maxval, const int templateSize,
     const int distance, ArraysView<real3_type> covValue, const int size)

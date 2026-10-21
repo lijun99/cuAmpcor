@@ -1,5 +1,5 @@
-/*
- * @file OverSampler.h
+/**
+ * @file  OverSampler.h
  * @brief Oversampling with FFT padding method (CPU backend)
  *
  * Define cuOverSampler class, to save fftw plans and perform oversampling calculations
@@ -16,45 +16,48 @@
 
 namespace pycuampcor::cpu {
 
-// FFT Oversampler for complex images
+/// the FFT oversampler for complex images (windows), by zero padding their spectra
 class cuOverSamplerC2C
 {
 private:
-     FftwPlan forwardPlan;   // forward fft handle
-     FftwPlan backwardPlan;  // backward fft handle
-     stream_t stream;              // stream (not used)
-     array_type<complex_type> workIn;  // work array to hold forward fft data
-     array_type<complex_type> workOut; // work array to hold padded data
+     FftwPlan forwardPlan;               ///< the forward fft handle
+     FftwPlan backwardPlan;              ///< the backward fft handle
+     stream_t stream;                    ///< the stream (not used)
+     array_type<complex_type> workIn;    ///< the work array to hold the forward fft data
+     array_type<complex_type> workOut;   ///< the work array to hold the padded data
 public:
      // disable the default constructor
      cuOverSamplerC2C() = delete;
-     // constructor
+     /// constructor, for nImages images of inNX x inNY oversampled to outNX x outNY
      cuOverSamplerC2C(int inNX, int inNY, int outNX, int outNY, int nImages, stream_t stream_);
-     // execute oversampling
+     /// execute the oversampling (imagesOut of outNX x outNY)
      void execute(ArraysView<const complex_type> imagesIn, ArraysView<complex_type> imagesOut);
-     // destructor
+     /// destructor
      ~cuOverSamplerC2C();
 };
 
-// FFT Oversampler for real images
-// the inverse fft of the padded spectrum is done for one image at a time, along the columns
-// (only those with non-zero spectrum) and then along the rows
+/// the FFT oversampler for real images (correlation surfaces), by zero padding their spectra;
+/// the inverse fft of the padded spectrum is done for one image at a time, along the columns
+/// (only those with non-zero spectrum) and then along the rows
 class cuOverSamplerR2R
 {
 private:
-     FftwPlan forwardPlan;
-     FftwPlan backwardPlanColumns[2]; // for the positive and negative frequency columns
-     FftwPlan backwardPlanRows;
-     stream_t stream;
-     array_type<complex_type> workSizeIn;   // the spectra of the input images
-     array_type<complex_type> workColumns;  // the spectrum of one image, padded along the columns
-     array_type<complex_type> workPadded;   // the inverse fft along the columns, padded along the rows
-     array_type<complex_type> workSizeOut;  // the oversampled image
+     FftwPlan forwardPlan;                   ///< the forward fft (in place) of all images
+     FftwPlan backwardPlanColumns[2];        ///< the inverse fft along the positive/negative frequency columns (or null)
+     FftwPlan backwardPlanRows;              ///< the inverse fft along the rows
+     stream_t stream;                        ///< the stream (not used)
+     array_type<complex_type> workSizeIn;    ///< the spectra of the input images
+     array_type<complex_type> workColumns;   ///< the spectrum of one image, padded along the columns
+     array_type<complex_type> workPadded;    ///< the inverse fft along the columns, padded along the rows
+     array_type<complex_type> workSizeOut;   ///< the oversampled image
 
 public:
     cuOverSamplerR2R() = delete;
+    /// constructor, for nImages images of inNX x inNY oversampled to outNX x outNY
     cuOverSamplerR2R(int inNX, int inNY, int outNX, int outNY, int nImages, stream_t stream_);
+    /// execute the oversampling (imagesOut takes the top left part of the oversampled images)
     void execute(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut);
+    /// destructor
     ~cuOverSamplerR2R();
 };
 

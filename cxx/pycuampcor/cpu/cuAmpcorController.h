@@ -34,7 +34,7 @@ public:
 /// the default number of windows in a chunk on the CPU: one window per chunk, as each thread
 /// processes a chunk (its windows one after another)
 /// @param param the parameters
-/// @param[out] down, across the number of windows in a chunk, down and across
+/// @param[out] down,across the number of windows in a chunk, down and across
 void defaultWindowsInChunk(const cuAmpcorParameter &param, int &down, int &across);
 
 /// set up the parameters (cuAmpcorParameter::setupParameters), with the default number of

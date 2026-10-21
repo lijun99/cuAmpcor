@@ -27,12 +27,20 @@
 #include "float2.h"
 
 // the factories of the workers, for the processors
+
+/**
+ * A normalizer for the correlation surfaces of count windows of height x width
+ */
 std::unique_ptr<pycuampcor::array_traits<pycuampcor::cpu::Arrays>::normalizer_type>
 pycuampcor::array_traits<pycuampcor::cpu::Arrays>::newNormalizer(int height, int width, int count)
 {
     return cpu::newCuNormalizer(height, width, count);
 }
 
+/**
+ * An oversampler (FFT or sinc, by method) of count correlation surfaces of height x width
+ * around their peaks, by factor
+ */
 std::unique_ptr<pycuampcor::array_traits<pycuampcor::cpu::Arrays>::surface_oversampler_type>
 pycuampcor::array_traits<pycuampcor::cpu::Arrays>::newSurfaceOverSampler(OversamplingMethod method,
     int height, int width, int factor, int rawFactor, int count, stream_type stream)

@@ -28,12 +28,12 @@ namespace pycuampcor {
 template <typename T>
 class ArraysView {
 public:
-    using element_type = T;
-    using value_type = std::remove_cv_t<T>;
-    using index_type = int;
-    using size_type = std::size_t;
-    using data_handle_type = T *;
-    using reference = T &;
+    using element_type = T;                       ///< the element type (const T for read-only views)
+    using value_type = std::remove_cv_t<T>;       ///< the element type without const
+    using index_type = int;                       ///< the type of the indices and extents
+    using size_type = std::size_t;                ///< the type of the total number of elements
+    using data_handle_type = T *;                 ///< the pointer to the elements
+    using reference = T &;                        ///< the reference to an element
 
     /// the number of dimensions: count, height, width
     PYCUAMPCOR_HOST_DEVICE static constexpr int rank() { return 3; }

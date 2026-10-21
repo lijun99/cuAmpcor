@@ -1,5 +1,5 @@
-/*
- * @file cuNormalizer.cu
+/**
+ * @file  cuCorrNormalizer.cpp
  * @brief processors to normalize the correlation surface
  *
  */
@@ -12,6 +12,10 @@
 
 namespace pycuampcor::cuda {
 
+/**
+ * The normalizer of the correlation surfaces: cuNormalizeFixed for the smallest size that fits
+ * the width of the secondary windows, or cuNormalizeSAT beyond 1024
+ */
 std::unique_ptr<cuNormalizer<cuArrays>>
 newCuNormalizer(int secondaryNX, int secondaryNY, int count)
 {
@@ -36,6 +40,10 @@ newCuNormalizer(int secondaryNX, int secondaryNY, int count)
     }
 }
 
+/**
+ * Constructor, allocating the sums of the squares of the reference windows and the sum area
+ * tables of the secondary windows
+ */
 cuNormalizeSAT::cuNormalizeSAT(int secondaryNX, int secondaryNY, int count)
 {
     // allocate the work array
@@ -47,8 +55,14 @@ cuNormalizeSAT::cuNormalizeSAT(int secondaryNX, int secondaryNY, int count)
     secondarySAT2 = cuArrays<real_type>(secondaryNX, secondaryNY, count);
 };
 
+/**
+ * Release the work arrays
+ */
 cuNormalizeSAT::~cuNormalizeSAT() = default;
 
+/**
+ * Normalize the correlation surfaces with the sum area tables of the secondary windows
+ */
 void cuNormalizeSAT::execute(ArraysView<real_type> correlation,
     ArraysView<const real_type> reference, ArraysView<const real_type> secondary, cudaStream_t stream)
 {
@@ -56,6 +70,9 @@ void cuNormalizeSAT::execute(ArraysView<real_type> correlation,
         referenceSum2, secondarySAT, secondarySAT2, stream);
 }
 
+/**
+ * Normalize the correlation surfaces, summing in shared memory (blocks of Size threads)
+ */
 template<int Size>
 void cuNormalizeFixed<Size>::execute(ArraysView<real_type> correlation,
     ArraysView<const real_type> reference, ArraysView<const real_type> secondary, cudaStream_t stream)

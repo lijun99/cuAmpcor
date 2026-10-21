@@ -1,5 +1,5 @@
-/*
- * @file cuCorrNormalizationSAT.cu
+/**
+ * @file  cuCorrNormalizationSAT.cu
  * @brief Utilities to normalize the 2D correlation surface with the sum area table
  *
  */
@@ -20,16 +20,14 @@ namespace pycuampcor::cuda {
 // alias for cuda cooperative groups
 namespace cg = cooperative_groups;
 
+#if __CUDACC_VER_MAJOR__ >= 11
 /**
- * cuda kernel for sum value^2 (std)
- * compute the sum value square (std) of the reference image
+ * Cuda kernel for sum value^2 (std), with cg::reduce for NVCC 11 and above
+ * Compute the sum value square (std) of the reference image
  * @param[out] sum2 sum of value square
  * @param[in] images the reference images
  * @note use one thread block for each image, blockIdx.x is image index
- **/
-
-#if __CUDACC_VER_MAJOR__ >= 11
-// use cg::reduce for NVCC 11 and above
+ */
 __global__ void sum_square_kernel(ArraysView<real_type> sum2, ArraysView<const real_type> images)
 {
     // get block id for each image
@@ -73,7 +71,10 @@ __global__ void sum_square_kernel(ArraysView<real_type> sum2, ArraysView<const r
 }
 
 #else
-// use warp-shuffle reduction for NVCC 9 & 10
+/**
+ * Cuda kernel for sum value^2 (std), with a warp-shuffle reduction for NVCC 9 & 10
+ * (see the version above)
+ */
 __global__ void sum_square_kernel(ArraysView<real_type> sum2, ArraysView<const real_type> images)
 {
     // get block id for each image
@@ -136,13 +137,12 @@ __global__ void sum_square_kernel(ArraysView<real_type> sum2, ArraysView<const r
 #endif // __CUDACC_VER_MAJOR check
 
 /**
- * cuda kernel for 2d sum area table
+ * Cuda kernel for 2d sum area tables (one block per image)
  * Compute the (inclusive) sum area table of the value and value^2 of a batch of 2d images.
- * @param[out] sat the sum area table
- * @param[out] sat2 the sum area table of value^2
+ * @param[out] sats the sum area tables
+ * @param[out] sats2 the sum area tables of value^2
  * @param[in] images search images
- **/
-
+ */
 __global__ void sat2d_kernel(ArraysView<real_type> sats, ArraysView<real_type> sats2,
     ArraysView<const real_type> images)
 {
@@ -198,6 +198,12 @@ __global__ void sat2d_kernel(ArraysView<real_type> sats, ArraysView<real_type> s
     // all done
 }
 
+/**
+ * Cuda kernel to normalize the correlation surfaces with the sum area tables of the secondary
+ * windows (one thread per pixel of the correlation surfaces, blockIdx.z the image index)
+ * @param referenceSum2 the sums of the squares of the reference windows (mean subtracted)
+ * @param referenceNX,referenceNY the size of the reference windows
+ */
 __global__ void cuCorrNormalizeSAT_kernel(ArraysView<real_type> correlation,
     ArraysView<const real_type> referenceSum2, ArraysView<const real_type> secondarySat,
     ArraysView<const real_type> secondarySat2, const int referenceNX, const int referenceNY)
@@ -241,6 +247,10 @@ __global__ void cuCorrNormalizeSAT_kernel(ArraysView<real_type> correlation,
     }
 }
 
+/**
+ * Normalize the correlation surfaces with the sum area tables: the sums of the squares of the
+ * reference windows, the sum area tables of the secondary windows, then the normalization
+ */
 void cuCorrNormalizeSAT(ArraysView<real_type> correlation, ArraysView<const real_type> reference,
     ArraysView<const real_type> secondary, ArraysView<real_type> referenceSum2,
     ArraysView<real_type> secondarySat, ArraysView<real_type> secondarySat2, cudaStream_t stream)

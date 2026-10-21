@@ -10,9 +10,9 @@
 #include "../common/api.h"
 
 namespace pycuampcor::cuda {
-    // the controller, which runs ampcor with the parameters
+    /// the controller, which runs ampcor with the parameters
     using controller_t = cuAmpcorController;
-    // the processor of a chunk (the base of the workflows), for the arrays of this package
+    /// the processor of a chunk (the base of the workflows), for the arrays of this package
     using processor_t = pycuampcor::cuAmpcorProcessor<cuArrays>;
 }
 

@@ -21,8 +21,8 @@ namespace pycuampcor {
 template <template <typename> class arrayT>
 class cuNormalizer {
 public:
-    using real_type = typename array_traits<arrayT>::real_type;
-    using stream_type = typename array_traits<arrayT>::stream_type;
+    using real_type = typename array_traits<arrayT>::real_type;      ///< the real type
+    using stream_type = typename array_traits<arrayT>::stream_type;  ///< the stream on which the kernels are queued
 
     virtual ~cuNormalizer() = default;
 

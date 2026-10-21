@@ -1,5 +1,5 @@
-/*
- * @file  cuCorrTimetime.cu
+/**
+ * @file  cuCorrTimeDomain.cu
  * @brief Correlation between two sets of images in time domain
  *
  * This code is adapted from the nxcor package.
@@ -11,7 +11,13 @@
 
 namespace pycuampcor::cuda {
 
-// cuda kernel for cuCorrTimeDomain
+/**
+ * CUDA kernel for cuCorrTimeDomain: one block per pair of windows (blockIdx.x) and NPT rows of its
+ * correlation surface, starting at the row blockIdx.y*NPT
+ * @note the block of nthreads threads (at least the width of the secondary window) loads the rows of
+ *   the template and of the secondary window to shared memory; the thread tx computes the column tx
+ *   of the NPT rows, with the template columns split among q groups of threads, summed at the end
+ */
 template<const int nthreads, const int NPT>
 __global__ void cuArraysCorrTime_kernel(ArraysView<const real_type> templates,
     ArraysView<const real_type> images, ArraysView<real_type> results)

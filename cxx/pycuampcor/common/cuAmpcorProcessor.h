@@ -33,26 +33,32 @@ public:
     /// the arrays: batches of 2D arrays of T, e.g., cuda::cuArrays<float>
     template <typename T>
     using array_type = arrayT<T>;
-    /// the element types
-    using real_type = typename traits::real_type;
-    using complex_type = typename traits::complex_type;
-    using real2_type = typename traits::real2_type;
-    using real3_type = typename traits::real3_type;
-    using int2_type = typename traits::int2_type;
+    // the element types
+    using real_type = typename traits::real_type;        ///< the real type
+    using complex_type = typename traits::complex_type;  ///< the complex type
+    using real2_type = typename traits::real2_type;      ///< a pair of reals (e.g., the offsets)
+    using real3_type = typename traits::real3_type;      ///< a triple of reals (e.g., the covariances)
+    using int2_type = typename traits::int2_type;        ///< a pair of ints (e.g., the window positions)
     /// the stream on which the kernels are queued
     using stream_type = typename traits::stream_type;
-    /// the chunks of the images loaded by the chunk loader
+    // the chunks of the images loaded by the chunk loader
+    /// the chunks of the reference and secondary images, loaded by the chunk loader
     using chunk_type = typename traits::chunk_type;
+    /// a chunk of an image, loaded by the chunk loader
     using loaded_chunk_type = typename traits::loaded_chunk_type;
-    /// the workers
+    // the workers
+    /// the cross-correlation of the windows in the frequency domain
     using freq_correlator_type = typename traits::freq_correlator_type;
+    /// the FFT oversampler of complex windows
     using oversampler_c2c_type = typename traits::oversampler_c2c_type;
+    /// the normalizer of the correlation surfaces
     using normalizer_type = typename traits::normalizer_type;
+    /// the oversampler of the correlation surfaces around their peaks
     using surface_oversampler_type = typename traits::surface_oversampler_type;
 
     /// a processor writing to the output images
     /// @param param the parameters (set up), kept for the lifetime of the processor
-    /// @param offsetImage, snrImage, covImage, peakValueImage the output images, covering whole
+    /// @param offsetImage,snrImage,covImage,peakValueImage the output images, covering whole
     ///     chunks, kept for the lifetime of the processor
     /// @param stream the stream on which the kernels are queued
     cuAmpcorProcessor(const cuAmpcorParameter &param,
@@ -123,7 +129,7 @@ protected:
     /// image are padded with zeros, complex images are copied as amplitudes if derampMethod is
     /// magnitude, and real images are copied as complex
     /// @param chunk the loaded chunk (of the reference or secondary image)
-    /// @param startDown, startAcross the starting pixels of all windows in the image
+    /// @param startDown,startAcross the starting pixels of all windows in the image
     /// @param[out] batch the windows
     void copyToBatch(const loaded_chunk_type &chunk,
         const std::vector<int> &startDown, const std::vector<int> &startAcross,
@@ -131,7 +137,7 @@ protected:
 
     /// cross-correlate the reference windows with the secondary windows (in the frequency or time
     /// domain), and normalize the correlation surfaces
-    /// @param reference, secondary the windows (amplitudes, with the mean subtracted)
+    /// @param reference,secondary the windows (amplitudes, with the mean subtracted)
     /// @param[out] surface the normalized correlation surfaces
     /// @param freqCorrelator the correlator in the frequency domain (if algorithm is frequency)
     /// @param normalizer the normalizer of the correlation surfaces

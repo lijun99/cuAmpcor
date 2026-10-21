@@ -1,4 +1,4 @@
-/*
+/**
  * @file  Deramp.cpp
  * @brief Derampling a batch of 2D complex images (CPU backend)
  *
@@ -21,9 +21,8 @@
 namespace pycuampcor::cpu {
 
 /**
- * Deramp a complex signal with Method 1
- * @brief Each signal is decomposed into real and imaginary parts,
- *   and the average phase shift is obtained as atan(\sum imag / \sum real).
+ * Deramp complex signals (the method DerampMethod::Complex): each signal is decomposed into real
+ * and imaginary parts, and the average phase shift is obtained as atan(\sum imag / \sum real)
  * @param[in,out] images input/output complex signals
  * @param[in] axis 0: deramp along x-axis; 1: deramp along y-axis; others: deramp along both axes
  */
@@ -80,6 +79,10 @@ static void cuLinearDeramp(ArraysView<complex_type> images, const int axis, stre
     }
 }
 
+/**
+ * Remove the phase ramps of the complex windows (in place), along the axis, with the method
+ * @note only DerampMethod::Complex deramps (with cuLinearDeramp); the other methods do nothing
+ */
 void cuDeramp(DerampMethod method, ArraysView<complex_type> images, DerampAxis axis, stream_t stream)
 {
     // the axis values (down 0, across 1, both 2) are those of cuLinearDeramp

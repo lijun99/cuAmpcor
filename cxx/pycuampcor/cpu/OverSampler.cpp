@@ -1,5 +1,5 @@
-/*
- * @file OverSampler.cpp
+/**
+ * @file  OverSampler.cpp
  * @brief Implementations of cuOverSamplerR2R (C2C) class (CPU backend)
  */
 
@@ -19,7 +19,13 @@
 
 namespace pycuampcor::cpu {
 
-// create a batched 2D complex fft plan
+/**
+ * Create a batched 2D complex fft plan
+ * @param nx,ny the size of the images
+ * @param nImages the number of images
+ * @param in,out the input and output arrays
+ * @param sign the sign of the exponent (FFTW_FORWARD or FFTW_BACKWARD)
+ */
 static fftw_plan_type planMany2D(int nx, int ny, int nImages, complex_type *in, complex_type *out, int sign)
 {
     int n[2] = {nx, ny};
@@ -31,11 +37,11 @@ static fftw_plan_type planMany2D(int nx, int ny, int nImages, complex_type *in, 
 }
 
 /**
- * Constructor for cuOversamplerC2C
- * @param input image size inNX x inNY
- * @param output image size outNX x outNY
- * @param nImages batches
- * @param stream_ (not used)
+ * Constructor for cuOverSamplerC2C
+ * @param inNX,inNY the size of the input images
+ * @param outNX,outNY the size of the output (oversampled) images
+ * @param nImages the number of images
+ * @param stream_ the stream (not used)
  */
 cuOverSamplerC2C::cuOverSamplerC2C(int inNX, int inNY, int outNX, int outNY, int nImages, stream_t stream_)
     : stream(stream_)
@@ -71,17 +77,19 @@ void cuOverSamplerC2C::execute(ArraysView<const complex_type> imagesIn, ArraysVi
     PYCUAMPCOR_FFTW(execute_dft)(backwardPlan, fftwCast(workOut.data_handle()), fftwCast(imagesOut.data_handle()));
 }
 
-/// destructor
+/**
+ * Release the fftw plans and the work arrays
+ */
 cuOverSamplerC2C::~cuOverSamplerC2C() = default;
 
 // end of cuOverSamplerC2C
 
 /**
- * Constructor for cuOversamplerR2R
- * @param input image size inNX x inNY
- * @param output image size outNX x outNY
+ * Constructor for cuOverSamplerR2R
+ * @param inNX,inNY the size of the input images
+ * @param outNX,outNY the size of the output (oversampled) images
  * @param nImages the number of images
- * @param stream_ (not used)
+ * @param stream_ the stream (not used)
  */
 cuOverSamplerR2R::cuOverSamplerR2R(int inNX, int inNY, int outNX, int outNY, int nImages, stream_t stream_)
     : stream(stream_)
@@ -162,7 +170,9 @@ void cuOverSamplerR2R::execute(ArraysView<const real_type> imagesIn, ArraysView<
     }
 }
 
-/// destructor
+/**
+ * Release the fftw plans and the work arrays
+ */
 cuOverSamplerR2R::~cuOverSamplerR2R() = default;
 
 namespace {

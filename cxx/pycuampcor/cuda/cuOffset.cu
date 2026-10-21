@@ -1,5 +1,5 @@
-/*
- * @file cuOffset.cu
+/**
+ * @file  cuOffset.cu
  * @brief Utilities used to determine the offset field
  *
  */
@@ -12,7 +12,9 @@
 
 namespace pycuampcor::cuda {
 
-// find the max between two elements
+/**
+ * Find the max between two elements of the shared memory, kept (with its location) at gid
+ */
 inline static __device__ void maxPairReduce(real_type* maxval, int* maxloc,
       size_t gid, size_t strideid)
 {
@@ -22,9 +24,13 @@ inline static __device__ void maxPairReduce(real_type* maxval, int* maxloc,
     }
 }
 
-// max reduction kernel for a 2d image
-// start from (start.x, start.y) in a rectangle range (range.x, range.y)
-// start + range <= imageSize
+/**
+ * Max reduction for a 2d image (device function), by a block of BLOCKSIZE threads
+ * start from (start.x, start.y) in a rectangle range (range.x, range.y)
+ * start + range <= imageSize
+ * @param shval,shloc the shared memory for the values and the (flattened) locations; the result is
+ *   in shval[0], shloc[0]
+ */
 template<const int BLOCKSIZE>
 __device__ void max_reduction_2d(const real_type* const image,
     const int2 imageSize,
@@ -82,7 +88,9 @@ __device__ void max_reduction_2d(const real_type* const image,
     __syncthreads();
 }
 
-// kernel for 2D array(image), find max location only
+/**
+ * Kernel for cuArraysMaxloc2D: one block per 2D array (image), the max value and its location
+ */
 template <const int BLOCKSIZE>
 __global__ void  cudaKernel_maxloc2D(ArraysView<const real_type> images, ArraysView<int2> maxloc,
     ArraysView<real_type> maxval, const int2 start, const int2 range)
@@ -143,7 +151,9 @@ void cuArraysMaxloc2D(ArraysView<const real_type> images,
     checkCudaAsyncErrors();
 }
 
-// cuda kernel for cuSubPixelOffset
+/**
+ * CUDA kernel for cuSubPixelOffset: one thread per window
+ */
 __global__ void cuSubPixelOffset_kernel(ArraysView<const int2> offsetInit,
                                         ArraysView<const int2> offsetZoomIn,
                                         ArraysView<real2_type> offsetFinal, const int size,
@@ -182,7 +192,9 @@ void cuSubPixelOffset(ArraysView<const int2> offsetInit,
 
 }
 
-// cuda kernel for cuSubPixelOffset
+/**
+ * CUDA kernel for cuSubPixelOffset2Pass: one thread per window
+ */
 __global__ void cuSubPixelOffset2Pass_kernel(ArraysView<const int2> offsetInit,
                                         ArraysView<const int2> offsetZoomIn,
                                         ArraysView<real2_type> offsetFinal,
@@ -201,18 +213,18 @@ __global__ void cuSubPixelOffset2Pass_kernel(ArraysView<const int2> offsetInit,
  *   the cross-correlation before oversampling, in dimensions of pixel
  * @param[in] offsetZoomIn max location from the oversampled cross-correlation surface
  * @param[out] offsetFinal the combined offset value
- * @param[in] OversampleRatioZoomIn the correlation surface oversampling factor
- * @param[in] OversampleRatioRaw the oversampling factor of reference/secondary windows before cross-correlation
- * @param[in] xHalfRangInit the original half search range along x, to be subtracted
- * @param[in] yHalfRangInit the original half search range along y, to be subtracted
+ * @param[in] OverSampleRatioZoomin the correlation surface oversampling factor
+ * @param[in] OverSampleRatioRaw the oversampling factor of reference/secondary windows before cross-correlation
+ * @param[in] xHalfRangeInit the original half search range along x, to be subtracted
+ * @param[in] yHalfRangeInit the original half search range along y, to be subtracted
  *
  * 1. Cross-correlation is performed at first for the un-oversampled data with a larger search range.
  *   The secondary window is then extracted to a smaller size (a smaller search range) around the max location.
  *   The extraction starting location (offsetInit) - original half search range (xHalfRangeInit, yHalfRangeInit)
  *        = pixel size offset
- * 2. Reference/secondary windows are then oversampled by OversampleRatioRaw, and cross-correlated.
- * 3. The correlation surface is further oversampled by OversampleRatioZoomIn.
- *    The overall oversampling factor is OversampleRatioZoomIn*OversampleRatioRaw.
+ * 2. Reference/secondary windows are then oversampled by OverSampleRatioRaw, and cross-correlated.
+ * 3. The correlation surface is further oversampled by OverSampleRatioZoomin.
+ *    The overall oversampling factor is OverSampleRatioZoomin*OverSampleRatioRaw.
  *    The max location in oversampled correlation surface (offsetZoomIn) / overall oversampling factor
  *        = subpixel offset
  *    Final offset =  pixel size offset +  subpixel offset
@@ -234,7 +246,10 @@ void cuSubPixelOffset2Pass(ArraysView<const int2> offsetInit, ArraysView<const i
 
 }
 
-// cuda device function to compute the shift of center
+/**
+ * CUDA device function to compute the start of extraction and the shift of center
+ * @return the start (x) and the shift (y)
+ */
 static inline __device__ int2 dev_adjustOffset(
     const int oldRange, const int newRange, const int maxloc)
 {
@@ -272,7 +287,9 @@ static inline __device__ int2 dev_adjustOffset(
     return make_int2(start, shift);
 }
 
-// cuda kernel for cuDetermineSecondaryExtractOffset
+/**
+ * CUDA kernel for cuDetermineSecondaryExtractOffset: one thread per window
+ */
 __global__ void cudaKernel_determineSecondaryExtractOffset(ArraysView<int2> maxLoc, ArraysView<int2> shift,
     const size_t nImages, int xOldRange, int yOldRange, int xNewRange, int yNewRange)
 {
@@ -291,8 +308,8 @@ __global__ void cudaKernel_determineSecondaryExtractOffset(ArraysView<int2> maxL
 
 /**
  * Determine the secondary window extract offset from the max location
- * @param[in] xOldRange, yOldRange are (half) search ranges in first step
- * @param[in] xNewRange, yNewRange are (half) search range
+ * @param[in] xOldRange,yOldRange are (half) search ranges in first step
+ * @param[in] xNewRange,yNewRange are (half) search range
  *
  * After the first run of cross-correlation, with a larger search range,
  *  We now choose a smaller search range around the max location for oversampling.

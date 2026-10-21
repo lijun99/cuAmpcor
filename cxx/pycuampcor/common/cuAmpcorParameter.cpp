@@ -53,6 +53,12 @@ void cuAmpcorParameter::setupParameters(int defaultWindowsDownInChunk, int defau
     allocateArrays();
 }
 
+/**
+ * Compute the sizes of the windows and correlation surfaces for the two-pass workflow
+ *
+ * The first pass correlates the raw windows over the full search range; the second pass
+ * correlates the oversampled windows over the zoom-in search range around the first-pass peak.
+ */
 void cuAmpcorParameter::_setupParameters_TwoPass()
 {
     // Size to extract the raw correlation surface for snr/cov
@@ -94,6 +100,12 @@ void cuAmpcorParameter::_setupParameters_TwoPass()
 
 }
 
+/**
+ * Compute the sizes of the windows and correlation surfaces for the one-pass workflow
+ *
+ * The search range is extended by the zoom-in margin, and the reference windows are enlarged
+ * (loaded) to the size of the search windows.
+ */
 void cuAmpcorParameter::_setupParameters_OnePass()
 {
 
@@ -163,6 +175,9 @@ void cuAmpcorParameter::_setupParameters_OnePass()
 
 }
 
+/**
+ * (Re)size the arrays of the windows and chunks, discarding the values of previous setups
+ */
 void cuAmpcorParameter::allocateArrays()
 {
     // (re)size arrays, discarding values from previous setups, if any
@@ -180,14 +195,18 @@ void cuAmpcorParameter::allocateArrays()
         array->assign(numberChunks, 0);
 }
 
-/// check whether the arrays for windows/chunks are allocated (by setupParameters)
+/**
+ * Check whether the arrays for windows/chunks are allocated (by setupParameters)
+ */
 void cuAmpcorParameter::checkArraysAllocated() const
 {
     if (grossOffsetDown.empty())
         throw std::logic_error("Parameters are not set up; call setupParams() first");
 }
 
-/// check whether the parameters are ready to run (setupParameters and setStartPixels are called)
+/**
+ * Check whether the parameters are ready to run (setupParameters and setStartPixels are called)
+ */
 void cuAmpcorParameter::checkReadyToRun() const
 {
     checkArraysAllocated();
@@ -200,9 +219,11 @@ void cuAmpcorParameter::checkReadyToRun() const
 // make reference window the same as secondary for oversampling
 // ****************
 
-/// Set starting pixels for reference and secondary windows from arrays
-/// set also gross offsets between reference and secondary windows
-///
+/**
+ * Set starting pixels for reference and secondary windows from arrays
+ *
+ * Set also gross offsets between reference and secondary windows.
+ */
 void cuAmpcorParameter::setStartPixels(const int *mStartD, const int *mStartA, const int *gOffsetD, const int *gOffsetA)
 {
     checkArraysAllocated();
@@ -218,7 +239,9 @@ void cuAmpcorParameter::setStartPixels(const int *mStartD, const int *mStartA, c
     setChunkStartPixels();
 }
 
-/// set starting pixels for each window with a varying gross offset
+/**
+ * Set starting pixels for each window with a varying gross offset
+ */
 void cuAmpcorParameter::setStartPixels(int mStartD, int mStartA, const int *gOffsetD, const int *gOffsetA)
 {
     checkArraysAllocated();
@@ -238,7 +261,9 @@ void cuAmpcorParameter::setStartPixels(int mStartD, int mStartA, const int *gOff
     setChunkStartPixels();
 }
 
-/// set starting pixels for each window with a constant gross offset
+/**
+ * Set starting pixels for each window with a constant gross offset
+ */
 void cuAmpcorParameter::setStartPixels(int mStartD, int mStartA, int gOffsetD, int gOffsetA)
 {
     checkArraysAllocated();
@@ -258,7 +283,12 @@ void cuAmpcorParameter::setStartPixels(int mStartD, int mStartA, int gOffsetD, i
     setChunkStartPixels();
 }
 
-/// set starting pixels for each chunk
+/**
+ * Set starting pixels for each chunk
+ *
+ * The chunks cover the windows in them, within the images; their maximum sizes determine the
+ * sizes of the read buffers.
+ */
 void cuAmpcorParameter::setChunkStartPixels()
 {
     checkArraysAllocated();
@@ -352,8 +382,11 @@ void cuAmpcorParameter::setChunkStartPixels()
     chunkStartPixelsSet = true;
 }
 
-/// check whether reference and secondary windows are within the image range
-// now issue warning rather than errors
+/**
+ * Check whether reference and secondary windows are within the image range
+ *
+ * Now issue warnings rather than errors (debug builds only).
+ */
 void cuAmpcorParameter::checkPixelInImageRange() const
 {
 // check range is no longer required, but offered as an option in DEBUG

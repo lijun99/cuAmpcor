@@ -8,10 +8,8 @@
 #include "forward.h"
 
 namespace pycuampcor {
-    // the parameters
-    using parameter_t = cuAmpcorParameter;
-    // images
-    using slc_image_t = SlcImage;
+    using parameter_t = cuAmpcorParameter; ///< the parameters
+    using slc_image_t = SlcImage;          ///< the images
 }
 
 //end of file

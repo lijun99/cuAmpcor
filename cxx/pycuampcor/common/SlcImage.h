@@ -1,6 +1,7 @@
-// -*- c++ -*-
-// file slcimage.h
-// image sources (tile loaders) for slc images: a raw binary file (mmap) or an HDF5 dataset
+/**
+ * @file  SlcImage.h
+ * @brief Image sources (tile loaders) for SLC images: a raw binary file (mmap) or an HDF5 dataset
+ */
 
 #pragma once
 
@@ -47,29 +48,33 @@ class MmapSlcImage : public SlcImage {
 public:
     // disable default constructor
     MmapSlcImage()=delete;
-    // constructor
+    /// open a raw binary file of image_height x image_width pixels of pixel_size bytes, row major
+    /// @param buffersize the size of the mmap window, in GB
     MmapSlcImage(const std::string& fn, size_t image_height, size_t image_width, size_t pixel_size, size_t buffersize);
-    // interface
+    /// load a tile of h_tile x w_tile pixels starting at (h_offset, w_offset) to host memory,
+    /// row major with a pitch of w_tile pixels
     void loadToHost(void* host, size_t h_offset, size_t w_offset, size_t h_tile, size_t w_tile) override;
+    /// the size of a pixel in bytes
     size_t pixelSize() const override { return pixel_size; }
-    // destructor
+    /// unmap the window and close the file
     ~MmapSlcImage() override;
 
 private:
-    int fd;
-    size_t file_size;
-    size_t pixel_size;
-    size_t height;
-    size_t width;
+    int fd;               ///< the file descriptor
+    size_t file_size;     ///< the size of the image in bytes
+    size_t pixel_size;    ///< the size of a pixel in bytes
+    size_t height;        ///< the number of rows of the image (down, azimuth)
+    size_t width;         ///< the number of columns of the image (across, range)
 
-    void* mapped_data;
-    size_t page_size;
-    size_t mapped_offset;
-    size_t mapped_size;
-    size_t max_map_size;
+    void* mapped_data;    ///< the mapped window, nullptr if none
+    size_t page_size;     ///< the system page size (the alignment of the window offset)
+    size_t mapped_offset; ///< the offset of the window in the file, in bytes
+    size_t mapped_size;   ///< the size of the window, in bytes
+    size_t max_map_size;  ///< the maximum size of the window (the buffer size), in bytes
 
     std::mutex mutex;  ///< serialize remapping/loading among workers
 
+    /// remap the window if the byte range [required_start, required_end) of the file is not in it
     void remapIfNeeded(size_t required_start, size_t required_end);
 };
 

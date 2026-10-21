@@ -18,7 +18,7 @@ namespace pycuampcor {
 
 /**
  * Process the chunk (idxDown, idxAcross), and write its results to the output images
- * @param idxDown, idxAcross the index of the chunk, down and across
+ * @param idxDown,idxAcross the index of the chunk, down and across
  * @param chunk the chunk, loaded by the chunk loader
  */
 template <template <typename> class arrayT>
@@ -198,7 +198,9 @@ cuAmpcorProcessorOnePass<arrayT>::cuAmpcorProcessorOnePass(const cuAmpcorParamet
     logDebug("all objects in chunk are created");
 }
 
-/// the buffers and workers are released with their owners
+/**
+ * Release the buffers and workers (they are released with their owners)
+ */
 template <template <typename> class arrayT>
 cuAmpcorProcessorOnePass<arrayT>::~cuAmpcorProcessorOnePass() = default;
 

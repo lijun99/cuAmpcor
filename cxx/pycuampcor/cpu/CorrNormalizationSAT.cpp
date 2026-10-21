@@ -1,5 +1,5 @@
-/*
- * @file CorrNormalizationSAT.cpp
+/**
+ * @file  CorrNormalizationSAT.cpp
  * @brief Utilities to normalize the 2D correlation surface with the sum area table (CPU backend)
  *
  */
