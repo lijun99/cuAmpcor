@@ -87,7 +87,7 @@ void cuOverSamplerC2C::execute(cuArrays<complex_type> *imagesIn, cuArrays<comple
  #endif
 
     // padding zeros in the middle
-    cuArraysFFTPaddingMany(workIn.get(), workOut.get(), stream);
+    cuArraysFFTPaddingMany(*workIn, *workOut, stream);
 
     // iFFT back to time domain
 #ifdef CUAMPCOR_DOUBLE
@@ -160,7 +160,7 @@ void cuOverSamplerR2R::execute(cuArrays<real_type> *imagesIn, cuArrays<real_type
     checkCudaErrors(cufftExecC2C(forwardPlan, workSizeIn->devData, workSizeIn->devData, CUFFT_INVERSE));
 #endif
 
-    cuArraysFFTPaddingMany(workSizeIn.get(), workSizeOut.get(), stream);
+    cuArraysFFTPaddingMany(*workSizeIn, *workSizeOut, stream);
 
 #ifdef CUAMPCOR_DOUBLE
     checkCudaErrors(cufftExecZ2Z(backwardPlan, workSizeOut->devData, workSizeOut->devData, CUFFT_FORWARD));

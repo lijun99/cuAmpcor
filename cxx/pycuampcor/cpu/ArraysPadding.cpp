@@ -5,8 +5,8 @@
 
 #include "ArraysPadding.h"
 #include "float2.h"
-#include "indexing.h"
-#include "Arrays.h"
+
+#include <cstring>
 
 namespace pycuampcor::cpu {
 
@@ -25,22 +25,22 @@ namespace pycuampcor::cpu {
  *             zeros 0...0,
  *             negative f [(N+1)/2, ..., N-1]
  */
-void cuArraysFFTPaddingMany(array_type<complex_type> *image1, array_type<complex_type> *image2, stream_t stream)
+void cuArraysFFTPaddingMany(ArraysView<const complex_type> image1, ArraysView<complex_type> image2,
+    stream_t)
 {
-    const int height1 = image1->height, width1 = image1->width, size1 = image1->size;
-    const int height2 = image2->height, width2 = image2->width, size2 = image2->size;
-    const real_type factor = real_type(1)/size1;
+    const int height1 = image1.height(), width1 = image1.width();
+    const int height2 = image2.height(), width2 = image2.width();
+    const real_type factor = real_type(1)/image1.arraySize();
 
-    image2->setZero(stream);
-    for(int imageIdx = 0; imageIdx < image1->count; imageIdx++)
+    std::memset((void *)image2.data_handle(), 0, image2.size()*sizeof(complex_type));
+    for(int imageIdx = 0; imageIdx < image1.count(); imageIdx++)
         for(int x1 = 0; x1 < height1; x1++) {
             // determine the quadrants
             // divup the length to be consistent with both even and odd lengths
             const int x2 = (x1 < (height1+1)/2) ? x1 : height2 - height1 + x1;
             for(int y1 = 0; y1 < width1; y1++) {
                 const int y2 = (y1 < (width1+1)/2) ? y1 : width2 - width1 + y1;
-                image2->devData[idx2r(x2, y2, width2)+imageIdx*size2]
-                    = image1->devData[idx2r(x1, y1, width1)+imageIdx*size1]*factor;
+                image2(imageIdx, x2, y2) = image1(imageIdx, x1, y1)*factor;
             }
         }
 }

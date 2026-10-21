@@ -8,10 +8,13 @@
 #pragma once
 
 #include "forward.h"
+#include "ArraysView.h"
 
 namespace pycuampcor::cuda {
 
-void cuArraysFFTPaddingMany(cuArrays<complex_type> *image1, cuArrays<complex_type> *image2,
+/// pad the spectra image1 with zeros in the middle to the larger image2 (for the FFT oversampling),
+/// scaled by 1/(height*width) of image1 (the inverse FFT normalization)
+void cuArraysFFTPaddingMany(ArraysView<const complex_type> image1, ArraysView<complex_type> image2,
     stream_t stream);
 
 } // namespace

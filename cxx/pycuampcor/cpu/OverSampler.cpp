@@ -75,7 +75,7 @@ void cuOverSamplerC2C::execute(array_type<complex_type> *imagesIn, array_type<co
     // FFT to frequency domain
     PYCUAMPCOR_FFTW(execute_dft)(forwardPlan, fftwCast(imagesIn->devData), fftwCast(workIn->devData));
     // padding zeros in the middle
-    cuArraysFFTPaddingMany(workIn.get(), workOut.get(), stream);
+    cuArraysFFTPaddingMany(*workIn, *workOut, stream);
     // iFFT back to time domain
     PYCUAMPCOR_FFTW(execute_dft)(backwardPlan, fftwCast(workOut->devData), fftwCast(imagesOut->devData));
 }
