@@ -1,6 +1,10 @@
 #include "Hdf5SlcImage.h"
 #include "logging.h"
 
+// posix: the file, read with pread
+#include <fcntl.h>
+#include <unistd.h>
+
 namespace pycuampcor::PYCUAMPCOR_BACKEND {
 
 namespace {

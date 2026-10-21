@@ -34,13 +34,6 @@
 #include <utility>
 #include <vector>
 
-// posix: files and memory maps
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-
 // hdf5 and zlib, to read images from HDF5 datasets (and decode their chunks)
 #ifdef PYCUAMPCOR_WITH_HDF5
 #include <hdf5.h>

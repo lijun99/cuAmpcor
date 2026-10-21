@@ -3,6 +3,13 @@
 #include "Hdf5SlcImage.h"
 #endif
 
+// posix: the files and their memory maps
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+
 namespace pycuampcor::PYCUAMPCOR_BACKEND {
 
 bool SlcImage::parseHdf5Name(const std::string& name, std::string& file, std::string& dataset)
