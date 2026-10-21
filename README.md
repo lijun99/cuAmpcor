@@ -141,14 +141,14 @@ PyCuAmpcor is included in [ISCE2](https://github.com/isce-framework/isce2) (as *
 
 ### 2.6 Code organization
 
-* *cxx/pycuampcor/common*: the backend-agnostic code (parameters, controller, processors for the two-pass and one-pass workflows, image i/o), compiled once for each backend;
-* *cxx/pycuampcor/cuda*: the CUDA backend, in namespace `pycuampcor::cuda`;
-* *cxx/pycuampcor/cpu*: the CPU backend, in namespace `pycuampcor::cpu`;
+* *cxx/pycuampcor/common*: the shared code, in namespace `pycuampcor`, compiled once (library `pycuampcor_common`): the parameters and their options, logging, the image readers (raw files and HDF5 datasets), and the layers processed together (chunk footprints); and the processors of the two-pass and one-pass workflows, compiled for each package;
+* *cxx/pycuampcor/cpu*: the CPU package, in namespace `pycuampcor::cpu` (library `pycuampcor_cpu`): arrays and kernels, FFTs with FFTW, and the controller and chunk loader, running chunks in parallel with OpenMP threads;
+* *cxx/pycuampcor/cuda*: the CUDA package, in namespace `pycuampcor::cuda` (library `pycuampcor_cuda`): arrays and kernels, FFTs with cuFFT, and the controller and chunk loader, running chunks on CUDA streams;
 * *python/extensions*: the pybind11 bindings, compiled to `pycuampcor._cuda` and `pycuampcor._cpu`;
 * *python/packages/pycuampcor*: the python package;
 * *tests/cxx*, *tests/python*, *tests/data*: tests and test data (see [2.4 Tests](#24-tests)).
 
-The headers are organized as in [pyre](https://github.com/pyre/pyre): *common/externals.h* (the external headers, with the backend's *backend_externals.h*), *common/forward.h* (forward declarations, with *backend_forward.h*), *common/api.h* (the public type aliases) and *common/public.h* (everything, in dependency order, with *backend_public.h*). Clients (the python bindings, the C++ tests) include *public.h*, with the include directories of the library `pycuampcor_<backend>` (*common/* and the backend's directory). Each header includes *forward.h* and the headers of the types it needs complete, and compiles on its own; each source includes its own header and the headers it uses, so that changing a header recompiles only the sources using it.
+The headers are organized as in [pyre](https://github.com/pyre/pyre): in each of *common/*, *cpu/* and *cuda/*, *externals.h* (the external headers), *forward.h* (forward declarations), *api.h* (the public type aliases) and *public.h* (everything, in dependency order); those of *cpu/* and *cuda/* include those of *common/*. Clients (the python bindings, the C++ tests) include *public.h*, with the include directories of the library `pycuampcor_cpu` or `pycuampcor_cuda` (the package's directory, then *common/*). Each header includes *forward.h* and the headers of the types it needs complete, and compiles on its own; each source includes its own header and the headers it uses, so that changing a header recompiles only the sources using it.
 
 ## 3. User Guide
 

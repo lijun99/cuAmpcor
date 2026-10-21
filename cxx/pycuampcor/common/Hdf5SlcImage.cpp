@@ -8,7 +8,7 @@
 #include <thread>
 #include <zlib.h>
 
-namespace pycuampcor::PYCUAMPCOR_BACKEND {
+namespace pycuampcor {
 
 namespace {
 

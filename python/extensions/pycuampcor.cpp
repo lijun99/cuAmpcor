@@ -14,6 +14,9 @@
 
 namespace {
 
+// the shared code (parameters, options, logging, images), and the package of this module
+// (pycuampcor::cpu or pycuampcor::cuda, chosen by the build)
+using namespace pycuampcor;
 using namespace pycuampcor::PYCUAMPCOR_BACKEND;
 using cls = cuAmpcorController;
 
@@ -333,7 +336,7 @@ PYBIND11_MODULE(PYCUAMPCOR_MODULE, m)
                 else
                     throw pybind11::type_error("unexpected parameter '" + name + "'");
             }
-            self->param->setupParameters();
+            setupParameters(*self->param);
             setGrossOffset(*self, goDown, goAcross);
             return self;
         }),
@@ -366,7 +369,7 @@ PYBIND11_MODULE(PYCUAMPCOR_MODULE, m)
         "beyond the images, which are padded with zeros.")
 
         .def("setupParams", [](cls& self) {
-            self.param->setupParameters();
+            setupParameters(*self.param);
         },
         "Set up the processing from the parameters, after they are set; the gross offsets\n"
         "are then set with setConstantGrossOffset or setVaryingGrossOffset.")

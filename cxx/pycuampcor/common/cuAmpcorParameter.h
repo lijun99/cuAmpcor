@@ -10,7 +10,14 @@
 #include "forward.h"
 #include "cuAmpcorOptions.h"
 
-namespace pycuampcor::PYCUAMPCOR_BACKEND {
+namespace pycuampcor {
+
+/// a pair of integers along the two axes of the images (x: down, y: across), e.g., a size or a
+/// position; the backends convert it to their own int2 (CUDA's, or the CPU backend's)
+struct Index2 {
+    int x = 0;  ///< down
+    int y = 0;  ///< across
+};
 
 /// Parameters of ampcor
 ///
@@ -24,7 +31,9 @@ namespace pycuampcor::PYCUAMPCOR_BACKEND {
 /// @note
 /// Usage:
 /// 1. create an instance (with the default inputs) and set the inputs, e.g., numberWindowDown = 100;
-/// 2. setupParameters(): compute the sizes of the windows, correlation surfaces and chunks;
+/// 2. setupParameters(...): compute the sizes of the windows, correlation surfaces and chunks
+///    (with the backend's default number of windows in a chunk; see setupParameters(param) of the
+///    cpu and cuda controllers);
 /// 3. setStartPixels(...): set the starting pixels and the gross offsets of the windows, and the
 ///    areas of the chunks to load;
 /// 4. optionally, checkPixelInImageRange(): warn about windows outside the images (debug builds).
@@ -117,11 +126,11 @@ public:
     // correlation surface
     int corrZoomWindowSize = 0;         ///< zoomWindowSize used (limited by the search range in the two-pass workflow)
     int halfZoomWindowSizeRaw = 0;      ///< corrZoomWindowSize/(2*rawDataOversamplingFactor)
-    int2 corrWindowSize{};              ///< correlation surface size (one-pass workflow)
-    int2 corrZoomInSize{};              ///< zoom-in correlation surface size: corrZoomWindowSize+1 (one-pass workflow)
-    int2 corrZoomInOversampledSize{};   ///< corrZoomInSize*corrSurfaceOverSamplingFactor (one-pass workflow)
-    int2 corrZoomInOversampledSearchStart{};  ///< peak search start in the oversampled correlation surface (one-pass workflow)
-    int2 corrZoomInOversampledSearchRange{};  ///< peak search range in the oversampled correlation surface (one-pass workflow)
+    Index2 corrWindowSize{};              ///< correlation surface size (one-pass workflow)
+    Index2 corrZoomInSize{};              ///< zoom-in correlation surface size: corrZoomWindowSize+1 (one-pass workflow)
+    Index2 corrZoomInOversampledSize{};   ///< corrZoomInSize*corrSurfaceOverSamplingFactor (one-pass workflow)
+    Index2 corrZoomInOversampledSearchStart{};  ///< peak search start in the oversampled correlation surface (one-pass workflow)
+    Index2 corrZoomInOversampledSearchRange{};  ///< peak search range in the oversampled correlation surface (one-pass workflow)
     int corrRawZoomInHeight = 0;        ///< correlation surface height (at the raw spacing) for the SNR
     int corrRawZoomInWidth = 0;         ///< correlation surface width (at the raw spacing) for the SNR
 
@@ -157,7 +166,10 @@ public:
     // ==== methods ====
 
     /// compute the sizes of the windows, correlation surfaces and chunks from the inputs
-    void setupParameters();
+    /// @param defaultWindowsDownInChunk the number of windows down in a chunk if
+    ///     numberWindowDownInChunk is 0 (automatic), e.g., the backend's default
+    /// @param defaultWindowsAcrossInChunk the same across
+    void setupParameters(int defaultWindowsDownInChunk, int defaultWindowsAcrossInChunk);
 
     /// set the starting pixels of the windows and their gross offsets (after setupParameters):
     /// (int *, int *, int *, int *): varying reference start pixels and gross offsets
@@ -175,11 +187,13 @@ public:
     void checkReadyToRun() const;
 
 private:
+    /// the sizes of the windows and correlation surfaces for the two-pass workflow
     void _setupParameters_TwoPass();
+    /// the sizes of the windows and correlation surfaces for the one-pass workflow
     void _setupParameters_OnePass();
-    // (re)size the arrays of the windows and chunks
+    /// (re)size the arrays of the windows and chunks
     void allocateArrays();
-    // set the starting pixels and sizes of the chunks
+    /// set the starting pixels and sizes of the chunks, from the starting pixels of the windows
     void setChunkStartPixels();
 };
 

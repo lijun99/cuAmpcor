@@ -5,7 +5,7 @@
 
 #include "logging.h"
 
-namespace pycuampcor::PYCUAMPCOR_BACKEND {
+namespace pycuampcor {
 
 namespace {
 std::atomic<int> currentLevel{static_cast<int>(LogLevel::Info)};

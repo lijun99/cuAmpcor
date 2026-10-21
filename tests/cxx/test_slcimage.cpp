@@ -45,9 +45,8 @@ TEST_F(SlcImageTest, LoadTiles)
     // tiles in the middle and at the end of the file
     for (auto tile : {std::vector<int>{3, 5, 7, 11}, std::vector<int>{H-4, W-6, 4, 6}}) {
         const int h0 = tile[0], w0 = tile[1], h = tile[2], w = tile[3];
-        auto buffer = make<image_complex_type>(h, w);
-        image.loadToDevice(buffer->devData, h0, w0, h, w, stream);
-        auto r = download(*buffer);
+        std::vector<image_complex_type> r(h*w);
+        image.loadToHost(r.data(), h0, w0, h, w);
         for (int i = 0; i < h; i++)
             for (int j = 0; j < w; j++) {
                 EXPECT_EQ(r[i*w+j].x, values[(h0+i)*W + w0+j].x);
@@ -64,8 +63,8 @@ TEST_F(SlcImageTest, Errors)
     EXPECT_THROW(MmapSlcImage(filename + ".missing", H, W, sizeof(image_complex_type), 1), std::runtime_error);
     // a tile beyond the end of the file
     MmapSlcImage image(filename, H, W, sizeof(image_complex_type), 1);
-    auto buffer = make<image_complex_type>(2, 2);
-    EXPECT_THROW(image.loadToDevice(buffer->devData, H-1, 0, 2, 2, stream), std::runtime_error);
+    std::vector<image_complex_type> r(2*2);
+    EXPECT_THROW(image.loadToHost(r.data(), H-1, 0, 2, 2), std::runtime_error);
 }
 
 TEST_F(SlcImageTest, BufferSmallerThanTile)
@@ -74,9 +73,8 @@ TEST_F(SlcImageTest, BufferSmallerThanTile)
     MmapSlcImage image(filename, H, W, sizeof(image_complex_type), 0);
     for (auto tile : {std::vector<int>{3, 5, 7, 11}, std::vector<int>{0, 0, H, W}, std::vector<int>{H-4, W-6, 4, 6}}) {
         const int h0 = tile[0], w0 = tile[1], h = tile[2], w = tile[3];
-        auto buffer = make<image_complex_type>(h, w);
-        image.loadToDevice(buffer->devData, h0, w0, h, w, stream);
-        auto r = download(*buffer);
+        std::vector<image_complex_type> r(h*w);
+        image.loadToHost(r.data(), h0, w0, h, w);
         for (int i = 0; i < h; i++)
             for (int j = 0; j < w; j++)
                 EXPECT_EQ(r[i*w+j].x, values[(h0+i)*W + w0+j].x);
@@ -88,9 +86,8 @@ TEST_F(SlcImageTest, Reader)
     // a raw file, by the name or explicitly
     for (const char *reader : {"auto", "raw"}) {
         auto image = SlcImage::open(filename, reader, H, W, sizeof(image_complex_type), 1);
-        auto buffer = make<image_complex_type>(2, 3);
-        image->loadToDevice(buffer->devData, 5, 7, 2, 3, stream);
-        auto r = download(*buffer);
+        std::vector<image_complex_type> r(2*3);
+        image->loadToHost(r.data(), 5, 7, 2, 3);
         EXPECT_EQ(r[4].x, values[6*W + 8].x) << reader;
     }
     // a raw file read as an HDF5 dataset

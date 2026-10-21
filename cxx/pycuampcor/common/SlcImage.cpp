@@ -10,7 +10,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-namespace pycuampcor::PYCUAMPCOR_BACKEND {
+namespace pycuampcor {
 
 bool SlcImage::parseHdf5Name(const std::string& name, std::string& file, std::string& dataset)
 {
@@ -43,18 +43,6 @@ bool SlcImage::parseHdf5Name(const std::string& name, std::string& file, std::st
         throw std::invalid_argument("Invalid HDF5 image name " + name + "; no dataset is given");
     dataset = "/" + dataset.substr(first);
     return true;
-}
-
-void SlcImage::loadToDevice(void *dArray, size_t h_offset, size_t w_offset, size_t h_tile, size_t w_tile,
-                            stream_t stream)
-{
-    // the tile in host memory (reused by each thread); the copy from pageable memory
-    // returns once the host buffer can be reused
-    thread_local std::vector<char> host;
-    host.resize(h_tile * w_tile * pixelSize());
-    loadToHost(host.data(), h_offset, w_offset, h_tile, w_tile);
-    backendCopyFromHost2D(dArray, w_tile * pixelSize(), host.data(), w_tile * pixelSize(),
-                          w_tile * pixelSize(), h_tile, stream);
 }
 
 bool SlcImage::hasHdf5()

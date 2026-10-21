@@ -6,7 +6,7 @@
 
 #include "SlcImage.h"
 
-namespace pycuampcor::PYCUAMPCOR_BACKEND {
+namespace pycuampcor {
 
 /// a 2D dataset (float32, or complex64 as a compound of two float32) in an HDF5 file
 ///

@@ -170,7 +170,10 @@ void cuAmpcorProcessorOnePass::run(int idxDown_, int idxAcross_, const cuAmpcorC
 #endif
 
     //find the max again, within the range of \pm 1 pixel * totalOS
-    cuArraysMaxloc2D(r_corrBatchZoomInOverSampled.get(), param->corrZoomInOversampledSearchStart, param->corrZoomInOversampledSearchRange,
+    // (the search start and range, as the backend's int2)
+    const int2 searchStart = make_int2(param->corrZoomInOversampledSearchStart.x, param->corrZoomInOversampledSearchStart.y);
+    const int2 searchRange = make_int2(param->corrZoomInOversampledSearchRange.x, param->corrZoomInOversampledSearchRange.y);
+    cuArraysMaxloc2D(r_corrBatchZoomInOverSampled.get(), searchStart, searchRange,
         offsetZoomIn.get(), corrMaxValue.get(), stream);
 
 #ifdef CUAMPCOR_DEBUG

@@ -6,9 +6,10 @@
 
 #include "forward.h"
 
-namespace pycuampcor::PYCUAMPCOR_BACKEND {
+namespace pycuampcor {
 
-/// a source of image tiles, loaded to the device (GPU) or work (CPU) memory
+/// a source of image tiles, read to host memory (the chunk loaders of the cpu and cuda
+/// backends then use them in place or copy them to the device)
 class SlcImage {
 public:
     virtual ~SlcImage() = default;
@@ -20,10 +21,6 @@ public:
     /// row major with a pitch of w_tile pixels
     virtual void loadToHost(void* host, size_t h_offset, size_t w_offset,
                             size_t h_tile, size_t w_tile) = 0;
-
-    /// load a tile to the device (GPU) or work (CPU) memory, through a pageable host buffer
-    void loadToDevice(void* dArray, size_t h_offset, size_t w_offset,
-                      size_t h_tile, size_t w_tile, stream_t stream);
 
     /// open an image of image_height x image_width pixels of pixel_size bytes
     /// @param fn the image name: a raw binary file (row major), or a 2D dataset in an HDF5 file

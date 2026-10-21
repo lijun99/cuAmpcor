@@ -38,18 +38,32 @@ protected:
     stream_t stream{};
     bool hasStream = false;
 
+    /// skip the test if the device is not available; create the stream
     void SetUp() override
     {
         if (!backendAvailable())
             GTEST_SKIP() << "the backend (device) is not available";
-        stream = backendCreateStream();
+#ifdef PYCUAMPCOR_BACKEND_CUDA
+        ASSERT_EQ(cudaStreamCreate(&stream), cudaSuccess);
+#endif
         hasStream = true;
     }
 
+    /// destroy the stream
     void TearDown() override
     {
+#ifdef PYCUAMPCOR_BACKEND_CUDA
         if (hasStream)
-            backendDestroyStream(stream);
+            cudaStreamDestroy(stream);
+#endif
+    }
+
+    /// wait for the work queued on the device (nothing to wait for on the CPU)
+    static void synchronize()
+    {
+#ifdef PYCUAMPCOR_BACKEND_CUDA
+        ASSERT_EQ(cudaDeviceSynchronize(), cudaSuccess);
+#endif
     }
 
     /// allocate a batch of images in both backend and host memory
@@ -69,7 +83,7 @@ protected:
         ASSERT_EQ(values.size(), array.getSize());
         std::copy(values.begin(), values.end(), array.hostData);
         array.copyToDevice(stream);
-        backendSynchronize();
+        synchronize();
     }
 
     /// allocate and fill a batch of images
@@ -86,9 +100,9 @@ protected:
     template<typename T>
     std::vector<T> download(cuArrays<T> &array)
     {
-        backendSynchronize();
+        synchronize();
         array.copyToHost(stream);
-        backendSynchronize();
+        synchronize();
         return std::vector<T>(array.hostData, array.hostData + array.getSize());
     }
 };

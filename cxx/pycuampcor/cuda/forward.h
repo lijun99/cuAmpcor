@@ -1,12 +1,13 @@
 /**
- * @file  backend_forward.h
- * @brief Forward declarations of the CUDA backend (see forward.h)
+ * @file  forward.h
+ * @brief Forward declarations of the CUDA package, in namespace pycuampcor::cuda
  */
 
 #pragma once
 
-// the backend hooks of the shared code: stream_t, event_t, ...
-#include "backend.h"
+#include "externals.h"
+// the shared code: parameters, images, ...
+#include "../common/forward.h"
 
 namespace pycuampcor::cuda {
     // batches of 2D arrays, in the device memory (cuArrays.h)
@@ -25,6 +26,16 @@ namespace pycuampcor::cuda {
     template <int Size>
     class cuNormalizeFixed;
     class cuNormalizeSAT;
+    // the chunks of the images loaded for processing (cuAmpcorChunkLoader.h)
+    struct cuAmpcorLoadedChunk;
+    struct cuAmpcorChunk;
+    class cuAmpcorChunkLoader;
+    // the processors of a chunk, for each workflow (cuAmpcorProcessor*.h)
+    class cuAmpcorProcessor;
+    class cuAmpcorProcessorTwoPass;
+    class cuAmpcorProcessorOnePass;
+    // the controller, running the processors over the chunks (cuAmpcorController.h)
+    class cuAmpcorController;
 }
 
 //end of file

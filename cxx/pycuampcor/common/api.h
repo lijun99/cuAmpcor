@@ -1,20 +1,15 @@
 /**
  * @file  api.h
- * @brief The public type aliases of the package
+ * @brief The public type aliases of the shared code
  */
 
 #pragma once
 
 #include "forward.h"
 
-namespace pycuampcor::PYCUAMPCOR_BACKEND {
+namespace pycuampcor {
     // the parameters
     using parameter_t = cuAmpcorParameter;
-    // the controller, which runs ampcor with the parameters
-    using controller_t = cuAmpcorController;
-    // batches of 2D arrays, in the backend (device or work) memory
-    template <typename T>
-    using arrays_t = cuArrays<T>;
     // images
     using slc_image_t = SlcImage;
 }

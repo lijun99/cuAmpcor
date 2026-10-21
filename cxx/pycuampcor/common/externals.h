@@ -1,6 +1,6 @@
 /**
  * @file  externals.h
- * @brief The external headers used by the package, and the backend's implementation choices
+ * @brief The external headers used by the shared code (and by the cpu and cuda packages)
  */
 
 #pragma once
@@ -30,8 +30,5 @@
 #ifdef PYCUAMPCOR_WITH_HDF5
 #include <hdf5.h>
 #endif
-
-// the backend: the precision and vector types, and its libraries (fftw or cuda/cufft)
-#include "backend_externals.h"
 
 //end of file

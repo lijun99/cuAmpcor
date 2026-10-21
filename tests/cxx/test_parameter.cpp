@@ -30,7 +30,7 @@ TEST(ParameterTest, TwoPassSizes)
     cuAmpcorParameter p;
     setWindows(p);
     p.workflow = Workflow::TwoPass;
-    p.setupParameters();
+    setupParameters(p);
     EXPECT_EQ(p.corrZoomWindowSize, 16);
     EXPECT_EQ(p.halfZoomWindowSizeRaw, 4);
     EXPECT_EQ(p.windowSizeWidth, 128);
@@ -52,13 +52,13 @@ TEST(ParameterTest, TwoPassZoomWindowLimitedBySearchRange)
     setWindows(p);
     p.halfSearchRangeAcrossRaw = 3;
     p.workflow = Workflow::TwoPass;
-    p.setupParameters();
+    setupParameters(p);
     // min(half search range)*2*oversampling
     EXPECT_EQ(p.corrZoomWindowSize, 3*2*2);
     // the input is kept: a larger search range uses the whole zoom window again
     EXPECT_EQ(p.zoomWindowSize, 16);
     p.halfSearchRangeAcrossRaw = 10;
-    p.setupParameters();
+    setupParameters(p);
     EXPECT_EQ(p.corrZoomWindowSize, 16);
 }
 
@@ -67,7 +67,7 @@ TEST(ParameterTest, OnePassSizes)
     cuAmpcorParameter p;
     setWindows(p);
     p.workflow = Workflow::OnePass;
-    p.setupParameters();
+    setupParameters(p);
     const int halfZoom = 16/(2*2);
     EXPECT_EQ(p.halfZoomWindowSizeRaw, halfZoom);
     // the search range is extended by the zoom-in window (the input is kept)
@@ -100,23 +100,23 @@ TEST(ParameterTest, SetupChecks)
     // not set up yet
     EXPECT_THROW(p.checkReadyToRun(), std::logic_error);
     EXPECT_THROW(p.setStartPixels(0, 0, 0, 0), std::logic_error);
-    p.setupParameters();
+    setupParameters(p);
     // starting pixels not set
     EXPECT_THROW(p.checkReadyToRun(), std::logic_error);
     p.setStartPixels(30, 20, 0, 0);
     EXPECT_NO_THROW(p.checkReadyToRun());
     // setting up again requires the starting pixels again
-    p.setupParameters();
+    setupParameters(p);
     EXPECT_THROW(p.checkReadyToRun(), std::logic_error);
 
     cuAmpcorParameter bad;
     setWindows(bad);
     bad.workflow = static_cast<Workflow>(2);
-    EXPECT_THROW(bad.setupParameters(), std::invalid_argument);
+    EXPECT_THROW(setupParameters(bad), std::invalid_argument);
     cuAmpcorParameter empty;
     setWindows(empty);
     empty.numberWindowDown = 0;
-    EXPECT_THROW(empty.setupParameters(), std::invalid_argument);
+    EXPECT_THROW(setupParameters(empty), std::invalid_argument);
 }
 
 // automatic numbers of windows in a chunk (0), limited by the numbers of windows
@@ -128,9 +128,9 @@ TEST(ParameterTest, AutoChunkSize)
     p.numberWindowAcross = 2;
     p.numberWindowDownInChunk = 0;
     p.numberWindowAcrossInChunk = 0;
-    p.setupParameters();
+    setupParameters(p);
     int down, across;
-    backendDefaultChunkSize(&p, down, across);
+    defaultWindowsInChunk(p, down, across);
     EXPECT_GE(down, 1);
     EXPECT_GE(across, 1);
     EXPECT_EQ(p.windowsDownInChunk, std::min(down, 1000));
@@ -140,7 +140,7 @@ TEST(ParameterTest, AutoChunkSize)
     EXPECT_EQ(p.numberWindowDownInChunk, 0);
     EXPECT_EQ(p.numberWindowAcrossInChunk, 0);
     p.numberWindowDown = 1;
-    p.setupParameters();
+    setupParameters(p);
     EXPECT_EQ(p.windowsDownInChunk, 1);
 
     // explicit values are kept
@@ -148,7 +148,7 @@ TEST(ParameterTest, AutoChunkSize)
     setWindows(q);
     q.numberWindowDownInChunk = 2;
     q.numberWindowAcrossInChunk = 3;
-    q.setupParameters();
+    setupParameters(q);
     EXPECT_EQ(q.windowsDownInChunk, 2);
     EXPECT_EQ(q.windowsAcrossInChunk, 3);
 }
@@ -169,7 +169,7 @@ TEST(ParameterTest, WindowAndChunkPixels)
     p.numberWindowAcross = 8;
     p.numberWindowDownInChunk = 2;
     p.numberWindowAcrossInChunk = 2;
-    p.setupParameters();
+    setupParameters(p);
     const int startD = 10, startA = 50, grossD = 2, grossA = -3;
     p.setStartPixels(startD, startA, grossD, grossA);
 
@@ -231,7 +231,7 @@ TEST(ParameterTest, WindowAndChunkPixels)
 
     // setting up again resizes the arrays to the new number of windows/chunks
     p.numberWindowAcross = 3;
-    p.setupParameters();
+    setupParameters(p);
     EXPECT_EQ(p.referenceStartPixelDown.size(), 4u*3u);
     EXPECT_EQ(p.referenceChunkHeight.size(), 2u*2u);
 }

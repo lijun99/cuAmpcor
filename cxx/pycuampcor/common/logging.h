@@ -10,7 +10,7 @@
 
 #include "externals.h"
 
-namespace pycuampcor::PYCUAMPCOR_BACKEND {
+namespace pycuampcor {
 
 /// level of a message, or of the messages written
 enum class LogLevel : int {

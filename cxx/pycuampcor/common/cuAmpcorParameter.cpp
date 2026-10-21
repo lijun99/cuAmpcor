@@ -1,19 +1,21 @@
 /**
- * @file cuAmpcorParameter.cu
- * Input parameters for ampcor
+ * @file  cuAmpcorParameter.cpp
+ * @brief Parameters of ampcor: the setup of the windows, correlation surfaces and chunks
  */
 
 #include "cuAmpcorParameter.h"
 #include "indexing.h"
 #include "logging.h"
 
-namespace pycuampcor::PYCUAMPCOR_BACKEND {
+namespace pycuampcor {
 
 /**
- * To determine other process parameters after reading essential parameters from python
+ * Compute the sizes of the windows, correlation surfaces and chunks from the inputs
+ * @param defaultWindowsDownInChunk the backend's number of windows down in a chunk, used if
+ *     numberWindowDownInChunk is 0 (automatic)
+ * @param defaultWindowsAcrossInChunk the same across
  */
-
-void cuAmpcorParameter::setupParameters()
+void cuAmpcorParameter::setupParameters(int defaultWindowsDownInChunk, int defaultWindowsAcrossInChunk)
 {
     // workflow specific parameter settings
     //
@@ -40,14 +42,10 @@ void cuAmpcorParameter::setupParameters()
     // (the inputs are kept, so that the setup can be repeated after changing the parameters)
     windowsDownInChunk = numberWindowDownInChunk;
     windowsAcrossInChunk = numberWindowAcrossInChunk;
-    if(windowsDownInChunk <= 0 || windowsAcrossInChunk <= 0) {
-        int down, across;
-        backendDefaultChunkSize(this, down, across);
-        if(windowsDownInChunk <= 0)
-            windowsDownInChunk = std::min(down, numberWindowDown);
-        if(windowsAcrossInChunk <= 0)
-            windowsAcrossInChunk = std::min(across, numberWindowAcross);
-    }
+    if(windowsDownInChunk <= 0)
+        windowsDownInChunk = std::min(defaultWindowsDownInChunk, numberWindowDown);
+    if(windowsAcrossInChunk <= 0)
+        windowsAcrossInChunk = std::min(defaultWindowsAcrossInChunk, numberWindowAcross);
 
     numberChunkDown = divUp(numberWindowDown, windowsDownInChunk);
     numberChunkAcross = divUp(numberWindowAcross, windowsAcrossInChunk);
@@ -140,26 +138,26 @@ void cuAmpcorParameter::_setupParameters_OnePass()
     secondaryLoadingOffsetAcross = 0;
 
     // correlation surface size
-    corrWindowSize = make_int2(searchWindowSizeHeight - windowSizeHeight + 1,
-                               searchWindowSizeWidth - windowSizeWidth +1);
+    corrWindowSize = Index2{searchWindowSizeHeight - windowSizeHeight + 1,
+                               searchWindowSizeWidth - windowSizeWidth +1};
     // check zoom in window size, if larger, issue a warning
     if(zoomWindowSize >= corrWindowSize.x || zoomWindowSize >= corrWindowSize.y)
         logWarning("zoomWindowSize ", zoomWindowSize, " is bigger than the original correlation surface size (",
             corrWindowSize.x, ", ", corrWindowSize.y, ")");
     // use the smaller values
-    corrZoomInSize = make_int2(std::min(zoomWindowSize+1, corrWindowSize.x),
-                               std::min(zoomWindowSize+1, corrWindowSize.y));
+    corrZoomInSize = Index2{std::min(zoomWindowSize+1, corrWindowSize.x),
+                               std::min(zoomWindowSize+1, corrWindowSize.y)};
 
     // oversampled correlation surface size
-    corrZoomInOversampledSize = make_int2(corrZoomInSize.x * corrSurfaceOverSamplingFactor,
-                                              corrZoomInSize.y * corrSurfaceOverSamplingFactor);
+    corrZoomInOversampledSize = Index2{corrZoomInSize.x * corrSurfaceOverSamplingFactor,
+                                              corrZoomInSize.y * corrSurfaceOverSamplingFactor};
 
     int totalOS = rawDataOversamplingFactor*corrSurfaceOverSamplingFactor;
     // search start : image center - 1 pixel * totalOS
-    corrZoomInOversampledSearchStart = make_int2((corrZoomInSize.x-1)*corrSurfaceOverSamplingFactor/2 - totalOS,
-        (corrZoomInSize.y-1)*corrSurfaceOverSamplingFactor/2 - totalOS);
+    corrZoomInOversampledSearchStart = Index2{(corrZoomInSize.x-1)*corrSurfaceOverSamplingFactor/2 - totalOS,
+        (corrZoomInSize.y-1)*corrSurfaceOverSamplingFactor/2 - totalOS};
     // search range \pm 1 pixel * totalOS
-    corrZoomInOversampledSearchRange = make_int2(2*totalOS, 2*totalOS);
+    corrZoomInOversampledSearchRange = Index2{2*totalOS, 2*totalOS};
 
     logDebug("zoomWindowSize is (", corrZoomInSize.x, ", ", corrZoomInSize.y, ")");
 

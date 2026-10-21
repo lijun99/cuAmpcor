@@ -1,10 +1,9 @@
 /**
  * @file  public.h
- * @brief The package: everything, in dependency order
+ * @brief The shared code: everything, in dependency order
  *
- * The package is compiled for each backend, with the include directories common/ and the
- * backend's (cpu/ or cuda/), and PYCUAMPCOR_BACKEND set to the backend; clients include this
- * header (with the include directories of the library pycuampcor_<backend>).
+ * The shared code (namespace pycuampcor) is compiled once, into the library pycuampcor_common;
+ * the cpu and cuda packages include it from their own public.h.
  */
 
 #pragma once
@@ -23,19 +22,14 @@
 #include "logging.h"
 #include "cuAmpcorOptions.h"
 
-// the backend: arrays, kernels, fft, oversamplers, correlators, normalizers
-#include "backend_public.h"
-
-// the processing
+// the parameters
 #include "cuAmpcorParameter.h"
+// the images
 #include "SlcImage.h"
 #ifdef PYCUAMPCOR_WITH_HDF5
 #include "Hdf5SlcImage.h"
 #endif
-#include "cuAmpcorChunkLoader.h"
-#include "cuAmpcorProcessor.h"
-#include "cuAmpcorProcessorTwoPass.h"
-#include "cuAmpcorProcessorOnePass.h"
-#include "cuAmpcorController.h"
+// layers processed together
+#include "cuAmpcorLayers.h"
 
 //end of file

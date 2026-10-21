@@ -1,6 +1,7 @@
 # CPU backend sources
 set(PYCUAMPCOR_CPU_SOURCES
-    backend.cpp
+    cuAmpcorChunkLoader.cpp
+    cuAmpcorController.cpp
     cuArrays.cpp
     cuArraysCopy.cpp
     cuArraysPadding.cpp
