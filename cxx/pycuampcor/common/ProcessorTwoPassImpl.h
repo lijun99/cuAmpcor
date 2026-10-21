@@ -144,45 +144,41 @@ ProcessorTwoPass<arrayT>::ProcessorTwoPass(const Parameter &param_,
           param_.windowsDownInChunk*param_.windowsAcrossInChunk, stream_)
 {
     using traits = typename base_type::traits;
-    const int down = param.windowsDownInChunk;
-    const int across = param.windowsAcrossInChunk;
-    // a batch of windows of height x width (one per window in a chunk)
-    auto batch = [down, across](auto &array, int height, int width) {
-        array = std::decay_t<decltype(array)>(height, width, down*across);
-    };
+    // the number of windows in a chunk
+    const int count = param.windowsDownInChunk*param.windowsAcrossInChunk;
 
     // first pass
-    batch(c_referenceBatchRaw, param.windowSizeHeightRaw, param.windowSizeWidthRaw);
-    batch(c_secondaryBatchRaw, param.searchWindowSizeHeightRaw, param.searchWindowSizeWidthRaw);
-    batch(r_referenceBatchRaw, param.windowSizeHeightRaw, param.windowSizeWidthRaw);
-    batch(r_secondaryBatchRaw, param.searchWindowSizeHeightRaw, param.searchWindowSizeWidthRaw);
-    batch(r_corrBatchRaw, param.searchWindowSizeHeightRaw - param.windowSizeHeightRaw + 1,
+    allocateArrays(c_referenceBatchRaw, param.windowSizeHeightRaw, param.windowSizeWidthRaw);
+    allocateArrays(c_secondaryBatchRaw, param.searchWindowSizeHeightRaw, param.searchWindowSizeWidthRaw);
+    allocateArrays(r_referenceBatchRaw, param.windowSizeHeightRaw, param.windowSizeWidthRaw);
+    allocateArrays(r_secondaryBatchRaw, param.searchWindowSizeHeightRaw, param.searchWindowSizeWidthRaw);
+    allocateArrays(r_corrBatchRaw, param.searchWindowSizeHeightRaw - param.windowSizeHeightRaw + 1,
         param.searchWindowSizeWidthRaw - param.windowSizeWidthRaw + 1);
 
     // second pass
-    batch(c_secondaryBatchZoomIn, param.searchWindowSizeHeightRawZoomIn, param.searchWindowSizeWidthRawZoomIn);
-    maxLocShift = array_type<int2_type>(down, across);
-    batch(c_referenceBatchOverSampled, param.windowSizeHeight, param.windowSizeWidth);
-    batch(c_secondaryBatchOverSampled, param.searchWindowSizeHeight, param.searchWindowSizeWidth);
-    batch(r_referenceBatchOverSampled, param.windowSizeHeight, param.windowSizeWidth);
-    batch(r_secondaryBatchOverSampled, param.searchWindowSizeHeight, param.searchWindowSizeWidth);
-    batch(r_corrBatchZoomIn, param.searchWindowSizeHeight - param.windowSizeHeight + 1,
+    allocateArrays(c_secondaryBatchZoomIn, param.searchWindowSizeHeightRawZoomIn, param.searchWindowSizeWidthRawZoomIn);
+    allocateValues(maxLocShift);
+    allocateArrays(c_referenceBatchOverSampled, param.windowSizeHeight, param.windowSizeWidth);
+    allocateArrays(c_secondaryBatchOverSampled, param.searchWindowSizeHeight, param.searchWindowSizeWidth);
+    allocateArrays(r_referenceBatchOverSampled, param.windowSizeHeight, param.windowSizeWidth);
+    allocateArrays(r_secondaryBatchOverSampled, param.searchWindowSizeHeight, param.searchWindowSizeWidth);
+    allocateArrays(r_corrBatchZoomIn, param.searchWindowSizeHeight - param.windowSizeHeight + 1,
         param.searchWindowSizeWidth - param.windowSizeWidth + 1);
-    batch(r_corrBatchZoomInAdjust, param.searchWindowSizeHeight - param.windowSizeHeight,
+    allocateArrays(r_corrBatchZoomInAdjust, param.searchWindowSizeHeight - param.windowSizeHeight,
         param.searchWindowSizeWidth - param.windowSizeWidth);
-    batch(r_corrBatchZoomInOverSampled, param.corrZoomWindowSize * param.corrSurfaceOverSamplingFactor,
+    allocateArrays(r_corrBatchZoomInOverSampled, param.corrZoomWindowSize * param.corrSurfaceOverSamplingFactor,
         param.corrZoomWindowSize * param.corrSurfaceOverSamplingFactor);
     createSurfaceOversampler(param.corrZoomWindowSize, param.corrZoomWindowSize);
 
     // the cross-correlators (by the algorithm) and the normalizers, of both passes
     correlatorRaw = newWindowCorrelator<arrayT>(param.algorithm,
-        param.searchWindowSizeHeightRaw, param.searchWindowSizeWidthRaw, down*across, stream);
+        param.searchWindowSizeHeightRaw, param.searchWindowSizeWidthRaw, count, stream);
     correlatorOverSampled = newWindowCorrelator<arrayT>(param.algorithm,
-        param.searchWindowSizeHeight, param.searchWindowSizeWidth, down*across, stream);
+        param.searchWindowSizeHeight, param.searchWindowSizeWidth, count, stream);
     corrNormalizerRaw = traits::newNormalizer(param.searchWindowSizeHeightRaw,
-        param.searchWindowSizeWidthRaw, down*across);
+        param.searchWindowSizeWidthRaw, count);
     corrNormalizerOverSampled = traits::newNormalizer(param.searchWindowSizeHeight,
-        param.searchWindowSizeWidth, down*across);
+        param.searchWindowSizeWidth, count);
 
     logDebug("all objects in chunk are created");
 }

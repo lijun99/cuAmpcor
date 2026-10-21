@@ -69,6 +69,8 @@ private:
     using base_type::r_corrBatchSum;
     using base_type::i_corrBatchValidCount;
     using base_type::setIndex;
+    using base_type::allocateArrays;
+    using base_type::allocateValues;
     using base_type::copyToBatch;
     using base_type::correlate;
     using base_type::createSurfaceOversampler;

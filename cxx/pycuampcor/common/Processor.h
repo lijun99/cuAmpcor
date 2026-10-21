@@ -119,6 +119,16 @@ protected:
     /// set the index of the current chunk, and its number of windows
     void setIndex(int idxDown, int idxAcross);
 
+    /// allocate array: one array of height x width per window of a chunk (windowsDownInChunk x
+    /// windowsAcrossInChunk arrays)
+    template <typename T>
+    void allocateArrays(array_type<T> &array, int height, int width);
+
+    /// allocate array: one value per window of a chunk (an array of windowsDownInChunk x
+    /// windowsAcrossInChunk)
+    template <typename T>
+    void allocateValues(array_type<T> &array);
+
     /// the starting pixels of the windows of the current chunk, relative to the loaded chunk
     /// @param[out] relative the starting pixels relative to the loaded chunk (windows in a chunk)
     /// @param absolute the starting pixels of all windows in the image

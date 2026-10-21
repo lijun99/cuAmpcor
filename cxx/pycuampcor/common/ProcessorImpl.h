@@ -56,35 +56,24 @@ Processor<arrayT>::Processor(const Parameter &param_,
     : param(param_), offsetImage(offsetImage_), snrImage(snrImage_), covImage(covImage_),
       peakValueImage(peakValueImage_), stream(stream_)
 {
-    const int down = param.windowsDownInChunk;
-    const int across = param.windowsAcrossInChunk;
-    // a batch of count windows of height x width (one per window in a chunk), in the work memory
-    auto batch = [down, across](auto &array, int height, int width) {
-        array = std::decay_t<decltype(array)>(height, width, down*across);
-    };
-    // one value per window in a chunk
-    auto values = [down, across](auto &array) {
-        array = std::decay_t<decltype(array)>(down, across);
-    };
-
     // the starting pixels of the windows relative to the loaded chunk, computed on the host
-    chunkOffsetHost.resize(down*across);
-    values(chunkOffsetDown);
-    values(chunkOffsetAcross);
+    chunkOffsetHost.resize(param.windowsDownInChunk*param.windowsAcrossInChunk);
+    allocateValues(chunkOffsetDown);
+    allocateValues(chunkOffsetAcross);
 
     // the per-window results
-    values(offsetInit);
-    values(offsetZoomIn);
-    values(offsetFinal);
-    values(r_maxval);
-    values(corrMaxValue);
-    values(r_covValue);
-    values(r_snrValue);
-    values(r_corrBatchSum);
-    values(i_corrBatchValidCount);
+    allocateValues(offsetInit);
+    allocateValues(offsetZoomIn);
+    allocateValues(offsetFinal);
+    allocateValues(r_maxval);
+    allocateValues(corrMaxValue);
+    allocateValues(r_covValue);
+    allocateValues(r_snrValue);
+    allocateValues(r_corrBatchSum);
+    allocateValues(i_corrBatchValidCount);
     // the correlation surfaces around the peaks, at the raw pixel spacing, for the SNR
-    batch(r_corrBatchRawZoomIn, param.corrRawZoomInHeight, param.corrRawZoomInWidth);
-    batch(i_corrBatchZoomInValid, param.corrRawZoomInHeight, param.corrRawZoomInWidth);
+    allocateArrays(r_corrBatchRawZoomIn, param.corrRawZoomInHeight, param.corrRawZoomInWidth);
+    allocateArrays(i_corrBatchZoomInValid, param.corrRawZoomInHeight, param.corrRawZoomInWidth);
 }
 
 /**
@@ -107,6 +96,26 @@ void Processor<arrayT>::setIndex(int idxDown, int idxAcross)
     nWindowsAcross = (idxChunkAcross == param.numberChunkAcross - 1)
         ? param.numberWindowAcross - param.windowsAcrossInChunk*(param.numberChunkAcross - 1)
         : param.windowsAcrossInChunk;
+}
+
+/**
+ * Allocate array: one array of height x width per window of a chunk
+ */
+template <template <typename> class arrayT>
+template <typename T>
+void Processor<arrayT>::allocateArrays(array_type<T> &array, int height, int width)
+{
+    array = array_type<T>(height, width, param.windowsDownInChunk*param.windowsAcrossInChunk);
+}
+
+/**
+ * Allocate array: one value per window of a chunk
+ */
+template <template <typename> class arrayT>
+template <typename T>
+void Processor<arrayT>::allocateValues(array_type<T> &array)
+{
+    array = array_type<T>(param.windowsDownInChunk, param.windowsAcrossInChunk);
 }
 
 /**
