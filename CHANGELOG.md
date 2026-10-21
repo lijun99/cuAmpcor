@@ -16,10 +16,20 @@
 - File name parameters accept path-like objects; a value of a wrong type raises a `TypeError`
   naming the parameter.
 
+### Changes
+
+- `PyCuAmpcor.device_list()` returns the devices (dicts with `id`, `name`, `sm_count`,
+  `compute_capability` and `total_memory`) instead of printing them.
+- The CUDA utilities adapted from the NVIDIA CUDA samples are replaced by our own: CUDA and cuFFT
+  errors are reported with their names and the failed call; in Debug builds, the device is
+  synchronized after each kernel, so that execution errors are reported at the failing kernel.
+
 ### Fixes
 
 - `setupParams` can be called repeatedly: the one-pass workflow no longer adds its zoom-in margin
   to `halfSearchRangeDown` / `halfSearchRangeAcross`.
+- A CUDA error is cleared once reported, so it is no longer reported again by a later kernel
+  (e.g., after an invalid `deviceID`).
 
 ## 2.2.0 (2026-10-02)
 
