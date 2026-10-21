@@ -6,6 +6,7 @@
 #include "cuAmpcorParameter.h"
 #include "backend.h"
 #include "indexing.h"
+#include "logging.h"
 #include <stdio.h>
 #include <algorithm>
 #include <iostream>
@@ -151,8 +152,8 @@ void cuAmpcorParameter::_setupParameters_OnePass()
                                searchWindowSizeWidth - windowSizeWidth +1);
     // check zoom in window size, if larger, issue a warning
     if(zoomWindowSize >= corrWindowSize.x || zoomWindowSize >= corrWindowSize.y)
-        fprintf(stderr, "Warning: zoomWindowSize %d is bigger than the original correlation surface size (%d, %d)!\n",
-            zoomWindowSize, corrWindowSize.x, corrWindowSize.y );
+        logWarning("zoomWindowSize ", zoomWindowSize, " is bigger than the original correlation surface size (",
+            corrWindowSize.x, ", ", corrWindowSize.y, ")");
     // use the smaller values
     corrZoomInSize = make_int2(std::min(zoomWindowSize+1, corrWindowSize.x),
                                std::min(zoomWindowSize+1, corrWindowSize.y));
@@ -168,8 +169,7 @@ void cuAmpcorParameter::_setupParameters_OnePass()
     // search range \pm 1 pixel * totalOS
     corrZoomInOversampledSearchRange = make_int2(2*totalOS, 2*totalOS);
 
-    fprintf(stderr, "zoomWindowSize is (%d, %d)!\n",
-            corrZoomInSize.x, corrZoomInSize.y );
+    logDebug("zoomWindowSize is (", corrZoomInSize.x, ", ", corrZoomInSize.y, ")");
 
 }
 
@@ -378,40 +378,40 @@ void cuAmpcorParameter::checkPixelInImageRange() const
             int i = row*numberWindowAcross + col;
             if(referenceStartPixelDown[i] <0)
             {
-                printf("Warning: Reference Window start pixel out of range in Down, window (%d,%d), pixel %d\n", row, col, referenceStartPixelDown[i]);
+                logWarning("Reference Window start pixel out of range in Down, window (", row, ",", col, "), pixel ", referenceStartPixelDown[i]);
             }
             if(referenceStartPixelAcross[i] <0)
             {
-                printf("Warning: Reference Window start pixel out of range in Across, window (%d,%d), pixel %d\n", row, col, referenceStartPixelAcross[i]);
+                logWarning("Reference Window start pixel out of range in Across, window (", row, ",", col, "), pixel ", referenceStartPixelAcross[i]);
             }
             endPixel = referenceStartPixelDown[i] + windowSizeHeightRaw;
             if(endPixel >= referenceImageHeight)
             {
-                printf("Warning: Reference Window end pixel out of range in Down, window (%d,%d), pixel %d\n", row, col, endPixel);
+                logWarning("Reference Window end pixel out of range in Down, window (", row, ",", col, "), pixel ", endPixel);
             }
             endPixel = referenceStartPixelAcross[i] + windowSizeWidthRaw;
             if(endPixel >= referenceImageWidth)
             {
-                printf("Warning: Reference Window end pixel out of range in Across, window (%d,%d), pixel %d\n", row, col, endPixel);
+                logWarning("Reference Window end pixel out of range in Across, window (", row, ",", col, "), pixel ", endPixel);
             }
             //secondary
             if(secondaryStartPixelDown[i] <0)
             {
-                printf("Warning: Secondary Window start pixel out of range in Down, window (%d,%d), pixel %d\n", row, col, secondaryStartPixelDown[i]);
+                logWarning("Secondary Window start pixel out of range in Down, window (", row, ",", col, "), pixel ", secondaryStartPixelDown[i]);
             }
             if(secondaryStartPixelAcross[i] <0)
             {
-                printf("Warning: Secondary Window start pixel out of range in Across, window (%d,%d), pixel %d\n", row, col, secondaryStartPixelAcross[i]);
+                logWarning("Secondary Window start pixel out of range in Across, window (", row, ",", col, "), pixel ", secondaryStartPixelAcross[i]);
             }
             endPixel = secondaryStartPixelDown[i] + searchWindowSizeHeightRaw;
             if(endPixel >= secondaryImageHeight)
             {
-                printf("Warning: Secondary Window end pixel out of range in Down, window (%d,%d), pixel %d\n", row, col, endPixel);
+                logWarning("Secondary Window end pixel out of range in Down, window (", row, ",", col, "), pixel ", endPixel);
             }
             endPixel = secondaryStartPixelAcross[i] + searchWindowSizeWidthRaw;
             if(endPixel >= secondaryImageWidth)
             {
-                printf("Warning: Secondary Window end pixel out of range in Across, window (%d,%d), pixel %d\n", row, col, endPixel);
+                logWarning("Secondary Window end pixel out of range in Across, window (", row, ",", col, "), pixel ", endPixel);
             }
 
         }

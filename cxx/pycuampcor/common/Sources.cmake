@@ -7,4 +7,5 @@ set(PYCUAMPCOR_COMMON_SOURCES
     cuAmpcorProcessor.cpp
     cuAmpcorProcessorOnePass.cpp
     cuAmpcorProcessorTwoPass.cpp
+    logging.cpp
     )

@@ -1,4 +1,5 @@
 #include "cuAmpcorProcessorTwoPass.h"
+#include "logging.h"
 
 #include "cuAmpcorUtil.h"
 #include <iostream>
@@ -432,9 +433,7 @@ cuAmpcorProcessorTwoPass::cuAmpcorProcessorTwoPass(cuAmpcorParameter *param_,
         );
 
 
-#ifdef CUAMPCOR_DEBUG
-    std::cout << "all objects in chunk are created ...\n";
-#endif
+    logDebug("all objects in chunk are created");
 }
 
 // destructor

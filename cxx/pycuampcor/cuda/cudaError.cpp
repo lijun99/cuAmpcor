@@ -1,4 +1,5 @@
 #include "cudaError.h"
+#include "logging.h"
 
 #include <cstdio>
 #include <exception>
@@ -14,7 +15,7 @@ namespace {
 void reportError(const std::string &message)
 {
     if (std::uncaught_exceptions() > 0) {
-        std::fprintf(stderr, "%s\n", message.c_str());
+        logWarning(message);
         return;
     }
     throw std::runtime_error(message);

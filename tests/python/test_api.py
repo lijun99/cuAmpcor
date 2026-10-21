@@ -179,6 +179,25 @@ def test_setup_repeated(impl, images, tmp_path):
             np.testing.assert_array_equal(again[name], once[name], err_msg=name)
 
 
+def test_log_level(impl, images, tmp_path, capfd):
+    """The messages written, by level (set for both backends)"""
+    assert pycuampcor.get_log_level() is pycuampcor.LogLevel.INFO
+    try:
+        for level, progress in [("quiet", False), (pycuampcor.LogLevel.WARNING, False),
+                                (2, True), ("debug", True)]:
+            pycuampcor.set_log_level(level)
+            assert pycuampcor.get_log_level() == pycuampcor.LogLevel.from_value(level)
+            capfd.readouterr()
+            run_ampcor(impl, images, SHAPE, tmp_path / str(level), n_windows=(2, 2))
+            out = capfd.readouterr().out
+            assert ("Processing chunks" in out) == progress, level
+            assert ("all objects in chunk are created" in out) == (level == "debug"), level
+        with pytest.raises(ValueError):
+            pycuampcor.set_log_level("verbose")
+    finally:
+        pycuampcor.set_log_level("info")
+
+
 def test_real_images(impl, tmp_path_factory, tmp_path):
     """Real (amplitude) images"""
     # a bandwidth <= 50% avoids the aliasing of the amplitudes (see test_synthetic.py)

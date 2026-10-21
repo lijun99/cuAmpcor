@@ -5,6 +5,7 @@
  **/
 
 #include "cpuUtil.h"
+#include "logging.h"
 #include "backend.h"
 #include "cuAmpcorParameter.h"
 #include <cstring>
@@ -17,7 +18,7 @@ namespace pycuampcor::cpu {
 
 int backendInit(cuAmpcorParameter *param)
 {
-    std::cout << "Using " << backendNumWorkers(param) << " CPU thread(s) ...\n";
+    logInfo("Using ", backendNumWorkers(param), " CPU thread(s) ...");
     return 0;
 }
 

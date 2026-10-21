@@ -1,4 +1,5 @@
 #include "cudaUtil.h"
+#include "logging.h"
 #include "backend.h"
 #include "cuAmpcorParameter.h"
 
@@ -22,7 +23,7 @@ int gpuDeviceInit(int devID)
             + " (" + std::to_string(count) + " devices available)");
 
     checkCudaErrors(cudaSetDevice(devID));
-    printf("Using CUDA Device %d ...\n", devID);
+    logInfo("Using CUDA Device ", devID, " ...");
     return devID;
 }
 
@@ -103,8 +104,8 @@ void *backendAllocStaging(size_t bytes)
     if (cudaMallocHost(&ptr, bytes) != cudaSuccess) {
         // e.g., limited page-locked memory; clear the error and use pageable copies
         cudaGetLastError();
-        std::cerr << "Warning: failed to allocate " << bytes << " bytes of page-locked memory;"
-                  << " using pageable memory to load the images" << std::endl;
+        logWarning("failed to allocate ", bytes, " bytes of page-locked memory;",
+                   " using pageable memory to load the images");
         return nullptr;
     }
     return ptr;

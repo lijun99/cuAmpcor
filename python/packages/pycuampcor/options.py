@@ -12,7 +12,7 @@ import enum
 import operator
 
 __all__ = ["Algorithm", "Workflow", "DerampMethod", "DerampAxis",
-           "OversamplingMethod", "DataType"]
+           "OversamplingMethod", "DataType", "LogLevel"]
 
 
 class _Option(enum.IntEnum):
@@ -78,6 +78,14 @@ class DataType(_Option):
     REAL = 1
     FLOAT = 1
     COMPLEX = 2
+
+
+class LogLevel(_Option):
+    """Level of the messages written by pycuampcor (see pycuampcor.set_log_level)"""
+    QUIET = 0    #: no messages
+    WARNING = 1  #: warnings (to stderr)
+    INFO = 2     #: and progress (to stdout; default)
+    DEBUG = 3    #: and debugging
 
 
 def _to_flag(value):

@@ -13,6 +13,7 @@
  */
 
 #include "cuAmpcorUtil.h"
+#include "logging.h"
 #include <cmath>
 #include <cstdio>
 
@@ -62,7 +63,7 @@ void cuLinearDeramp(cuArrays<complex_type> *images, const int axis, stream_t)
 
 #ifdef CUAMPCOR_DEBUG
         // output the phase ramp in debug mode
-        printf("debug linear deramp az: %g rg: %g\n", phaseX, phaseY);
+        logDebug("debug linear deramp az: ", phaseX, " rg: ", phaseY);
 #endif
 
         for(int ix = 0; ix < imageNX; ix++)

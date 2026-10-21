@@ -24,6 +24,10 @@
 - `useMmap` and `mergeGrossOffset` are booleans (set by a bool or an integer).
 - Docstrings for the class, its methods and all the parameters (with their default values), and
   argument names for `setConstantGrossOffset` / `setVaryingGrossOffset`.
+- `pycuampcor.set_log_level` / `get_log_level`: the level of the messages written (`quiet`,
+  `warning`, `info` (default) or `debug`), for both backends; all the messages go through it
+  (warnings to stderr, the others to stdout). The one-pass zoom-in window size is now a debug
+  message.
 - Type stubs (`_cpu.pyi`, `_cuda.pyi`, with `py.typed`) for type checkers and IDEs: the types of
   the parameters (as set and as read) and of the methods, the keyword constructor with all the
   parameters, and the docstrings.

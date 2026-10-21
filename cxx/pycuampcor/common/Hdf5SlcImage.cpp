@@ -1,4 +1,5 @@
 #include "Hdf5SlcImage.h"
+#include "logging.h"
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -140,12 +141,12 @@ Hdf5SlcImage::Hdf5SlcImage(const std::string& file, const std::string& dataset,
 
     if (direct) {
         std::string filters = shuffle ? (deflate ? "shuffle+deflate" : "shuffle") : (deflate ? "deflate" : "none");
-        std::cout << "  HDF5 " << dataset << ": chunks " << chunkHeight << " x " << chunkWidth
-                  << ", filters " << filters << ", decoded directly (cache of " << cacheCapacity
-                  << " chunks, up to " << maxThreads << " threads)" << std::endl;
+        logInfo("  HDF5 ", dataset, ": chunks ", chunkHeight, " x ", chunkWidth,
+                ", filters ", filters, ", decoded directly (cache of ", cacheCapacity,
+                " chunks, up to ", maxThreads, " threads)");
     }
     else {
-        std::cout << "  HDF5 " << dataset << ": read with the HDF5 library" << std::endl;
+        logInfo("  HDF5 ", dataset, ": read with the HDF5 library");
     }
 }
 

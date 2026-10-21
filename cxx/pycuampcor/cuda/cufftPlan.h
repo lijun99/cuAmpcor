@@ -6,8 +6,8 @@
 #pragma once
 
 #include "cudaError.h"
+#include "logging.h"
 #include <cufft.h>
-#include <cstdio>
 #include <utility>
 
 namespace pycuampcor::cuda {
@@ -50,7 +50,7 @@ private:
     {
         // not throwing (called by the destructor)
         if (valid_ && cufftDestroy(handle_) != CUFFT_SUCCESS)
-            std::fprintf(stderr, "Warning: failed to destroy a cuFFT plan\n");
+            logWarning("failed to destroy a cuFFT plan");
         valid_ = false;
     }
     cufftHandle handle_ = 0;

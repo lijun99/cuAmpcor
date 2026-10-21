@@ -5,6 +5,7 @@
 
 // my declaration
 #include "cuAmpcorController.h"
+#include "logging.h"
 
 // dependencies
 #include "SlcImage.h"
@@ -172,11 +173,11 @@ void cuAmpcorController::runAmpcorLayers(const std::vector<cuAmpcorController *>
     for (const auto *p : params)
         mmapSizeInGB = std::max(mmapSizeInGB, p->mmapSizeInGB);
     // TODO: selecting band
-    std::cout << "Opening reference image " << param->referenceImageName << "...\n";
+    logInfo("Opening reference image ", param->referenceImageName, "...");
     auto referenceImage = SlcImage::open(param->referenceImageName, param->referenceImageReader,
         param->referenceImageHeight, param->referenceImageWidth,
         pixelSize(param->referenceImageDataType), mmapSizeInGB);
-    std::cout << "Opening secondary image " << param->secondaryImageName << "...\n";
+    logInfo("Opening secondary image ", param->secondaryImageName, "...");
     auto secondaryImage = SlcImage::open(param->secondaryImageName, param->secondaryImageReader,
         param->secondaryImageHeight, param->secondaryImageWidth,
         pixelSize(param->secondaryImageDataType), mmapSizeInGB);
@@ -229,13 +230,11 @@ void cuAmpcorController::runAmpcorLayers(const std::vector<cuAmpcorController *>
     const int nChunks = nChunksDown*nChunksAcross;
 
     // report info
-    std::cout << "Total number of windows (azimuth x range):  "
-        << param->numberWindowDown << " x " << param->numberWindowAcross
-        << std::endl;
-    std::cout << "to be processed in the number of chunks: "
-        << nChunksDown << " x " << nChunksAcross  << std::endl;
+    logInfo("Total number of windows (azimuth x range):  ",
+        param->numberWindowDown, " x ", param->numberWindowAcross);
+    logInfo("to be processed in the number of chunks: ", nChunksDown, " x ", nChunksAcross);
     if (nLayers > 1)
-        std::cout << "for " << nLayers << " layers sharing the loaded chunks" << std::endl;
+        logInfo("for ", nLayers, " layers sharing the loaded chunks");
 
     // iterate over all chunks
     // for GPU, chunks are assigned to cuda streams in turn (and the pragma is ignored);
@@ -251,8 +250,8 @@ void cuAmpcorController::runAmpcorLayers(const std::vector<cuAmpcorController *>
         const int i = k / nChunksAcross;
         const int j = k % nChunksAcross;
         if(j == 0 && i%message_interval == 0)
-            printf("Processing chunks (%d, x) - (%d, x) out of %d\n",
-                i+1, std::min(nChunksDown, i+message_interval), nChunksDown);
+            logInfo("Processing chunks (", i+1, ", x) - (", std::min(nChunksDown, i+message_interval),
+                ", x) out of ", nChunksDown);
         try {
             auto &worker = workers[backendWorkerId(k, nWorkers)];
             // load the chunk once, and process it for all layers

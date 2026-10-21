@@ -277,7 +277,9 @@ params = dict(referenceImageName="20151120.slc.full.vrt", windowSizeWidth=64, ..
 objOffset = PyCuAmpcor(**params, grossOffsetDown=vD, grossOffsetAcross=vA)
 objOffset.runAmpcor()
 ```
-Unknown parameter names and values of a wrong type raise a `TypeError`. File names may be given as strings or path-like objects (e.g., `pathlib.Path`).
+Unknown parameter names and values of a wrong type raise a `TypeError`.
+
+The messages written while running (progress to stdout, warnings to stderr) are chosen with `pycuampcor.set_log_level`, e.g., `pycuampcor.set_log_level("warning")` for the warnings only (levels `quiet`, `warning`, `info` (default) and `debug`). File names may be given as strings or path-like objects (e.g., `pathlib.Path`).
 
 ### 3.3 Offset visualization
 

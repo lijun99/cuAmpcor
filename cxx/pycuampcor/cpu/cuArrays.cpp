@@ -6,6 +6,7 @@
 
 // dependencies
 #include "cuArrays.h"
+#include "logging.h"
 #include "float2.h"
 #include "data_types.h"
 #include <algorithm>
@@ -149,7 +150,7 @@ void cuArrays<T>::outputHostToFile(std::string fn)
     file.open(fn.c_str(),  std::ios_base::binary);
     file.write((char *)hostData, getByteSize());
     file.close();
-    std::cout << fn << " size: height " << height << " width "<< width << " count " << count << "\n";
+    logInfo(fn, " size: height ", height, " width ", width, " count ", count);
 }
 
 // instantiations

@@ -4,6 +4,7 @@
 #include "cuAmpcorController.h"
 #include "cuAmpcorParameter.h"
 #include "SlcImage.h"
+#include "logging.h"
 #ifdef PYCUAMPCOR_BACKEND_CUDA
 #include "cudaUtil.h"
 #endif
@@ -187,6 +188,10 @@ PYBIND11_MODULE(PYCUAMPCOR_MODULE, m)
 
     // whether images can be read from HDF5 datasets (HDF5:<file>:<dataset>)
     m.attr("has_hdf5") = SlcImage::hasHdf5();
+
+    // the level of the messages (pycuampcor.set_log_level sets it for both backends)
+    m.def("_set_log_level", [](int level) { setLogLevel(static_cast<LogLevel>(level)); });
+    m.def("_get_log_level", [] { return static_cast<int>(logLevel()); });
 
     pybind11::class_<cls> c(m, PYBIND11_TOSTRING(PYCUAMPCOR_CLASS),
         "Amplitude cross-correlation (ampcor) of a reference and a secondary image\n\n"
