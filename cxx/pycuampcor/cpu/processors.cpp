@@ -37,17 +37,6 @@ pycuampcor::array_traits<pycuampcor::cpu::Arrays>::newNormalizer(int height, int
     return cpu::newNormalizer(height, width, count);
 }
 
-/**
- * An oversampler (FFT or sinc, by method) of count correlation surfaces of height x width
- * around their peaks, by factor
- */
-std::unique_ptr<pycuampcor::array_traits<pycuampcor::cpu::Arrays>::surface_oversampler_type>
-pycuampcor::array_traits<pycuampcor::cpu::Arrays>::newSurfaceOverSampler(OversamplingMethod method,
-    int height, int width, int factor, int rawFactor, int count, stream_type stream)
-{
-    return cpu::newSurfaceOverSampler(method, height, width, factor, rawFactor, count, stream);
-}
-
 // the processors
 #include "ProcessorImpl.h"
 #include "ProcessorTwoPassImpl.h"

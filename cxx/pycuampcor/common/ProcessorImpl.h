@@ -192,7 +192,7 @@ void Processor<arrayT>::correlate(array_type<real_type> &reference,
 template <template <typename> class arrayT>
 void Processor<arrayT>::createSurfaceOversampler(int height, int width)
 {
-    surfaceOverSampler = traits::newSurfaceOverSampler(param.corrSurfaceOverSamplingMethod,
+    surfaceOverSampler = newSurfaceOverSampler<arrayT>(param.corrSurfaceOverSamplingMethod,
         height, width, param.corrSurfaceOverSamplingFactor, param.rawDataOversamplingFactor,
         param.windowsDownInChunk*param.windowsAcrossInChunk, stream);
 }

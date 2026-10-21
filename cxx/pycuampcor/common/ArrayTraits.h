@@ -35,8 +35,6 @@ enum class Device : int {
 /// - make_int2(x, y): an int2_type
 /// - newNormalizer(height, width, count): a normalizer for the correlation of count windows
 ///   of height x width
-/// - newSurfaceOverSampler(method, height, width, factor, rawFactor, count, stream): an
-///   oversampler of the correlation surfaces (FFT or sinc)
 template <template <typename> class arrayT>
 struct array_traits;
 

@@ -43,12 +43,6 @@ struct array_traits<cuda::cuArrays> {
     /// a normalizer for the correlation surfaces of count windows of height x width
     /// (defined with the processors, processors.cpp)
     static std::unique_ptr<normalizer_type> newNormalizer(int height, int width, int count);
-
-    /// an oversampler (FFT or sinc, by method) of count correlation surfaces of height x width
-    /// around their peaks, by factor; with rawFactor, the oversampling of the windows (the sinc
-    /// oversampler shifts the peaks by factor*rawFactor)
-    static std::unique_ptr<surface_oversampler_type> newSurfaceOverSampler(OversamplingMethod method,
-        int height, int width, int factor, int rawFactor, int count, stream_type stream);
 };
 
 } // namespace

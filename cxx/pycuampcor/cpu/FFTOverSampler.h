@@ -70,14 +70,4 @@ private:
 };
 
 } // namespace
-
-namespace pycuampcor::cpu {
-
-/// an oversampler of count correlation surfaces of height x width around their peaks, by factor:
-/// FFT or sinc, by method; with rawFactor, the oversampling of the windows (the sinc oversampler
-/// shifts the peaks by factor*rawFactor)
-std::unique_ptr<SurfaceOverSampler<Arrays>> newSurfaceOverSampler(OversamplingMethod method,
-    int height, int width, int factor, int rawFactor, int count, stream_t stream);
-
-} // namespace
 // end of file
