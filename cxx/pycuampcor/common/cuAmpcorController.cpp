@@ -26,19 +26,6 @@
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND {
 
-// constructor
-cuAmpcorController::cuAmpcorController()
-{
-    // create a new set of parameters
-    param = new cuAmpcorParameter();
-}
-
-// destructor
-cuAmpcorController::~cuAmpcorController()
-{
-    delete param;
-}
-
 bool cuAmpcorController::isDoublePrecision()
 {
 #ifdef CUAMPCOR_DOUBLE
@@ -169,7 +156,7 @@ void cuAmpcorController::runAmpcorLayers(const std::vector<cuAmpcorController *>
 {
     std::vector<cuAmpcorParameter *> params;
     for (auto *layer : layers)
-        params.push_back(layer->param);
+        params.push_back(layer->param.get());
     // check whether the parameters are set up and compatible
     checkLayers(params);
     cuAmpcorParameter *param = params.front();

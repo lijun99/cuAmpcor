@@ -17,17 +17,14 @@
 
 // dependencies
 #include "cuAmpcorParameter.h"
+#include <memory>
 #include <vector>
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND {
 
 class cuAmpcorController {
 public:
-    cuAmpcorParameter *param;  ///< the parameter set
-    // constructor
-    cuAmpcorController();
-    // destructor
-    ~cuAmpcorController();
+    std::unique_ptr<cuAmpcorParameter> param = std::make_unique<cuAmpcorParameter>();  ///< the parameter set
     // run interface
     void runAmpcor();
     // run several layers (parameter sets) sharing the images and the chunk partition,

@@ -78,7 +78,7 @@ void defParam(pybind11::class_<cls> &c, Setters &setters, const char *name,
                    + " for parameter '" + name + "'";
         };
         try {
-            self.param->*member = fromPython(value);
+            (*self.param).*member = fromPython(value);
         } catch (const pybind11::cast_error &) {
             throw pybind11::type_error(invalid());
         } catch (const pybind11::error_already_set &e) {
@@ -92,7 +92,7 @@ void defParam(pybind11::class_<cls> &c, Setters &setters, const char *name,
         }
     };
     c.def_property(name, [member, toPython](const cls& self) {
-        return toPython(self.param->*member);
+        return toPython((*self.param).*member);
     }, [setter](cls& self, pybind11::object value) {
         setter(self, value);
     }, (std::string(doc) + "\n\nDefault: " + defaultText(asObject(toPython(defaults.*member)))).c_str());
