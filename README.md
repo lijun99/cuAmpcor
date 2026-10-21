@@ -137,7 +137,7 @@ The package includes type stubs (`_cpu.pyi`, `_cuda.pyi`) for type checkers and 
 
 ### 2.5 Installation with ISCE2
 
-PyCuAmpcor is included in [ISCE2](https://github.com/isce-framework/isce2) (as *contrib/pycuampcor*), and can be compiled/installed by CMake or SCons, together with ISCE2. An installation guide can be found at [isce-framework](https://github.com/isce-framework/isce2#building-isce).
+[ISCE2](https://github.com/isce-framework/isce2) includes an older version of PyCuAmpcor (*contrib/PyCuAmpcor*, GPU only), built with ISCE2 (see the [ISCE2 installation guide](https://github.com/isce-framework/isce2#building-isce)) and used by *topsApp* and *alos2App* for dense offsets. This package can be installed in the same environment; its *cuDenseOffsets.py* (see 3.1) works with the images of the ISCE2 stack processors.
 
 ### 2.6 Code organization
 
@@ -152,15 +152,17 @@ The headers are organized as in [pyre](https://github.com/pyre/pyre): in each of
 
 ## 3. User Guide
 
-The main procedures of PyCuAmpcor are implemented with CUDA/C++. A Python interface to configure and run PyCuAmpcor is offered. Sample python scripts are provided in *contrib/PyCuAmpcor/examples* directory.
+The main procedures of PyCuAmpcor are implemented with CUDA/C++. A Python interface to configure and run PyCuAmpcor is offered. The package installs the command-line tool *cuDenseOffsets.py* (3.1); the *examples* directory has a self-contained example on synthetic images (*simple_offsets.py*, 3.2) and a plotting script (*plotOffsets.py*, 3.3).
 
 ### 3.1 cuDenseOffsets.py
 
-*cuDenseOffsets.py*, as also included in InSAR processing stacks, serves as a general purpose script to run PyCuAmpcor. It uses *argparse* to pass parameters, either from a command line
+*cuDenseOffsets.py*, as used with the ISCE2 stack processors and [MintPy](https://github.com/insarlab/MintPy) (offset time series), serves as a general purpose script to run PyCuAmpcor. It is installed with the package (or run as `python -m pycuampcor.dense_offsets`), and uses *argparse* to pass parameters, either from a command line
 
 ```bash
-cuDenseOffsets.py -r 20151120.slc.full -s 20151214.slc.full --outprefix ./20151120_20151214/offset --ww 64 --wh 64 --oo 32 --kw 32 --kh 32 --nwac 8 --nwdc 1 --sw  20 --sh 20 --gpuid 0 --workflow 0
+cuDenseOffsets.py -r 20151120.slc.full -s 20151214.slc.full --outprefix ./20151120_20151214/offset --ww 64 --wh 64 --oo 32 --kw 32 --kh 32 --sw  20 --sh 20 --gpuid 0 --workflow 0
  ```
+
+The images are raw binary files (one band of complex64 or float32 pixels, e.g., the SLCs of the ISCE2 stack processors). Their size and pixel type are read from their ISCE *.xml* files if [ISCE2](https://github.com/isce-framework/isce2) is installed, or else with GDAL (from the *.vrt* next to an image, or the image itself), or given with *--length*, *--width* and *--data-type* (*complex64* or *float32*). The headers of the outputs are ISCE *.xml* (and *.vrt*) files if ISCE2 is installed, or else ENVI *.hdr* and *.vrt* files; both are read by MintPy and GDAL. The offsets are computed on the GPU, or on the CPU with *--cpu* (or if the package is built without CUDA). The geometry options (*--full-geom*, *--out-geom*) need GDAL.
 
  or by a shell script which may expose more options o
 
@@ -184,17 +186,16 @@ outprefix=./merged/20151120_20151214/offset  # output prefix
 outsuffix=_ww64_wh64   # output suffix
 gpuid=0   # GPU device ID
 nstreams=2 # number of CUDA streams
-usemmap=1 # whether to use memory-map i/o
 mmapsize=4 # buffer size in GB for memory map
-nwac=8 # number of windows in a batch along width
-nwdc=1  # number of windows in a batch along height
+nwac=0 # number of windows in a batch along width (0: automatic)
+nwdc=0  # number of windows in a batch along height (0: automatic)
 workflow=0 # 0=two pass 1=one pass
 
 rm $outprefix$outsuffix*
 cuDenseOffsets.py --reference $reference --secondary $secondary --ww $ww --wh $wh --sw $sw --sh $sh \
     --mm $mm --kw $kw --kh $kh --gross $gross --rr $rgshift --aa $azshift --oo $oo \
     --deramp $deramp --outprefix $outprefix --outsuffix $outsuffix \
-    --gpuid $gpuid  --usemmap $usemmap --mmapsize $mmapsize \
+    --gpuid $gpuid --mmapsize $mmapsize \
     --nwac $nwac --nwdc $nwdc --workflow $workflow
  ```
 
@@ -228,16 +229,13 @@ Please be advised, by enforcing the window locations and sizes, the windows near
 
 PyCuAmpcor supports two types of gross offset fields,
 * static (--gross=0), i.e., a constant shift between reference and secondary images. The static gross offsets can be passed by *--rr $rgshift --aa $azshift*. Note that the margin as well as the starting pixel may be adjusted.
-* dynamic (--gross=1), i.e., shifts between reference windows and secondary windows are varying in different locations. This is helpful to reduce the search range if you have a prior knowledge of the estimated offset fields, e.g., the velocity model of glaciers. You may prepare a BIP input file of the varying gross offsets (same format as the output offset fields), and use the option *--gross-file $grossOffsetFilename*. If you need the coordinates of reference windows, you may run *cuDenseOffsets.py* at first to find out the location of the starting pixel and the total number of windows. The coordinate for the starting pixel of the (iDown, iAcross) window will be (startPixelDown+iDown\*skipDown, startPixelAcross+iAcross\*skipAcross).
+* dynamic (--gross=1), i.e., shifts between reference windows and secondary windows are varying in different locations. This is helpful to reduce the search range if you have a prior knowledge of the estimated offset fields, e.g., the velocity model of glaciers. You may prepare a binary file of the varying gross offsets, int32 pairs (down, across) for each window in the order of the output offset fields, and use the option *--gross-file $grossOffsetFilename*. If you need the coordinates of reference windows, you may run *cuDenseOffsets.py* at first to find out the location of the starting pixel and the total number of windows. The coordinate for the starting pixel of the (iDown, iAcross) window will be (startPixelDown+iDown\*skipDown, startPixelAcross+iAcross\*skipAcross).
 
 ### 3.2 Customized Python Scripts
 
-If you need more control of the computation, or incorporate the PyCuAmpcor procedure in your InSAR processing stacks, you may follow the *cuDenseOffsets.py* example to create your own Python script. The general steps are
+If you need more control of the computation, or incorporate the PyCuAmpcor procedure in your InSAR processing stacks, you may follow *examples/simple_offsets.py* (offsets of synthetic images with a known shift: `python simple_offsets.py [--cpu]`) or *cuDenseOffsets.py* (*pycuampcor/dense_offsets.py*) to create your own Python script. The general steps are
 * create a PyCuAmpcor instance
 ```python
-# if installed with ISCE2
-from isce.components.contrib.pycuampcor import PyCuAmpcor
-# if standalone
 from pycuampcor import PyCuAmpcor, PyCPUAmpcor
 # create an instance (GPU)
 objOffset = PyCuAmpcor()
@@ -247,7 +245,7 @@ objOffset = PyCPUAmpcor()
 
 * set various parameters, e.g., (see a [list of configurable parameters](#4-list-of-parameters) below)
 ```python
-objOffset.referenceImageName="20151120.slc.full.vrt"
+objOffset.referenceImageName="20151120.slc.full"
 ...
 objOffset.windowSizeWidth = 64
 ...
@@ -275,7 +273,7 @@ objOffset.runAmpcor()
 
 Alternatively, the parameters may be given to the constructor as keyword arguments, named as the parameters above, with the gross offsets as `grossOffsetDown` and `grossOffsetAcross` (numbers for a constant gross offset, or sequences of `numberWindowDown*numberWindowAcross` numbers for varying gross offsets; default 0). The constructor then sets up the parameters and the gross offsets, so the object is ready to run:
 ```python
-params = dict(referenceImageName="20151120.slc.full.vrt", windowSizeWidth=64, ...)
+params = dict(referenceImageName="20151120.slc.full", windowSizeWidth=64, ...)
 objOffset = PyCuAmpcor(**params, grossOffsetDown=vD, grossOffsetAcross=vA)
 objOffset.runAmpcor()
 ```

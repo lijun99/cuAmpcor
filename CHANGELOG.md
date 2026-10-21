@@ -9,6 +9,14 @@
 
 ### New
 
+- `cuDenseOffsets.py` is installed with the package (also `python -m pycuampcor.dense_offsets`),
+  the dense offsets tool of the ISCE2 stack processors and MintPy: ISCE2 is optional (the image
+  size and type from the ISCE .xml, GDAL, or the options `--length`, `--width`, `--data-type`;
+  the output headers ISCE .xml, or ENVI .hdr and .vrt), `--cpu` for the CPU implementation, and
+  the numbers of windows in a chunk automatic by default.
+- `examples/simple_offsets.py`: a self-contained example (synthetic images of a known shift); the
+  examples depending on ISCE2 or a GDAL reader (`GeoTiffSample.py`, `glacierSample.py`,
+  `varyGrossOffsetSample.py`, `grossOffsets.py`) are removed.
 - The parameters can be given to the constructor as keyword arguments (the property names, e.g.,
   `PyCuAmpcor(windowSizeHeight=64, referenceImageName="ref.slc", ...)`), with the gross offsets
   `grossOffsetDown` / `grossOffsetAcross` (constant or varying); the constructor sets the object
