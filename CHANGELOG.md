@@ -15,6 +15,13 @@
   up to run (`setupParams` and the gross offsets).
 - File name parameters accept path-like objects; a value of a wrong type raises a `TypeError`
   naming the parameter.
+- Options are integer enums (`pycuampcor.Algorithm`, `Workflow`, `DerampMethod`, `DerampAxis`,
+  `OversamplingMethod`, `DataType`, in `pycuampcor.options`): `algorithm`, `workflow`,
+  `derampMethod`, `derampAxis`, `corrSurfaceOverSamplingMethod`, `referenceImageDataType` and
+  `secondaryImageDataType` are set by the member, the integer value as before, or the name
+  (e.g., `workflow="one_pass"`, `derampAxis="range"`), and read as the member, equal to the
+  integer value. An invalid option raises a `ValueError` when set (instead of in `setupParams`).
+- `useMmap` and `mergeGrossOffset` are booleans (set by a bool or an integer).
 
 ### Changes
 

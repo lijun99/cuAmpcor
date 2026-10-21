@@ -36,31 +36,74 @@ std::string toParam<std::string>(pybind11::handle value)
     return pybind11::module_::import("os").attr("fspath")(value).cast<std::string>();
 }
 
-// define a getter/setter for a controller parameter, and register the setter
-template <typename T>
-void defParam(pybind11::class_<cls> &c, Setters &setters, const char *name,
-              T cuAmpcorParameter::*member)
+// the python module with the options (enums) of the parameters
+pybind11::module_ options()
 {
-    auto setter = [member, name = std::string(name)](cls& self, pybind11::handle value) {
+    return pybind11::module_::import("pycuampcor.options");
+}
+
+// define a getter/setter for a controller parameter, converting the values with
+// toPython (parameter -> python) and fromPython (python -> parameter), and register the setter
+template <typename T, typename ToPython, typename FromPython>
+void defParam(pybind11::class_<cls> &c, Setters &setters, const char *name,
+              T cuAmpcorParameter::*member, ToPython toPython, FromPython fromPython)
+{
+    auto setter = [member, fromPython, name = std::string(name)](cls& self, pybind11::handle value) {
+        auto invalid = [&]() {
+            return "invalid value " + pybind11::repr(value).cast<std::string>()
+                   + " for parameter '" + name + "'";
+        };
         try {
-            self.param->*member = toParam<T>(value);
+            self.param->*member = fromPython(value);
         } catch (const pybind11::cast_error &) {
-            throw pybind11::type_error("invalid value " + pybind11::repr(value).cast<std::string>()
-                                       + " for parameter '" + name + "'");
+            throw pybind11::type_error(invalid());
         } catch (const pybind11::error_already_set &e) {
-            // e.g., os.fspath of a number
-            if (!e.matches(PyExc_TypeError))
-                throw;
-            throw pybind11::type_error("invalid value " + pybind11::repr(value).cast<std::string>()
-                                       + " for parameter '" + name + "'");
+            // e.g., os.fspath of a number, or an invalid option name
+            const std::string reason = pybind11::str(e.value());
+            if (e.matches(PyExc_TypeError))
+                throw pybind11::type_error(invalid() + ": " + reason);
+            if (e.matches(PyExc_ValueError))
+                throw pybind11::value_error(invalid() + ": " + reason);
+            throw;
         }
     };
-    c.def_property(name, [member](const cls& self) -> T {
-        return self.param->*member;
+    c.def_property(name, [member, toPython](const cls& self) {
+        return toPython(self.param->*member);
     }, [setter](cls& self, pybind11::object value) {
         setter(self, value);
     });
     setters[name] = setter;
+}
+
+// a parameter of type T
+template <typename T>
+void defParam(pybind11::class_<cls> &c, Setters &setters, const char *name,
+              T cuAmpcorParameter::*member)
+{
+    defParam(c, setters, name, member, [](const T &value) { return value; }, toParam<T>);
+}
+
+// an option (an int parameter), read as a member of the enum pycuampcor.options.<option>,
+// set by the member, the integer value, or the name
+void defOption(pybind11::class_<cls> &c, Setters &setters, const char *name,
+               int cuAmpcorParameter::*member, const char *option)
+{
+    defParam(c, setters, name, member,
+        [option](int value) { return options().attr(option)(value); },
+        [option](pybind11::handle value) {
+            return options().attr(option).attr("from_value")(value).cast<int>();
+        });
+}
+
+// a boolean flag (an int parameter, 0 or 1), set by a bool or an integer
+void defFlag(pybind11::class_<cls> &c, Setters &setters, const char *name,
+             int cuAmpcorParameter::*member)
+{
+    defParam(c, setters, name, member,
+        [](int value) { return value != 0; },
+        [](pybind11::handle value) {
+            return static_cast<int>(options().attr("_to_flag")(value).cast<bool>());
+        });
 }
 
 void setConstantGrossOffset(cls& self, const int goDown, const int goAcross)
@@ -137,24 +180,31 @@ PYBIND11_MODULE(PYCUAMPCOR_MODULE, m)
     // same as above, for even more trivial cases where pyname == cppname
 #define DEF_PARAM(T, name) DEF_PARAM_RENAME(T, name, name)
 
-    DEF_PARAM(int, algorithm);
+    // an option, as a member of the enum pycuampcor.options.<option>
+#define DEF_OPTION(name, option) \
+    defOption(c, setters, #name, &cuAmpcorParameter::name, #option)
+
+    // a boolean flag
+#define DEF_FLAG(name) defFlag(c, setters, #name, &cuAmpcorParameter::name)
+
+    DEF_OPTION(algorithm, Algorithm);
     DEF_PARAM(int, deviceID);
     DEF_PARAM(int, nStreams);
     DEF_PARAM(int, nThreads);
-    DEF_PARAM(int, derampMethod);
-    DEF_PARAM(int, derampAxis);
-    DEF_PARAM(int, workflow);
+    DEF_OPTION(derampMethod, DerampMethod);
+    DEF_OPTION(derampAxis, DerampAxis);
+    DEF_OPTION(workflow, Workflow);
 
     DEF_PARAM(str, referenceImageName);
     DEF_PARAM(str, referenceImageReader);
     DEF_PARAM(int, referenceImageHeight);
     DEF_PARAM(int, referenceImageWidth);
-    DEF_PARAM(int, referenceImageDataType);
+    DEF_OPTION(referenceImageDataType, DataType);
     DEF_PARAM(str, secondaryImageName);
     DEF_PARAM(str, secondaryImageReader);
     DEF_PARAM(int, secondaryImageHeight);
     DEF_PARAM(int, secondaryImageWidth);
-    DEF_PARAM(int, secondaryImageDataType);
+    DEF_OPTION(secondaryImageDataType, DataType);
 
     DEF_PARAM(int, numberWindowDown);
     DEF_PARAM(int, numberWindowAcross);
@@ -164,7 +214,7 @@ PYBIND11_MODULE(PYCUAMPCOR_MODULE, m)
 
     DEF_PARAM(str, offsetImageName);
     DEF_PARAM(str, grossOffsetImageName);
-    DEF_PARAM(int, mergeGrossOffset);
+    DEF_FLAG(mergeGrossOffset);
     DEF_PARAM(str, snrImageName);
     DEF_PARAM(str, covImageName);
     DEF_PARAM(str, peakValueImageName);
@@ -177,7 +227,7 @@ PYBIND11_MODULE(PYCUAMPCOR_MODULE, m)
     DEF_PARAM(int, numberWindowDownInChunk);
     DEF_PARAM(int, numberWindowAcrossInChunk);
 
-    DEF_PARAM(int, useMmap);
+    DEF_FLAG(useMmap);
 
     DEF_PARAM_RENAME(int, halfSearchRangeAcross, halfSearchRangeAcrossRaw);
     DEF_PARAM_RENAME(int, halfSearchRangeDown,   halfSearchRangeDownRaw);
@@ -185,7 +235,7 @@ PYBIND11_MODULE(PYCUAMPCOR_MODULE, m)
     DEF_PARAM_RENAME(int, referenceStartPixelAcrossStatic, referenceStartPixelAcross0);
     DEF_PARAM_RENAME(int, referenceStartPixelDownStatic,   referenceStartPixelDown0);
 
-    DEF_PARAM(int, corrSurfaceOverSamplingMethod);
+    DEF_OPTION(corrSurfaceOverSamplingMethod, OversamplingMethod);
     DEF_PARAM(int, corrSurfaceOverSamplingFactor);
 
     DEF_PARAM_RENAME(int, mmapSize, mmapSizeInGB);

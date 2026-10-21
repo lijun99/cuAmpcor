@@ -9,12 +9,16 @@ or setVaryingGrossOffset(), or given to the constructor as keyword arguments, e.
 PyCPUAmpcor(windowSizeHeight=64, ..., grossOffsetDown=0, grossOffsetAcross=0),
 which sets the object up to run.
 
+Options (e.g., workflow, derampMethod) are integer enums of pycuampcor.options
+(e.g., Workflow), set by the member, the integer value or the name (e.g., "one_pass").
+
 Images are raw binary files, or 2D datasets in HDF5 files named as HDF5:<file>:<dataset>
 if built with HDF5 support (has_hdf5). The reader of each image is chosen by its name
 (referenceImageReader/secondaryImageReader = "auto", default) or set to "raw" or "hdf5".
 """
 
 from ._version import __version__
+from .options import Algorithm, DataType, DerampAxis, DerampMethod, OversamplingMethod, Workflow
 from ._cpu import PyCPUAmpcor, has_hdf5
 
 try:

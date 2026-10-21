@@ -204,9 +204,59 @@ def test_setup_errors(impl, images):
     with pytest.raises(ValueError):
         ampcor.setupParams()
     ampcor = new_ampcor(impl)
-    ampcor.workflow = 3
-    with pytest.raises(ValueError):
-        ampcor.setupParams()
+    with pytest.raises(ValueError, match="workflow"):
+        ampcor.workflow = 3
+
+
+# option -> (member, integer value, accepted names)
+OPTIONS = {
+    "algorithm": (pycuampcor.Algorithm.TIME, 1, ["time", "TIME"]),
+    "workflow": (pycuampcor.Workflow.ONE_PASS, 1, ["one_pass", "One-Pass"]),
+    "derampMethod": (pycuampcor.DerampMethod.NONE, 2, ["none", "skip"]),
+    "derampAxis": (pycuampcor.DerampAxis.ACROSS, 1, ["across", "range"]),
+    "corrSurfaceOverSamplingMethod": (pycuampcor.OversamplingMethod.SINC, 1, ["sinc"]),
+    "referenceImageDataType": (pycuampcor.DataType.FLOAT32, 1, ["float32", "real"]),
+    "secondaryImageDataType": (pycuampcor.DataType.COMPLEX64, 2, ["complex64", "complex"]),
+}
+
+
+def test_options(impl):
+    ampcor = new_ampcor(impl)
+    for name, (member, value, names) in OPTIONS.items():
+        other = next(m for m in type(member) if m != member)
+        for v in [member, value, np.int32(value)] + names:
+            setattr(ampcor, name, other)
+            setattr(ampcor, name, v)
+            # read as the member, equal to the integer value
+            assert getattr(ampcor, name) is member, (name, v)
+            assert getattr(ampcor, name) == value
+    # in the constructor
+    cls = type(ampcor)
+    assert cls(workflow="one_pass", derampAxis="azimuth").workflow is pycuampcor.Workflow.ONE_PASS
+    # invalid options
+    with pytest.raises(ValueError, match="derampMethod.*'magnitude'"):
+        ampcor.derampMethod = "deramp"
+    with pytest.raises(ValueError, match="algorithm"):
+        ampcor.algorithm = 2
+    with pytest.raises(TypeError, match="workflow"):
+        ampcor.workflow = 1.0
+    with pytest.raises(ValueError, match="derampAxis"):
+        cls(derampAxis="diagonal")
+
+
+def test_flags(impl):
+    ampcor = new_ampcor(impl)
+    for name in ["useMmap", "mergeGrossOffset"]:
+        for value in [True, 1, np.int64(1), np.bool_(True)]:
+            setattr(ampcor, name, False)
+            setattr(ampcor, name, value)
+            assert getattr(ampcor, name) is True
+        setattr(ampcor, name, 0)
+        assert getattr(ampcor, name) is False
+        with pytest.raises(TypeError, match=name):
+            setattr(ampcor, name, "yes")
+        with pytest.raises(TypeError, match=name):
+            setattr(ampcor, name, 0.5)
 
 
 def test_image_errors(impl, images, tmp_path):
