@@ -6,12 +6,7 @@
 #ifndef __PYCUAMPCOR_INDEXING_H
 #define __PYCUAMPCOR_INDEXING_H
 
-// functions callable from host and device (CUDA) code
-#ifdef __CUDACC__
-#define PYCUAMPCOR_HOST_DEVICE __host__ __device__
-#else
-#define PYCUAMPCOR_HOST_DEVICE
-#endif
+#include "hostDevice.h"
 
 namespace pycuampcor {
 
