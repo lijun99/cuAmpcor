@@ -179,12 +179,13 @@ void cuAmpcorParameter::_setupParameters_OnePass()
     halfZoomWindowSizeRaw = zoomWindowSize/(2*rawDataOversamplingFactor);
 
     // add extra search range to ensure enough area to oversample correlation surface
-    halfSearchRangeDownRaw += halfZoomWindowSizeRaw;
-    halfSearchRangeAcrossRaw += halfZoomWindowSizeRaw;
+    // (kept apart from the input search range, so that the setup can be repeated)
+    const int halfSearchRangeDownExtended = halfSearchRangeDownRaw + halfZoomWindowSizeRaw;
+    const int halfSearchRangeAcrossExtended = halfSearchRangeAcrossRaw + halfZoomWindowSizeRaw;
 
     // search window size before antialiasing oversampling
-    searchWindowSizeWidthRaw =  windowSizeWidthRaw + 2*halfSearchRangeAcrossRaw;
-    searchWindowSizeHeightRaw = windowSizeHeightRaw + 2*halfSearchRangeDownRaw;
+    searchWindowSizeWidthRaw =  windowSizeWidthRaw + 2*halfSearchRangeAcrossExtended;
+    searchWindowSizeHeightRaw = windowSizeHeightRaw + 2*halfSearchRangeDownExtended;
 
     windowSizeHeightRawEnlarged = searchWindowSizeHeightRaw;
     windowSizeWidthRawEnlarged = searchWindowSizeWidthRaw;
@@ -198,8 +199,8 @@ void cuAmpcorParameter::_setupParameters_OnePass()
 
     // loading offsets
     // reference size matching the secondary size
-    referenceLoadingOffsetDown = -halfSearchRangeDownRaw;
-    referenceLoadingOffsetAcross = -halfSearchRangeAcrossRaw;
+    referenceLoadingOffsetDown = -halfSearchRangeDownExtended;
+    referenceLoadingOffsetAcross = -halfSearchRangeAcrossExtended;
     // secondary loading offset relative to reference
     secondaryLoadingOffsetDown = 0;
     secondaryLoadingOffsetAcross = 0;
