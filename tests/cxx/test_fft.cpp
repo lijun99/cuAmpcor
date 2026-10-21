@@ -5,6 +5,8 @@
 
 #include "test_util.h"
 
+#include <array>
+
 namespace pycuampcor::PYCUAMPCOR_BACKEND::test {
 
 /// the tests of the FFT oversamplers, correlators and normalizers
@@ -118,23 +120,28 @@ static std::vector<double> naiveCorrelation(const std::vector<real_type> &t, int
 
 TEST_F(FFTTest, Correlators)
 {
-    const int h = 8, w = 12, H = 20, W = 30, n = 3;
-    const int ch = H - h + 1, cw = W - w + 1;
-    auto tv = randomReal(h*w*n, 3);
-    auto sv = randomReal(H*W*n, 4);
-    auto ref = naiveCorrelation(tv, h, w, sv, H, W, n);
-    auto t = makeFrom(tv, h, w, n);
-    auto s = makeFrom(sv, H, W, n);
-    auto c = make<real_type>(ch, cw, n);
+    // correlation surfaces wider than tall, and taller than wide
+    for (auto [h, w, H, W] : {std::array<int, 4>{8, 12, 20, 30}, std::array<int, 4>{8, 12, 30, 20}}) {
+        const int n = 3;
+        const int ch = H - h + 1, cw = W - w + 1;
+        auto tv = randomReal(h*w*n, 3);
+        auto sv = randomReal(H*W*n, 4);
+        auto ref = naiveCorrelation(tv, h, w, sv, H, W, n);
+        auto t = makeFrom(tv, h, w, n);
+        auto s = makeFrom(sv, H, W, n);
+        auto c = make<real_type>(ch, cw, n);
 
-    cuFreqCorrelator correlator(H, W, n, stream);
-    correlator.execute(t, s, c);
-    auto rf = download(c);
-    cuCorrTimeDomain(t, s, c, stream);
-    auto rt = download(c);
-    for (size_t i = 0; i < ref.size(); i++) {
-        EXPECT_NEAR(rf[i], ref[i], 1e3*tol) << i;
-        EXPECT_NEAR(rt[i], ref[i], 1e2*tol) << i;
+        cuFreqCorrelator correlator(H, W, n, stream);
+        correlator.execute(t, s, c);
+        auto rf = download(c);
+        // overwrite the surfaces, so that any pixel the time-domain correlation misses is caught
+        cuArraysSetConstant(c, 1e6, stream);
+        cuCorrTimeDomain(t, s, c, stream);
+        auto rt = download(c);
+        for (size_t i = 0; i < ref.size(); i++) {
+            EXPECT_NEAR(rf[i], ref[i], 1e3*tol) << H << "x" << W << " " << i;
+            EXPECT_NEAR(rt[i], ref[i], 1e2*tol) << H << "x" << W << " " << i;
+        }
     }
 }
 

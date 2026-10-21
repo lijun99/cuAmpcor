@@ -54,6 +54,10 @@
 
 ### Fixes
 
+- The time-domain correlation on the GPU (`algorithm=1`) computed only as many rows of the
+  correlation surfaces as they have columns: with `halfSearchRangeDown` > `halfSearchRangeAcross`,
+  the lower rows were missed (wrong offsets for peaks there); with a wider surface, the extra
+  thread blocks read beyond the windows. The CPU backend was not affected.
 - `setupParams` can be called repeatedly: the one-pass workflow no longer adds its zoom-in margin
   to `halfSearchRangeDown` / `halfSearchRangeAcross`.
 - A repeated `setupParams` (e.g., after changing `deviceID`, the numbers of windows or the search

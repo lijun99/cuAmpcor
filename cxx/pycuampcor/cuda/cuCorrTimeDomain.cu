@@ -120,7 +120,8 @@ void cuCorrTimeDomain(ArraysView<const real_type> templates,
     const int NPT = 8;
 #endif
 
-    const dim3 grid(nImages, (results.width()-1)/NPT+1, 1);
+    // one block per window and per NPT rows of its correlation surface
+    const dim3 grid(nImages, (results.height()-1)/NPT+1, 1);
     if      (imageNY <=   64) {
         cuArraysCorrTime_kernel<  64,NPT><<<grid,  64, 0, stream>>>(templates, images, results);
         checkCudaAsyncErrors();
