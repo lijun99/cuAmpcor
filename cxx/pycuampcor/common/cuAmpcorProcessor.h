@@ -11,6 +11,9 @@
  * the buffers of the per-window results (peaks, offsets, SNR, covariance), and the steps they
  * have in common (copying the windows from the chunk, correlating, oversampling the correlation
  * surface, writing the results).
+ *
+ * The definitions are in cuAmpcorProcessorImpl.h, included only by the packages'
+ * processors.cpp, which instantiate the processors for their arrays (compiled once per package).
  */
 
 #pragma once

@@ -7,6 +7,9 @@
  * peak to the pixel (and the SNR and covariance). Second pass: the windows (the secondary ones
  * around the first peak) are deramped and oversampled (antialiasing), their amplitudes correlated,
  * and the correlation surface oversampled again around the peak, giving the sub-pixel offset.
+ *
+ * The definitions are in cuAmpcorProcessorTwoPassImpl.h, included only by the packages'
+ * processors.cpp, which instantiate the processors for their arrays (compiled once per package).
  */
 
 #pragma once

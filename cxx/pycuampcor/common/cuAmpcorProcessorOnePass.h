@@ -6,6 +6,9 @@
  * (antialiasing), and their amplitudes correlated over the whole search range, with an extra
  * margin around it; the correlation surface is then oversampled around the peak, giving the
  * sub-pixel offset.
+ *
+ * The definitions are in cuAmpcorProcessorOnePassImpl.h, included only by the packages'
+ * processors.cpp, which instantiate the processors for their arrays (compiled once per package).
  */
 
 #pragma once

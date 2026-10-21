@@ -1,8 +1,9 @@
 /**
- * @file  cuAmpcorProcessorTwoPass.icc
+ * @file  cuAmpcorProcessorTwoPassImpl.h
  * @brief The two-pass workflow: the implementation
  *
- * Included by the instantiations of the processors in each package (processors.cpp).
+ * The definitions of the member functions of cuAmpcorProcessorTwoPass (templates); only the packages'
+ * processors.cpp include them (see cuAmpcorProcessorImpl.h).
  */
 
 #pragma once

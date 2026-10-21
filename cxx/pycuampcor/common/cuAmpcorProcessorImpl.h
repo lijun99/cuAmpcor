@@ -1,9 +1,11 @@
 /**
- * @file  cuAmpcorProcessor.icc
+ * @file  cuAmpcorProcessorImpl.h
  * @brief The processor of a chunk: the implementation of the base of the workflows
  *
- * Included by the instantiations of the processors in each package (processors.cpp), after the
- * package's arrays, kernels and array_traits.
+ * The definitions of the member functions of cuAmpcorProcessor (templates). Only the packages'
+ * processors.cpp include them, after their arrays, kernels and array_traits, and instantiate the
+ * processors for their arrays: the processors are compiled once per package, and the other code
+ * (e.g., the controllers) needs only the declarations (cuAmpcorProcessor.h).
  */
 
 #pragma once

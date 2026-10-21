@@ -3,7 +3,7 @@
  * @brief The processors of the chunks (the two-pass and one-pass workflows), for the arrays of
  *     the CUDA package
  *
- * The processors are written once (common/cuAmpcorProcessor*.icc), as templates on the array
+ * The processors are written once (common/cuAmpcorProcessor*Impl.h), as templates on the array
  * type; their kernels are found from the arrays of their arguments, those of this package.
  */
 
@@ -41,9 +41,9 @@ pycuampcor::array_traits<pycuampcor::cuda::cuArrays>::newSurfaceOverSampler(Over
 }
 
 // the processors
-#include "cuAmpcorProcessor.icc"
-#include "cuAmpcorProcessorTwoPass.icc"
-#include "cuAmpcorProcessorOnePass.icc"
+#include "cuAmpcorProcessorImpl.h"
+#include "cuAmpcorProcessorTwoPassImpl.h"
+#include "cuAmpcorProcessorOnePassImpl.h"
 
 // for the arrays of this package
 template class pycuampcor::cuAmpcorProcessor<pycuampcor::cuda::cuArrays>;
