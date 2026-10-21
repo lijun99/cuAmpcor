@@ -67,9 +67,9 @@ TEST(ParameterTest, OnePassSizes)
     p.setupParameters();
     const int halfZoom = 16/(2*2);
     EXPECT_EQ(p.halfZoomWindowSizeRaw, halfZoom);
-    // the search range is extended by the zoom-in window
-    EXPECT_EQ(p.halfSearchRangeDownRaw, 20 + halfZoom);
-    EXPECT_EQ(p.halfSearchRangeAcrossRaw, 10 + halfZoom);
+    // the search range is extended by the zoom-in window (the input is kept)
+    EXPECT_EQ(p.halfSearchRangeDownRaw, 20);
+    EXPECT_EQ(p.halfSearchRangeAcrossRaw, 10);
     const int sw = 64 + 2*(10 + halfZoom), sh = 32 + 2*(20 + halfZoom);
     EXPECT_EQ(p.searchWindowSizeWidthRaw, sw);
     EXPECT_EQ(p.searchWindowSizeHeightRaw, sh);
