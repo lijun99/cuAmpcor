@@ -40,12 +40,15 @@ cuAmpcorChunkLoader::Source::Source(const cuAmpcorChunkFootprint &footprint_, Da
  */
 void cuAmpcorChunkLoader::Source::load(int idxChunk, cuAmpcorLoadedChunk &chunk)
 {
-    chunk.complexData = complexBuffer.get();
-    chunk.realData = realBuffer.get();
     chunk.startDown = footprint.startDown[idxChunk];
     chunk.startAcross = footprint.startAcross[idxChunk];
     chunk.height = footprint.height[idxChunk];
     chunk.width = footprint.width[idxChunk];
+    // the chunk, contiguous in the buffer
+    if (complexBuffer)
+        chunk.complexData = ArraysView<const image_complex_type>(complexBuffer->devData, chunk.height, chunk.width);
+    else
+        chunk.realData = ArraysView<const image_real_type>(realBuffer->devData, chunk.height, chunk.width);
     // nothing to load for chunks outside the image (their windows are set to zero)
     if (chunk.empty()) return;
     // the work memory is host memory: read the chunk directly into the buffer

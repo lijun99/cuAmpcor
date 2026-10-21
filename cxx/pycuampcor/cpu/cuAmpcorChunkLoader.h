@@ -10,14 +10,15 @@
 #pragma once
 
 #include "forward.h"
+#include "ArraysView.h"
 #include "cuAmpcorLayers.h"
 
 namespace pycuampcor::cpu {
 
 /// a chunk of an image loaded to the work memory
 struct cuAmpcorLoadedChunk {
-    array_type<image_complex_type> *complexData = nullptr; ///< for complex images
-    array_type<image_real_type> *realData = nullptr;       ///< for real images
+    ArraysView<const image_complex_type> complexData;  ///< the chunk of a complex image (empty otherwise)
+    ArraysView<const image_real_type> realData;        ///< the chunk of a real image (empty otherwise)
     int startDown = 0, startAcross = 0;  ///< first pixel of the chunk in the image
     int height = 0, width = 0;           ///< chunk size; 0 if entirely outside the image
 

@@ -21,215 +21,147 @@
 
 // dependencies
 #include "cuArraysCopy.h"
-#include "cuArrays.h"
 #include "device.h"
 #include "cudaError.h"
 #include "float2.h"
 
 namespace pycuampcor::cuda {
 
-// kernel for cuArraysCopyToBatchWithOffset
-template<typename T_in, typename T_out>
-__global__ void cuArraysCopyToBatchWithOffset_kernel(const T_in *imageIn, const int inNX, const int inNY,
-    T_out *imageOut, const int outNX, const int outNY, const int nImages,
-    const int *offsetX, const int *offsetY)
+// the pixel of a chunk as a window pixel: the complex value, its amplitude, or a real value
+struct ToComplex {
+    __device__ complex_type operator()(const image_complex_type &v) const { return make_complex_type(v.x, v.y); }
+    __device__ complex_type operator()(const image_real_type &v) const { return complex_type{v}; }
+};
+struct ToAmplitude {
+    __device__ complex_type operator()(const image_complex_type &v) const { return make_complex_type(complexAbs(v), 0.0); }
+};
+
+// kernel for cuArraysCopyToBatch*WithOffset: one thread per window pixel (outx, outy) of the window
+// blockIdx.z, filled with 0 outside the chunk
+template<typename T_in, typename Op>
+__global__ void cuArraysCopyToBatchWithOffset_kernel(ArraysView<const T_in> chunk,
+    ArraysView<complex_type> windows, ArraysView<const int> offsetX, ArraysView<const int> offsetY,
+    Op op)
 {
     // get image index
     int idxImage = blockIdx.z;
     // check the image index within range
-    if(idxImage>=nImages ) return;
+    if(idxImage >= windows.count()) return;
     // get the output pixel location
     int outx = threadIdx.x + blockDim.x*blockIdx.x;
     int outy = threadIdx.y + blockDim.y*blockIdx.y;
      // check the output location within range (due to cuda threads)
-    if(outx >= outNX || outy >= outNY) return;
-    // flatten the output location to 1d
-    int idxOut = idxImage*outNX*outNY + outx*outNY + outy;
+    if(outx >= windows.height() || outy >= windows.width()) return;
     // find the input pixel location
     int inx = offsetX[idxImage] + outx;
     int iny = offsetY[idxImage] + outy;
     // check whether the location is within the input image range
-    if(inx>=0 && inx<inNX && iny>=0 && iny<inNY) {
-        int idxIn = inx*inNY+iny;
-        imageOut[idxOut] = T_out{imageIn[idxIn]}; //true, copy
-    }
+    if(inx>=0 && inx<chunk.height() && iny>=0 && iny<chunk.width())
+        windows(idxImage, outx, outy) = op(chunk(inx, iny)); //true, copy
     else
-        imageOut[idxOut] = T_out{0.0}; //false, fill with 0
+        windows(idxImage, outx, outy) = make_complex_type(0.0, 0.0); //false, fill with 0
 }
 
-// kernel for cuArraysCopyToBatchWithOffset
-template<>
-__global__ void cuArraysCopyToBatchWithOffset_kernel<image_complex_type, complex_type>(const image_complex_type *imageIn, const int inNX, const int inNY,
-    complex_type *imageOut, const int outNX, const int outNY, const int nImages,
-    const int *offsetX, const int *offsetY)
+// launch cuArraysCopyToBatchWithOffset_kernel, one block of threads per 16 x 16 window pixels
+template<typename T_in, typename Op>
+static void copyToBatchWithOffset(ArraysView<const T_in> chunk, ArraysView<complex_type> windows,
+    ArraysView<const int> offsetH, ArraysView<const int> offsetW, Op op, cudaStream_t stream)
 {
-    // get image index
-    int idxImage = blockIdx.z;
-    // check the image index within range
-    if(idxImage>=nImages ) return;
-    // get the output pixel location
-    int outx = threadIdx.x + blockDim.x*blockIdx.x;
-    int outy = threadIdx.y + blockDim.y*blockIdx.y;
-     // check the output location within range (due to cuda threads)
-    if(outx >= outNX || outy >= outNY) return;
-    // flatten the output location to 1d
-    int idxOut = idxImage*outNX*outNY + outx*outNY + outy;
-    // find the input pixel location
-    int inx = offsetX[idxImage] + outx;
-    int iny = offsetY[idxImage] + outy;
-    // check whether the location is within the input image range
-    if(inx>=0 && inx<inNX && iny>=0 && iny<inNY) {
-        int idxIn = inx*inNY+iny;
-        imageOut[idxOut] = make_complex_type(imageIn[idxIn].x, imageIn[idxIn].y);
-    }
-    else
-        imageOut[idxOut] = make_complex_type(0.0, 0.0); //false, fill with 0
+    const int nthreads = 16;
+    dim3 blockSize(nthreads, nthreads, 1);
+    dim3 gridSize(divUp(windows.height(),nthreads), divUp(windows.width(),nthreads), windows.count());
+    cuArraysCopyToBatchWithOffset_kernel<<<gridSize,blockSize, 0 , stream>>> (
+        chunk, windows, offsetH, offsetW, op);
+    checkCudaAsyncErrors();
 }
 
 /**
  * Copy a chunk into a batch of chips with varying offsets/strides
  * @note used to extract chips from a raw secondary image with varying offsets
- * @param image1 Input image as a large chunk
- * @param  the leading dimension of image1, usually, its width inNY
- * @param image2 Output images as a batch of chips
- * @param strideH (varying) offsets along height to extract chips
- * @param strideW (varying) offsets along width to extract chips
+ * @param chunk Input image as a large chunk
+ * @param windows Output images as a batch of chips
+ * @param offsetH (varying) offsets along height to extract chips
+ * @param offsetW (varying) offsets along width to extract chips
  * @param stream cudaStream
  */
-void cuArraysCopyToBatchWithOffset(cuArrays<image_complex_type> *image1, const int inNX, const int inNY,
-    cuArrays<complex_type> *image2, const int *offsetH, const int* offsetW, cudaStream_t stream)
+void cuArraysCopyToBatchWithOffset(ArraysView<const image_complex_type> chunk,
+    ArraysView<complex_type> windows, ArraysView<const int> offsetH, ArraysView<const int> offsetW,
+    cudaStream_t stream)
 {
-    const int nthreads = 16;
-    dim3 blockSize(nthreads, nthreads, 1);
-    dim3 gridSize(divUp(image2->height,nthreads), divUp(image2->width,nthreads), image2->count);
-    cuArraysCopyToBatchWithOffset_kernel<<<gridSize,blockSize, 0 , stream>>> (
-        image1->devData, inNX, inNY,
-        image2->devData, image2->height, image2->width, image2->count,
-        offsetH, offsetW);
-    checkCudaAsyncErrors();
-}
-
-// same as above, but from complex to real(take amplitudes)
-__global__ void cuArraysCopyToBatchAbsWithOffset_kernel(const image_complex_type *imageIn, const int inNX, const int inNY,
-    complex_type *imageOut, const int outNX, const int outNY, const int nImages,
-    const int *offsetX, const int *offsetY)
-{
-
-    // get image index
-    int idxImage = blockIdx.z;
-    // check the image index within range
-    if(idxImage>=nImages ) return;
-    // get the output pixel location
-    int outx = threadIdx.x + blockDim.x*blockIdx.x;
-    int outy = threadIdx.y + blockDim.y*blockIdx.y;
-     // check the output location within range (due to cuda threads)
-    if(outx >= outNX || outy >= outNY) return;
-    // flatten the output location to 1d
-    int idxOut = idxImage*outNX*outNY + outx*outNY + outy;
-    // find the input pixel location
-    int inx = offsetX[idxImage] + outx;
-    int iny = offsetY[idxImage] + outy;
-    // check whether the location is within the input image range
-    if(inx>=0 && inx<inNX && iny>=0 && iny<inNY)
-    {
-        int idxIn = inx*inNY+iny;
-        imageOut[idxOut] = make_complex_type(complexAbs(imageIn[idxIn]), 0.0); //true, copy with abs value
-    }
-    else
-        imageOut[idxOut] = make_complex_type(0.0, 0.0); //false, fill with 0
+    copyToBatchWithOffset(chunk, windows, offsetH, offsetW, ToComplex(), stream);
 }
 
 /**
  * Copy a chunk into a batch of chips with varying offsets/strides
  * @note similar to cuArraysCopyToBatchWithOffset, but take amplitudes instead
- * @param image1 Input image as a large chunk
- * @param lda1 the leading dimension of image1, usually, its width inNY
- * @param image2 Output images as a batch of chips
- * @param strideH (varying) offsets along height to extract chips
- * @param strideW (varying) offsets along width to extract chips
- * @param stream cudaStream
  */
-void cuArraysCopyToBatchAbsWithOffset(cuArrays<image_complex_type> *image1, const int inNX, const int inNY,
-    cuArrays<complex_type> *image2, const int *offsetH, const int* offsetW, cudaStream_t stream)
+void cuArraysCopyToBatchAbsWithOffset(ArraysView<const image_complex_type> chunk,
+    ArraysView<complex_type> windows, ArraysView<const int> offsetH, ArraysView<const int> offsetW,
+    cudaStream_t stream)
 {
-    const int nthreads = 16;
-    dim3 blockSize(nthreads, nthreads, 1);
-    dim3 gridSize(divUp(image2->height,nthreads), divUp(image2->width,nthreads), image2->count);
-    cuArraysCopyToBatchAbsWithOffset_kernel<<<gridSize,blockSize, 0 , stream>>> (
-        image1->devData, inNX, inNY,
-        image2->devData, image2->height, image2->width, image2->count,
-        offsetH, offsetW);
-    checkCudaAsyncErrors();
+    copyToBatchWithOffset(chunk, windows, offsetH, offsetW, ToAmplitude(), stream);
 }
 
 /**
  * Copy a chunk into a batch of chips with varying offsets/strides
  * @note used to load real images
- * @param image1 Input image as a large chunk
- * @param lda1 the leading dimension of image1, usually, its width inNY
- * @param image2 Output images as a batch of chips
- * @param strideH (varying) offsets along height to extract chips
- * @param strideW (varying) offsets along width to extract chips
- * @param stream cudaStream
  */
-void cuArraysCopyToBatchWithOffsetR2C(cuArrays<image_real_type> *image1, const int inNX, const int inNY,
-    cuArrays<complex_type> *image2, const int *offsetH, const int* offsetW, cudaStream_t stream)
+void cuArraysCopyToBatchWithOffsetR2C(ArraysView<const image_real_type> chunk,
+    ArraysView<complex_type> windows, ArraysView<const int> offsetH, ArraysView<const int> offsetW,
+    cudaStream_t stream)
 {
-    const int nthreads = 16;
-    dim3 blockSize(nthreads, nthreads, 1);
-    dim3 gridSize(divUp(image2->height,nthreads), divUp(image2->width,nthreads), image2->count);
-
-    cuArraysCopyToBatchWithOffset_kernel<<<gridSize,blockSize, 0 , stream>>> (
-        image1->devData, inNX, inNY,
-        image2->devData, image2->height, image2->width, image2->count,
-        offsetH, offsetW);
-    checkCudaAsyncErrors();
+    copyToBatchWithOffset(chunk, windows, offsetH, offsetW, ToComplex(), stream);
 }
 
 //copy a chunk into a series of chips with varying strides
 template<typename T>
-__global__ void cuArraysCopyExtractVaryingOffset(const T *imageIn, const int inNX, const int inNY,
-     T *imageOut, const int outNX, const int outNY, const int nImages,
-     const int2 *offsets)
+__global__ void cuArraysCopyExtractVaryingOffset(ArraysView<const T> imagesIn,
+    ArraysView<T> imagesOut, ArraysView<const int2> offsets)
 {
     int outx = threadIdx.x + blockDim.x*blockIdx.x;
     int outy = threadIdx.y + blockDim.y*blockIdx.y;
 
-    if(outx < outNX && outy < outNY)
+    if(outx < imagesOut.height() && outy < imagesOut.width())
     {
         int idxImage = blockIdx.z;
-        int idxOut = (blockIdx.z * outNX + outx)*outNY+outy;
-        int idxIn = (blockIdx.z*inNX + outx + offsets[idxImage].x)*inNY + outy + offsets[idxImage].y;
-        imageOut[idxOut] = imageIn[idxIn];
+        imagesOut(idxImage, outx, outy) =
+            imagesIn(idxImage, outx + offsets[idxImage].x, outy + offsets[idxImage].y);
     }
 }
 
 /**
  * Copy a tile of images to another image, with starting pixels offsets
- * @param[in] imageIn input images of dimension nImages*inNX*inNY
- * @param[out] imageOut output images of dimension nImages*outNX*outNY
+ * @param[in] imagesIn input images of dimension nImages*inNX*inNY
+ * @param[out] imagesOut output images of dimension nImages*outNX*outNY
  * @param[in] offsets, varying offsets for extraction
  */
 template<typename T>
-void cuArraysCopyExtract(cuArrays<T> *imagesIn, cuArrays<T> *imagesOut, cuArrays<int2> *offsets, cudaStream_t stream)
+static void copyExtract(ArraysView<const T> imagesIn, ArraysView<T> imagesOut,
+    ArraysView<const int2> offsets, cudaStream_t stream)
 {
-    //assert(imagesIn->height >= imagesOut && inNY >= outNY);
     const int nthreads = 16;
     dim3 threadsperblock(nthreads, nthreads,1);
-    dim3 blockspergrid(divUp(imagesOut->height,nthreads), divUp(imagesOut->width,nthreads), imagesOut->count);
-    cuArraysCopyExtractVaryingOffset<<<blockspergrid, threadsperblock,0, stream>>>(imagesIn->devData, imagesIn->height, imagesIn->width,
-        imagesOut->devData, imagesOut->height, imagesOut->width, imagesOut->count, offsets->devData);
+    dim3 blockspergrid(divUp(imagesOut.height(),nthreads), divUp(imagesOut.width(),nthreads), imagesOut.count());
+    cuArraysCopyExtractVaryingOffset<<<blockspergrid, threadsperblock,0, stream>>>(imagesIn,
+        imagesOut, offsets);
     checkCudaAsyncErrors();
 }
 
-// instantiate the above template for the data types we need
-template void cuArraysCopyExtract(cuArrays<real_type> *in, cuArrays<real_type> *out, cuArrays<int2> *offsets, cudaStream_t);
-template void cuArraysCopyExtract(cuArrays<complex_type> *in, cuArrays<complex_type> *out, cuArrays<int2> *offsets, cudaStream_t);
+void cuArraysCopyExtract(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut,
+    ArraysView<const int2> offsets, cudaStream_t stream)
+{
+    copyExtract(imagesIn, imagesOut, offsets, stream);
+}
+
+void cuArraysCopyExtract(ArraysView<const complex_type> imagesIn, ArraysView<complex_type> imagesOut,
+    ArraysView<const int2> offsets, cudaStream_t stream)
+{
+    copyExtract(imagesIn, imagesOut, offsets, stream);
+}
 
 // correlation surface extraction (Minyan Zhong)
-__global__ void cuArraysCopyExtractVaryingOffsetCorr(const real_type *imageIn, const int inNX, const int inNY,
-     real_type *imageOut, const int outNX, const int outNY, const int nImages,
-     const int2 *maxloc)
+__global__ void cuArraysCopyExtractVaryingOffsetCorr(ArraysView<const real_type> imagesIn,
+    ArraysView<real_type> imagesOut, ArraysView<const int2> maxloc)
 {
 
     // get the image index
@@ -240,16 +172,13 @@ __global__ void cuArraysCopyExtractVaryingOffsetCorr(const real_type *imageIn, c
     int outy = threadIdx.y + blockDim.y*blockIdx.y;
 
     // check whether thread is within output image range
-    if (outx < outNX && outy < outNY)
+    if (outx < imagesOut.height() && outy < imagesOut.width())
     {
         // Find the corresponding input.
-        int inx = outx + maxloc[idxImage].x - outNX/2;
-        int iny = outy + maxloc[idxImage].y - outNY/2;
+        int inx = outx + maxloc[idxImage].x - imagesOut.height()/2;
+        int iny = outy + maxloc[idxImage].y - imagesOut.width()/2;
 
-        // Find the location in flattened array.
-        int idxOut = (idxImage * outNX + outx) * outNY + outy;
-        int idxIn = (idxImage * inNX + inx) * inNY + iny;
-        imageOut[idxOut] = imageIn[idxIn];
+        imagesOut(idxImage, outx, outy) = imagesIn(idxImage, inx, iny);
     }
 }
 
@@ -258,25 +187,24 @@ __global__ void cuArraysCopyExtractVaryingOffsetCorr(const real_type *imageIn, c
  * @param[in] imageIn input images
  * @param[out] imageOut output images of dimension nImages*outNX*outNY
  */
-void cuArraysCopyExtractCorr(cuArrays<real_type> *imagesIn, cuArrays<real_type> *imagesOut, cuArrays<int2> *maxloc, cudaStream_t stream)
+void cuArraysCopyExtractCorr(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut,
+    ArraysView<const int2> maxloc, cudaStream_t stream)
 {
     //assert(imagesIn->height >= imagesOut && inNY >= outNY);
     const int nthreads = 16;
 
     dim3 threadsperblock(nthreads, nthreads,1);
 
-    dim3 blockspergrid(divUp(imagesOut->height,nthreads), divUp(imagesOut->width,nthreads), imagesOut->count);
+    dim3 blockspergrid(divUp(imagesOut.height(),nthreads), divUp(imagesOut.width(),nthreads), imagesOut.count());
 
     cuArraysCopyExtractVaryingOffsetCorr<<<blockspergrid, threadsperblock,0, stream>>>(
-        imagesIn->devData, imagesIn->height, imagesIn->width,
-        imagesOut->devData, imagesOut->height, imagesOut->width,
-        imagesOut->count, maxloc->devData);
+        imagesIn, imagesOut, maxloc);
     checkCudaAsyncErrors();
 }
 
-__global__ void cuArraysCopyExtractVaryingOffsetCorr(const real_type *imageIn, const int inNX, const int inNY,
-     real_type *imageOut, const int outNX, const int outNY, int *imageValid, const int nImages,
-     const int2 *maxloc, const int stride, const int2 validStart, const int2 validEnd)
+__global__ void cuArraysCopyExtractVaryingOffsetCorr(ArraysView<const real_type> imagesIn,
+    ArraysView<real_type> imagesOut, ArraysView<int> imagesValid, ArraysView<const int2> maxloc,
+    const int stride, const int2 validStart, const int2 validEnd)
 {
 
     // get the image index
@@ -287,27 +215,23 @@ __global__ void cuArraysCopyExtractVaryingOffsetCorr(const real_type *imageIn, c
     int outy = threadIdx.y + blockDim.y*blockIdx.y;
 
     // check whether thread is within output image range
-    if (outx < outNX && outy < outNY)
+    if (outx < imagesOut.height() && outy < imagesOut.width())
     {
         // Find the corresponding input.
-        int inx = maxloc[idxImage].x + (outx - outNX/2)*stride;
-        int iny = maxloc[idxImage].y + (outy - outNY/2)*stride;
-
-        // Find the location in flattened array.
-        int idxOut = ( blockIdx.z * outNX + outx ) * outNY + outy;
-        int idxIn = ( blockIdx.z * inNX + inx ) * inNY + iny;
+        int inx = maxloc[idxImage].x + (outx - imagesOut.height()/2)*stride;
+        int iny = maxloc[idxImage].y + (outy - imagesOut.width()/2)*stride;
 
         // check whether inside of the valid region of the input image
         if (inx>=validStart.x && iny>=validStart.y && inx<validEnd.x && iny<validEnd.y)
         {
             // inside the boundary, copy over and mark the pixel as valid (1)
-            imageOut[idxOut] = imageIn[idxIn];
-            imageValid[idxOut] = 1;
+            imagesOut(idxImage, outx, outy) = imagesIn(idxImage, inx, iny);
+            imagesValid(idxImage, outx, outy) = 1;
         }
         else {
             // outside, set it to 0 and mark the pixel as invalid (0)
-            imageOut[idxOut] = 0.0f;
-            imageValid[idxOut] = 0;
+            imagesOut(idxImage, outx, outy) = 0.0f;
+            imagesValid(idxImage, outx, outy) = 0;
         }
     }
 }
@@ -322,19 +246,19 @@ __global__ void cuArraysCopyExtractVaryingOffsetCorr(const real_type *imageIn, c
  * @param[in] stride the spacing of the extracted pixels in the input images
  * @param[in] validStart, validRange the valid region of the input images
  */
-void cuArraysCopyExtractCorr(cuArrays<real_type> *imagesIn, cuArrays<real_type> *imagesOut, cuArrays<int> *imagesValid,
-    cuArrays<int2> *maxloc, int stride, int2 validStart, int2 validRange, cudaStream_t stream)
+void cuArraysCopyExtractCorr(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut,
+    ArraysView<int> imagesValid, ArraysView<const int2> maxloc, int stride, int2 validStart,
+    int2 validRange, cudaStream_t stream)
 {
     const int nthreads = 16;
 
     dim3 threadsperblock(nthreads, nthreads,1);
 
-    dim3 blockspergrid(divUp(imagesOut->height,nthreads), divUp(imagesOut->width,nthreads), imagesOut->count);
+    dim3 blockspergrid(divUp(imagesOut.height(),nthreads), divUp(imagesOut.width(),nthreads), imagesOut.count());
 
     const int2 validEnd = make_int2(validStart.x + validRange.x, validStart.y + validRange.y);
-    cuArraysCopyExtractVaryingOffsetCorr<<<blockspergrid, threadsperblock,0, stream>>>(imagesIn->devData, imagesIn->height, imagesIn->width,
-        imagesOut->devData, imagesOut->height, imagesOut->width, imagesValid->devData, imagesOut->count, maxloc->devData,
-        stride, validStart, validEnd);
+    cuArraysCopyExtractVaryingOffsetCorr<<<blockspergrid, threadsperblock,0, stream>>>(imagesIn,
+        imagesOut, imagesValid, maxloc, stride, validStart, validEnd);
     checkCudaAsyncErrors();
 }
 
@@ -344,42 +268,34 @@ void cuArraysCopyExtractCorr(cuArrays<real_type> *imagesIn, cuArrays<real_type> 
  * @param[out] imageOut output images of dimension nImages*outNX*outNY
  * @param[out] imagesValid flags whether the pixels are within the input images (1) or not (0)
  */
-void cuArraysCopyExtractCorr(cuArrays<real_type> *imagesIn, cuArrays<real_type> *imagesOut, cuArrays<int> *imagesValid, cuArrays<int2> *maxloc, cudaStream_t stream)
+void cuArraysCopyExtractCorr(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut,
+    ArraysView<int> imagesValid, ArraysView<const int2> maxloc, cudaStream_t stream)
 {
     cuArraysCopyExtractCorr(imagesIn, imagesOut, imagesValid, maxloc, 1,
-        make_int2(0, 0), make_int2(imagesIn->height, imagesIn->width), stream);
+        make_int2(0, 0), make_int2(imagesIn.height(), imagesIn.width()), stream);
 }
 
 // end of correlation surface extraction (Minyan Zhong)
 
+// the element of the input as an element of the output (from complex to real: the real part)
 template<typename T>
-__global__ void cuArraysCopyExtractFixedOffset(const T *imageIn, const int inNX, const int inNY,
-     T *imageOut, const int outNX, const int outNY, const int nImages,
-     const int offsetX, const int offsetY)
+__device__ inline T extractConvert(const T &v) { return v; }
+__device__ inline real_type extractConvert(const complex_type &v) { return v.x; }
+
+template<typename T_in, typename T_out>
+__global__ void cuArraysCopyExtractFixedOffset(ArraysView<const T_in> imagesIn,
+    ArraysView<T_out> imagesOut, const int offsetX, const int offsetY)
 {
     int outx = threadIdx.x + blockDim.x*blockIdx.x;
     int outy = threadIdx.y + blockDim.y*blockIdx.y;
 
-    if(outx < outNX && outy < outNY)
+    if(outx < imagesOut.height() && outy < imagesOut.width())
     {
-        int idxOut = (blockIdx.z * outNX + outx)*outNY+outy;
-        int idxIn = (blockIdx.z*inNX + outx + offsetX)*inNY + outy + offsetY;
-        imageOut[idxOut] = imageIn[idxIn];
-    }
-}
-
-__global__ void cuArraysCopyExtractFixedOffset(const complex_type *imageIn, const int inNX, const int inNY,
-     real_type *imageOut, const int outNX, const int outNY, const int nImages,
-     const int offsetX, const int offsetY)
-{
-    int outx = threadIdx.x + blockDim.x*blockIdx.x;
-    int outy = threadIdx.y + blockDim.y*blockIdx.y;
-
-    if(outx < outNX && outy < outNY)
-    {
-        int idxOut = (blockIdx.z * outNX + outx)*outNY+outy;
-        int idxIn = (blockIdx.z*inNX + outx + offsetX)*inNY + outy + offsetY;
-        imageOut[idxOut] = imageIn[idxIn].x;
+        const T_in &v = imagesIn(blockIdx.z, outx + offsetX, outy + offsetY);
+        if constexpr (std::is_same_v<T_in, T_out>)
+            imagesOut(blockIdx.z, outx, outy) = v;
+        else
+            imagesOut(blockIdx.z, outx, outy) = extractConvert(v);
     }
 }
 
@@ -388,104 +304,132 @@ __global__ void cuArraysCopyExtractFixedOffset(const complex_type *imageIn, cons
  * a smaller size from the location (offsetX, offsetY)
  */
 template<typename T_in, typename T_out>
-void cuArraysCopyExtract(cuArrays<T_in> *imagesIn, cuArrays<T_out> *imagesOut, int2 offset, cudaStream_t stream)
+static void copyExtract(ArraysView<const T_in> imagesIn, ArraysView<T_out> imagesOut, int2 offset,
+    cudaStream_t stream)
 {
     //assert(imagesIn->height >= imagesOut && inNY >= outNY);
     const int nthreads = NTHREADS2D;
     dim3 threadsperblock(nthreads, nthreads,1);
-    dim3 blockspergrid(divUp(imagesOut->height,nthreads), divUp(imagesOut->width,nthreads), imagesOut->count);
+    dim3 blockspergrid(divUp(imagesOut.height(),nthreads), divUp(imagesOut.width(),nthreads), imagesOut.count());
     cuArraysCopyExtractFixedOffset<<<blockspergrid, threadsperblock,0, stream>>>
-        (imagesIn->devData, imagesIn->height, imagesIn->width,
-        imagesOut->devData, imagesOut->height, imagesOut->width, imagesOut->count, offset.x, offset.y);
+        (imagesIn, imagesOut, offset.x, offset.y);
     checkCudaAsyncErrors();
 }
 
-// instantiate the above template for the data types we need
-template void cuArraysCopyExtract(cuArrays<real_type> *in, cuArrays<real_type> *out, int2 offset, cudaStream_t);
-template void cuArraysCopyExtract(cuArrays<complex_type> *in, cuArrays<real_type> *out, int2 offset, cudaStream_t);
-template void cuArraysCopyExtract(cuArrays<complex_type> *in, cuArrays<complex_type> *out, int2 offset, cudaStream_t);
-template void cuArraysCopyExtract(cuArrays<real3_type> *in, cuArrays<real3_type> *out, int2 offset, cudaStream_t);
+void cuArraysCopyExtract(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut,
+    int2 offset, cudaStream_t stream)
+{
+    copyExtract(imagesIn, imagesOut, offset, stream);
+}
 
-__global__ void cuArraysCopyExtractAbsFixedOffset(const complex_type *imageIn, const int inNX, const int inNY,
-     real_type *imageOut, const int outNX, const int outNY, const int nImages,
-     const int offsetX, const int offsetY)
+void cuArraysCopyExtract(ArraysView<const complex_type> imagesIn, ArraysView<real_type> imagesOut,
+    int2 offset, cudaStream_t stream)
+{
+    copyExtract(imagesIn, imagesOut, offset, stream);
+}
+
+void cuArraysCopyExtract(ArraysView<const complex_type> imagesIn, ArraysView<complex_type> imagesOut,
+    int2 offset, cudaStream_t stream)
+{
+    copyExtract(imagesIn, imagesOut, offset, stream);
+}
+
+void cuArraysCopyExtract(ArraysView<const real3_type> imagesIn, ArraysView<real3_type> imagesOut,
+    int2 offset, cudaStream_t stream)
+{
+    copyExtract(imagesIn, imagesOut, offset, stream);
+}
+
+__global__ void cuArraysCopyExtractAbsFixedOffset(ArraysView<const complex_type> imagesIn,
+    ArraysView<real_type> imagesOut, const int offsetX, const int offsetY)
 {
     int outx = threadIdx.x + blockDim.x*blockIdx.x;
     int outy = threadIdx.y + blockDim.y*blockIdx.y;
 
-    if(outx < outNX && outy < outNY)
+    if(outx < imagesOut.height() && outy < imagesOut.width())
     {
-        int idxOut = (blockIdx.z * outNX + outx)*outNY+outy;
-        int idxIn = (blockIdx.z*inNX + outx + offsetX)*inNY + outy + offsetY;
-        imageOut[idxOut] = complexAbs(imageIn[idxIn]);
+        imagesOut(blockIdx.z, outx, outy) =
+            complexAbs(imagesIn(blockIdx.z, outx + offsetX, outy + offsetY));
     }
 }
 /**
  * copy/extract images from a large size to
  * a smaller size from the location (offsetX, offsetY), take amplitude
  */
-void cuArraysCopyExtractAbs(cuArrays<complex_type> *imagesIn, cuArrays<real_type> *imagesOut, int2 offset, cudaStream_t stream)
+void cuArraysCopyExtractAbs(ArraysView<const complex_type> imagesIn, ArraysView<real_type> imagesOut,
+    int2 offset, cudaStream_t stream)
 {
     //assert(imagesIn->height >= imagesOut && inNY >= outNY);
     const int nthreads = NTHREADS2D;
     dim3 threadsperblock(nthreads, nthreads,1);
-    dim3 blockspergrid(divUp(imagesOut->height,nthreads), divUp(imagesOut->width,nthreads), imagesOut->count);
+    dim3 blockspergrid(divUp(imagesOut.height(),nthreads), divUp(imagesOut.width(),nthreads), imagesOut.count());
     cuArraysCopyExtractAbsFixedOffset<<<blockspergrid, threadsperblock,0, stream>>>
-        (imagesIn->devData, imagesIn->height, imagesIn->width,
-        imagesOut->devData, imagesOut->height, imagesOut->width, imagesOut->count, offset.x, offset.y);
+        (imagesIn, imagesOut, offset.x, offset.y);
     checkCudaAsyncErrors();
 }
 
 template<typename T>
-__global__ void cuArraysCopyInsert_kernel(const T* imageIn, const int inNX, const int inNY,
-    T* imageOut, const int outNY, const int offsetX, const int offsetY)
+__global__ void cuArraysCopyInsert_kernel(ArraysView<const T> imageIn, ArraysView<T> imageOut,
+    const int offsetX, const int offsetY)
 {
     int inx = threadIdx.x + blockDim.x*blockIdx.x;
     int iny = threadIdx.y + blockDim.y*blockIdx.y;
-    if(inx < inNX && iny < inNY) {
-        int idxOut = idx2r(inx+offsetX, iny+offsetY, outNY);
-        int idxIn = idx2r(inx, iny, inNY);
-        imageOut[idxOut] = imageIn[idxIn];
-    }
+    if(inx < imageIn.height() && iny < imageIn.width())
+        imageOut(inx+offsetX, iny+offsetY) = imageIn(inx, iny);
 }
 
 /**
  * copy/insert images from a smaller size to a larger size from the location (offsetX, offsetY)
  */
 template<typename T>
-void cuArraysCopyInsert(cuArrays<T> *imageIn, cuArrays<T> *imageOut, int offsetX, int offsetY, cudaStream_t stream)
+static void copyInsert(ArraysView<const T> imageIn, ArraysView<T> imageOut, int offsetX,
+    int offsetY, cudaStream_t stream)
 {
     const int nthreads = 16;
     dim3 threadsperblock(nthreads, nthreads);
-    dim3 blockspergrid(divUp(imageIn->height,nthreads), divUp(imageIn->width,nthreads));
-    cuArraysCopyInsert_kernel<<<blockspergrid, threadsperblock,0, stream>>>(imageIn->devData, imageIn->height, imageIn->width,
-           imageOut->devData,  imageOut->width, offsetX, offsetY);
+    dim3 blockspergrid(divUp(imageIn.height(),nthreads), divUp(imageIn.width(),nthreads));
+    cuArraysCopyInsert_kernel<<<blockspergrid, threadsperblock,0, stream>>>(imageIn, imageOut,
+        offsetX, offsetY);
     checkCudaAsyncErrors();
 }
 
-// instantiate the above template for the data types we need
-template void cuArraysCopyInsert(cuArrays<complex_type>* in, cuArrays<complex_type>* out, int offX, int offY, cudaStream_t);
-template void cuArraysCopyInsert(cuArrays<real3_type>* in, cuArrays<real3_type>* out, int offX, int offY, cudaStream_t);
-template void cuArraysCopyInsert(cuArrays<real_type>* in, cuArrays<real_type>* out, int offX, int offY, cudaStream_t);
-template void cuArraysCopyInsert(cuArrays<int>* in, cuArrays<int>* out, int offX, int offY, cudaStream_t);
+void cuArraysCopyInsert(ArraysView<const complex_type> imageIn, ArraysView<complex_type> imageOut,
+    int offsetX, int offsetY, cudaStream_t stream)
+{
+    copyInsert(imageIn, imageOut, offsetX, offsetY, stream);
+}
+
+void cuArraysCopyInsert(ArraysView<const real3_type> imageIn, ArraysView<real3_type> imageOut,
+    int offsetX, int offsetY, cudaStream_t stream)
+{
+    copyInsert(imageIn, imageOut, offsetX, offsetY, stream);
+}
+
+void cuArraysCopyInsert(ArraysView<const real_type> imageIn, ArraysView<real_type> imageOut,
+    int offsetX, int offsetY, cudaStream_t stream)
+{
+    copyInsert(imageIn, imageOut, offsetX, offsetY, stream);
+}
+
+void cuArraysCopyInsert(ArraysView<const int> imageIn, ArraysView<int> imageOut,
+    int offsetX, int offsetY, cudaStream_t stream)
+{
+    copyInsert(imageIn, imageOut, offsetX, offsetY, stream);
+}
 
 template<typename T_in, typename T_out>
-__global__ void cuArraysCopyPadded_kernel(T_in *imageIn, int inNX, int inNY, int sizeIn,
-    T_out *imageOut, int outNX, int outNY, int sizeOut, int nImages)
+__global__ void cuArraysCopyPadded_kernel(ArraysView<const T_in> imageIn, ArraysView<T_out> imageOut)
 {
     int outx = threadIdx.x + blockDim.x*blockIdx.x;
     int outy = threadIdx.y + blockDim.y*blockIdx.y;
 
-    if(outx < outNX && outy < outNY)
+    if(outx < imageOut.height() && outy < imageOut.width())
     {
         int idxImage = blockIdx.z;
-        int idxOut = idx2r(outx, outy, outNY)+idxImage*sizeOut;
-        if(outx < inNX && outy <inNY) {
-            int idxIn = idx2r(outx, outy, inNY)+idxImage*sizeIn;
-            imageOut[idxOut] = T_out{imageIn[idxIn]};
-        } else {
-            imageOut[idxOut] = T_out{0};
-        }
+        if(outx < imageIn.height() && outy < imageIn.width())
+            imageOut(idxImage, outx, outy) = T_out{imageIn(idxImage, outx, outy)};
+        else
+            imageOut(idxImage, outx, outy) = T_out{0};
     }
 }
 
@@ -493,24 +437,36 @@ __global__ void cuArraysCopyPadded_kernel(T_in *imageIn, int inNX, int inNY, int
  * copy images from a smaller size to a larger size while padding 0 for extra elements
  */
 template<typename T_in, typename T_out>
-void cuArraysCopyPadded(cuArrays<T_in> *imageIn, cuArrays<T_out> *imageOut, cudaStream_t stream)
+static void copyPadded(ArraysView<const T_in> imageIn, ArraysView<T_out> imageOut, cudaStream_t stream)
 {
     const int nthreads = 16;
-    int nImages = imageIn->count;
+    int nImages = imageIn.count();
     dim3 blockSize(nthreads, nthreads,1);
-    dim3 gridSize(divUp(imageOut->height,nthreads), divUp(imageOut->width,nthreads), nImages);
-    cuArraysCopyPadded_kernel<<<gridSize, blockSize, 0, stream>>>(imageIn->devData, imageIn->height, imageIn->width, imageIn->size,
-       imageOut->devData, imageOut->height, imageOut->width, imageOut->size, nImages);
+    dim3 gridSize(divUp(imageOut.height(),nthreads), divUp(imageOut.width(),nthreads), nImages);
+    cuArraysCopyPadded_kernel<<<gridSize, blockSize, 0, stream>>>(imageIn, imageOut);
     checkCudaAsyncErrors();
 }
 
-// instantiate the above template for the data types we need
-template void cuArraysCopyPadded(cuArrays<real_type> *imageIn, cuArrays<real_type> *imageOut, cudaStream_t);
-template void cuArraysCopyPadded(cuArrays<real_type> *imageIn, cuArrays<complex_type> *imageOut, cudaStream_t);
-template void cuArraysCopyPadded(cuArrays<complex_type> *imageIn, cuArrays<complex_type> *imageOut, cudaStream_t);
+void cuArraysCopyPadded(ArraysView<const real_type> imageIn, ArraysView<real_type> imageOut,
+    cudaStream_t stream)
+{
+    copyPadded(imageIn, imageOut, stream);
+}
+
+void cuArraysCopyPadded(ArraysView<const real_type> imageIn, ArraysView<complex_type> imageOut,
+    cudaStream_t stream)
+{
+    copyPadded(imageIn, imageOut, stream);
+}
+
+void cuArraysCopyPadded(ArraysView<const complex_type> imageIn, ArraysView<complex_type> imageOut,
+    cudaStream_t stream)
+{
+    copyPadded(imageIn, imageOut, stream);
+}
 
 // cuda kernel for setting a constant value
-__global__ void cuArraysSetConstant_kernel(real_type *image, int size, real_type value)
+__global__ void cuArraysSetConstant_kernel(ArraysView<real_type> image, int size, real_type value)
 {
     int idx = threadIdx.x + blockDim.x*blockIdx.x;
 
@@ -524,18 +480,19 @@ __global__ void cuArraysSetConstant_kernel(real_type *image, int size, real_type
  * Set real images to a constant value
  * @note use setZero if value=0 because cudaMemset is faster
  */
-void cuArraysSetConstant(cuArrays<real_type> *imageIn, real_type value, cudaStream_t stream)
+void cuArraysSetConstant(ArraysView<real_type> imageIn, real_type value, cudaStream_t stream)
 {
     const int nthreads = 256;
-    int size = imageIn->getSize();
+    int size = imageIn.size();
 
     cuArraysSetConstant_kernel<<<divUp(size, nthreads), nthreads, 0, stream>>>
-        (imageIn->devData, size, value);
+        (imageIn, size, value);
      checkCudaAsyncErrors();
 }
 
 // convert real_type to complex_type(complex)
-__global__ void cuArraysR2C_kernel(real_type *image1, complex_type *image2, int size)
+__global__ void cuArraysR2C_kernel(ArraysView<const real_type> image1, ArraysView<complex_type> image2,
+    int size)
 {
     int idx =  threadIdx.x + blockDim.x*blockIdx.x;
     if(idx < size)
@@ -550,15 +507,17 @@ __global__ void cuArraysR2C_kernel(real_type *image1, complex_type *image2, int 
  * @param[in] image1 input images
  * @param[out] image2 output images
  */
-void cuArraysR2C(cuArrays<real_type> *image1, cuArrays<complex_type> *image2, cudaStream_t stream)
+void cuArraysR2C(ArraysView<const real_type> image1, ArraysView<complex_type> image2,
+    cudaStream_t stream)
 {
-    int size = image1->getSize();
-    cuArraysR2C_kernel<<<divUp(size, NTHREADS), NTHREADS, 0, stream>>>(image1->devData, image2->devData, size);
+    int size = image1.size();
+    cuArraysR2C_kernel<<<divUp(size, NTHREADS), NTHREADS, 0, stream>>>(image1, image2, size);
     checkCudaAsyncErrors();
 }
 
 // take real part of complex_type to real_type
-__global__ void cuArraysC2R_kernel(complex_type *image1, real_type *image2, int size)
+__global__ void cuArraysC2R_kernel(ArraysView<const complex_type> image1, ArraysView<real_type> image2,
+    int size)
 {
     int idx =  threadIdx.x + blockDim.x*blockIdx.x;
     if(idx < size)
@@ -572,15 +531,17 @@ __global__ void cuArraysC2R_kernel(complex_type *image1, real_type *image2, int 
  * @param[in] image1 input images
  * @param[out] image2 output images
  */
-void cuArraysC2R(cuArrays<complex_type> *image1, cuArrays<real_type> *image2, cudaStream_t stream)
+void cuArraysC2R(ArraysView<const complex_type> image1, ArraysView<real_type> image2,
+    cudaStream_t stream)
 {
-    int size = image1->getSize();
-    cuArraysC2R_kernel<<<divUp(size, NTHREADS), NTHREADS, 0, stream>>>(image1->devData, image2->devData, size);
+    int size = image1.size();
+    cuArraysC2R_kernel<<<divUp(size, NTHREADS), NTHREADS, 0, stream>>>(image1, image2, size);
     checkCudaAsyncErrors();
 }
 
 // cuda kernel for cuArraysAbs
-__global__ void cuArraysAbs_kernel(complex_type *image1, real_type *image2, int size)
+__global__ void cuArraysAbs_kernel(ArraysView<const complex_type> image1, ArraysView<real_type> image2,
+    int size)
 {
     int idx =  threadIdx.x + blockDim.x*blockIdx.x;
     if(idx < size)
@@ -594,10 +555,11 @@ __global__ void cuArraysAbs_kernel(complex_type *image1, real_type *image2, int 
  * @param[in] image1 input images
  * @param[out] image2 output images
  */
-void cuArraysAbs(cuArrays<complex_type> *image1, cuArrays<real_type> *image2, cudaStream_t stream)
+void cuArraysAbs(ArraysView<const complex_type> image1, ArraysView<real_type> image2,
+    cudaStream_t stream)
 {
-    int size = image1->getSize();
-    cuArraysAbs_kernel<<<divUp(size, NTHREADS), NTHREADS, 0, stream>>>(image1->devData, image2->devData, size);
+    int size = image1.size();
+    cuArraysAbs_kernel<<<divUp(size, NTHREADS), NTHREADS, 0, stream>>>(image1, image2, size);
     checkCudaAsyncErrors();
 }
 

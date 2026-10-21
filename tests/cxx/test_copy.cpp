@@ -33,11 +33,11 @@ TEST_F(CopyTest, CopyToBatchWithOffset)
     auto offsetW = makeFrom(offW, 1, 2);
 
     auto batch = make<complex_type>(h, w, 1, 2);
-    cuArraysCopyToBatchWithOffset(chunk.get(), H, W, batch.get(), offsetH->devData, offsetW->devData, stream);
+    cuArraysCopyToBatchWithOffset(*chunk, *batch, *offsetH, *offsetW, stream);
     auto out = download(*batch);
 
     auto batchAbs = make<complex_type>(h, w, 1, 2);
-    cuArraysCopyToBatchAbsWithOffset(chunk.get(), H, W, batchAbs.get(), offsetH->devData, offsetW->devData, stream);
+    cuArraysCopyToBatchAbsWithOffset(*chunk, *batchAbs, *offsetH, *offsetW, stream);
     auto outAbs = download(*batchAbs);
 
     for (int k = 0; k < 2; k++)
@@ -66,7 +66,7 @@ TEST_F(CopyTest, CopyToBatchWithOffsetR2C)
     auto offsetH = makeFrom(offH, 1, 1);
     auto offsetW = makeFrom(offW, 1, 1);
     auto batch = make<complex_type>(h, w);
-    cuArraysCopyToBatchWithOffsetR2C(chunk.get(), H, W, batch.get(), offsetH->devData, offsetW->devData, stream);
+    cuArraysCopyToBatchWithOffsetR2C(*chunk, *batch, *offsetH, *offsetW, stream);
     auto out = download(*batch);
     for (int i = 0; i < h; i++)
         for (int j = 0; j < w; j++) {
@@ -89,9 +89,9 @@ TEST_F(CopyTest, CopyExtractFixedOffset)
     auto rout = make<real_type>(h, w, 1, n);
     auto crout = make<real_type>(h, w, 1, n);
     auto cout = make<complex_type>(h, w, 1, n);
-    cuArraysCopyExtract(rin.get(), rout.get(), offset, stream);
-    cuArraysCopyExtract(cin.get(), crout.get(), offset, stream);
-    cuArraysCopyExtract(cin.get(), cout.get(), offset, stream);
+    cuArraysCopyExtract(*rin, *rout, offset, stream);
+    cuArraysCopyExtract(*cin, *crout, offset, stream);
+    cuArraysCopyExtract(*cin, *cout, offset, stream);
     auto r = download(*rout), cr = download(*crout);
     auto c = download(*cout);
     for (int k = 0; k < n; k++)
@@ -115,7 +115,7 @@ TEST_F(CopyTest, CopyExtractVaryingOffset)
     std::vector<int2> offV = {make_int2(0, 3), make_int2(4, 1)};
     auto offsets = makeFrom(offV, 1, n);
     auto rout = make<real_type>(h, w, 1, n);
-    cuArraysCopyExtract(rin.get(), rout.get(), offsets.get(), stream);
+    cuArraysCopyExtract(*rin, *rout, *offsets, stream);
     auto r = download(*rout);
     for (int k = 0; k < n; k++)
         for (int i = 0; i < h; i++)
@@ -130,7 +130,7 @@ TEST_F(CopyTest, CopyExtractAbs)
     auto cv = randomComplex(H*W);
     auto cin = makeFrom(cv, H, W);
     auto rout = make<real_type>(h, w);
-    cuArraysCopyExtractAbs(cin.get(), rout.get(), make_int2(1, 2), stream);
+    cuArraysCopyExtractAbs(*cin, *rout, make_int2(1, 2), stream);
     auto r = download(*rout);
     for (int i = 0; i < h; i++)
         for (int j = 0; j < w; j++) {
@@ -150,7 +150,7 @@ TEST_F(CopyTest, CopyExtractCorr)
     auto maxloc = makeFrom(locV, 1, n);
     auto out = make<real_type>(h, w, 1, n);
     auto valid = make<int>(h, w, 1, n);
-    cuArraysCopyExtractCorr(rin.get(), out.get(), valid.get(), maxloc.get(), stream);
+    cuArraysCopyExtractCorr(*rin, *out, *valid, *maxloc, stream);
     auto r = download(*out);
     auto f = download(*valid);
     for (int k = 0; k < n; k++)
@@ -166,7 +166,7 @@ TEST_F(CopyTest, CopyExtractCorr)
     // without validity flags (the window is assumed to be inside)
     std::vector<int2> inV = {make_int2(4, 5), make_int2(2, 6)};
     auto inside = makeFrom(inV, 1, n);
-    cuArraysCopyExtractCorr(rin.get(), out.get(), inside.get(), stream);
+    cuArraysCopyExtractCorr(*rin, *out, *inside, stream);
     r = download(*out);
     for (int k = 0; k < n; k++)
         for (int i = 0; i < h; i++)
@@ -187,7 +187,7 @@ TEST_F(CopyTest, CopyExtractCorrStrided)
     auto maxloc = makeFrom(locV, 1, n);
     auto out = make<real_type>(h, w, 1, n);
     auto valid = make<int>(h, w, 1, n);
-    cuArraysCopyExtractCorr(rin.get(), out.get(), valid.get(), maxloc.get(), stride, start, range, stream);
+    cuArraysCopyExtractCorr(*rin, *out, *valid, *maxloc, stride, start, range, stream);
     auto r = download(*out);
     auto f = download(*valid);
     int nInvalid = 0;
@@ -213,7 +213,7 @@ TEST_F(CopyTest, CopyInsert)
     big->setZero(stream);
     auto sv = randomReal(h*w);
     auto small = makeFrom(sv, h, w);
-    cuArraysCopyInsert(small.get(), big.get(), 2, 3, stream);
+    cuArraysCopyInsert(*small, *big, 2, 3, stream);
     auto r = download(*big);
     for (int i = 0; i < H; i++)
         for (int j = 0; j < W; j++) {
@@ -229,7 +229,7 @@ TEST_F(CopyTest, CopyPadded)
     auto sv = randomReal(h*w*n);
     auto small = makeFrom(sv, h, w, 1, n);
     auto big = make<complex_type>(H, W, 1, n);
-    cuArraysCopyPadded(small.get(), big.get(), stream);
+    cuArraysCopyPadded(*small, *big, stream);
     auto r = download(*big);
     for (int k = 0; k < n; k++)
         for (int i = 0; i < H; i++)
@@ -251,13 +251,13 @@ TEST_F(CopyTest, Conversions)
     auto rout = make<real_type>(1, n);
     auto cout = make<complex_type>(1, n);
 
-    cuArraysAbs(c.get(), rout.get(), stream);
+    cuArraysAbs(*c, *rout, stream);
     auto a = download(*rout);
-    cuArraysC2R(c.get(), rout.get(), stream);
+    cuArraysC2R(*c, *rout, stream);
     auto re = download(*rout);
-    cuArraysR2C(r.get(), cout.get(), stream);
+    cuArraysR2C(*r, *cout, stream);
     auto rc = download(*cout);
-    cuArraysSetConstant(r.get(), 2.5, stream);
+    cuArraysSetConstant(*r, 2.5, stream);
     auto k = download(*r);
     for (int i = 0; i < n; i++) {
         EXPECT_NEAR(a[i], std::hypot(cv[i].x, cv[i].y), tol);

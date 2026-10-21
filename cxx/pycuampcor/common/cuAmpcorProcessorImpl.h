@@ -152,19 +152,19 @@ void cuAmpcorProcessor<arrayT>::copyToBatch(const loaded_chunk_type &chunk,
     chunkOffsetAcross->copyToDevice(stream);
 
     // windows outside the chunk (image) are padded with zeros
-    if (chunk.complexData) {
+    if (!chunk.complexData.empty()) {
         // complex image (e.g., SLC): amplitudes if not deramped, the complex values otherwise
         if (param.derampMethod == DerampMethod::Magnitude)
-            cuArraysCopyToBatchAbsWithOffset(chunk.complexData, chunk.height, chunk.width,
-                batch, chunkOffsetDown->devData, chunkOffsetAcross->devData, stream);
+            cuArraysCopyToBatchAbsWithOffset(chunk.complexData, *batch, *chunkOffsetDown,
+                *chunkOffsetAcross, stream);
         else
-            cuArraysCopyToBatchWithOffset(chunk.complexData, chunk.height, chunk.width,
-                batch, chunkOffsetDown->devData, chunkOffsetAcross->devData, stream);
+            cuArraysCopyToBatchWithOffset(chunk.complexData, *batch, *chunkOffsetDown,
+                *chunkOffsetAcross, stream);
     }
     else {
         // real image (e.g., TIFF), copied to complex
-        cuArraysCopyToBatchWithOffsetR2C(chunk.realData, chunk.height, chunk.width,
-            batch, chunkOffsetDown->devData, chunkOffsetAcross->devData, stream);
+        cuArraysCopyToBatchWithOffsetR2C(chunk.realData, *batch, *chunkOffsetDown,
+            *chunkOffsetAcross, stream);
     }
 }
 
@@ -217,10 +217,10 @@ void cuAmpcorProcessor<arrayT>::writeResults()
     // the first window of the chunk in the output images
     const int down = idxChunkDown*param.windowsDownInChunk;
     const int across = idxChunkAcross*param.windowsAcrossInChunk;
-    cuArraysCopyInsert(offsetFinal.get(), &offsetImage, down, across, stream);
-    cuArraysCopyInsert(r_snrValue.get(), &snrImage, down, across, stream);
-    cuArraysCopyInsert(r_covValue.get(), &covImage, down, across, stream);
-    cuArraysCopyInsert(corrMaxValue.get(), &peakValueImage, down, across, stream);
+    cuArraysCopyInsert(*offsetFinal, offsetImage, down, across, stream);
+    cuArraysCopyInsert(*r_snrValue, snrImage, down, across, stream);
+    cuArraysCopyInsert(*r_covValue, covImage, down, across, stream);
+    cuArraysCopyInsert(*corrMaxValue, peakValueImage, down, across, stream);
 }
 
 /**

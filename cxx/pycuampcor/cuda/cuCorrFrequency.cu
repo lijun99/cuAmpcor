@@ -77,7 +77,7 @@ cuFreqCorrelator::~cuFreqCorrelator() = default;
 void cuFreqCorrelator::execute(cuArrays<real_type> *templates, cuArrays<real_type> *images, cuArrays<real_type> *results)
 {
     // pad the reference windows to the the size of search windows
-    cuArraysCopyPadded(templates, workT.get(), stream);
+    cuArraysCopyPadded(*templates, *workT, stream);
     // forward fft to frequency domain
 #ifdef CUAMPCOR_DOUBLE
     checkCudaErrors(cufftExecD2Z(forwardPlan, workT->devData, workFM->devData));
@@ -98,7 +98,7 @@ void cuFreqCorrelator::execute(cuArrays<real_type> *templates, cuArrays<real_typ
     checkCudaErrors(cufftExecC2R(backwardPlan, workFM->devData, workT->devData));
 #endif
     // extract to get proper size of correlation surface
-    cuArraysCopyExtract(workT.get(), results, make_int2(0, 0), stream);
+    cuArraysCopyExtract(*workT, *results, make_int2(0, 0), stream);
     // all done
 }
 

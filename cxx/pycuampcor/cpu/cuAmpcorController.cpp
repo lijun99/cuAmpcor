@@ -59,10 +59,10 @@ struct LayerImages {
     void write(const cuAmpcorParameter &param)
     {
         const stream_t stream{};
-        cuArraysCopyExtract(offsetRun.get(), offset.get(), make_int2(0,0), stream);
-        cuArraysCopyExtract(snrRun.get(), snr.get(), make_int2(0,0), stream);
-        cuArraysCopyExtract(covRun.get(), cov.get(), make_int2(0,0), stream);
-        cuArraysCopyExtract(peakValueRun.get(), peakValue.get(), make_int2(0,0), stream);
+        cuArraysCopyExtract(*offsetRun, *offset, make_int2(0,0), stream);
+        cuArraysCopyExtract(*snrRun, *snr, make_int2(0,0), stream);
+        cuArraysCopyExtract(*covRun, *cov, make_int2(0,0), stream);
+        cuArraysCopyExtract(*peakValueRun, *peakValue, make_int2(0,0), stream);
 
         // the gross offsets of the windows
         offset->allocateHost();

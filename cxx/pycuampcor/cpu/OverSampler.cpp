@@ -148,7 +148,7 @@ void cuOverSamplerR2R::setStream(stream_t stream_)
 void cuOverSamplerR2R::execute(array_type<real_type> *imagesIn, array_type<real_type> *imagesOut)
 {
     // forward fft of all images
-    cuArraysCopyPadded(imagesIn, workSizeIn.get(), stream);
+    cuArraysCopyPadded(*imagesIn, *workSizeIn, stream);
     PYCUAMPCOR_FFTW(execute)(forwardPlan);
 
     const int inNX = workSizeIn->height, inNY = workSizeIn->width;

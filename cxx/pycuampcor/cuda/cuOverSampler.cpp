@@ -151,7 +151,7 @@ void cuOverSamplerR2R::setStream(cudaStream_t stream_)
 void cuOverSamplerR2R::execute(cuArrays<real_type> *imagesIn, cuArrays<real_type> *imagesOut)
 {
 
-    cuArraysCopyPadded(imagesIn, workSizeIn.get(), stream);
+    cuArraysCopyPadded(*imagesIn, *workSizeIn, stream);
 
     // exp(+i) to the frequency domain and exp(-i) back, as cuOverSamplerC2C
 #ifdef CUAMPCOR_DOUBLE
@@ -168,7 +168,7 @@ void cuOverSamplerR2R::execute(cuArrays<real_type> *imagesIn, cuArrays<real_type
     checkCudaErrors(cufftExecC2C(backwardPlan, workSizeOut->devData, workSizeOut->devData, CUFFT_FORWARD));
 #endif
 
-    cuArraysCopyExtract(workSizeOut.get(), imagesOut, make_int2(0,0), stream);
+    cuArraysCopyExtract(*workSizeOut, *imagesOut, make_int2(0,0), stream);
 }
 
 /// destructor

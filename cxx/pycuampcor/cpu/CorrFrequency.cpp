@@ -67,7 +67,7 @@ cuFreqCorrelator::~cuFreqCorrelator() = default;
 void cuFreqCorrelator::execute(array_type<real_type> *templates, array_type<real_type> *images, array_type<real_type> *results)
 {
     // pad the reference windows to the the size of search windows
-    cuArraysCopyPadded(templates, workT.get(), stream);
+    cuArraysCopyPadded(*templates, *workT, stream);
     // forward fft to frequency domain
     PYCUAMPCOR_FFTW(execute_dft_r2c)(forwardPlan, workT->devData, fftwCast(workFM->devData));
     PYCUAMPCOR_FFTW(execute_dft_r2c)(forwardPlan, images->devData, fftwCast(workFS->devData));
@@ -78,7 +78,7 @@ void cuFreqCorrelator::execute(array_type<real_type> *templates, array_type<real
     // backward fft to get correlation surface in time domain
     PYCUAMPCOR_FFTW(execute_dft_c2r)(backwardPlan, fftwCast(workFM->devData), workT->devData);
     // extract to get proper size of correlation surface
-    cuArraysCopyExtract(workT.get(), results, make_int2(0, 0), stream);
+    cuArraysCopyExtract(*workT, *results, make_int2(0, 0), stream);
     // all done
 }
 

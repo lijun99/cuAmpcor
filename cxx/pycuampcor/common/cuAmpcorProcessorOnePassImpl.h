@@ -38,7 +38,7 @@ void cuAmpcorProcessorOnePass<arrayT>::run(int idxDown, int idxAcross, const chu
     const auto center = traits::make_int2(
         (c_referenceBatchOverSampled->height - r_referenceBatchOverSampled->height)/2,
         (c_referenceBatchOverSampled->width - r_referenceBatchOverSampled->width)/2);
-    cuArraysCopyExtractAbs(c_referenceBatchOverSampled.get(), r_referenceBatchOverSampled.get(), center, stream);
+    cuArraysCopyExtractAbs(*c_referenceBatchOverSampled, *r_referenceBatchOverSampled, center, stream);
     dump(c_referenceBatchOverSampled.get(), "c_referenceBatchOverSampled");
     dump(r_referenceBatchOverSampled.get(), "r_referenceBatchOverSampled");
     cuArraysSubtractMean(r_referenceBatchOverSampled.get(), stream);
@@ -51,7 +51,7 @@ void cuAmpcorProcessorOnePass<arrayT>::run(int idxDown, int idxAcross, const chu
     cuDeramp(param.derampMethod, c_secondaryBatchRaw.get(), param.derampAxis, stream);
     dump(c_secondaryBatchRaw.get(), "c_secondaryBatchRawDeramped");
     secondaryBatchOverSampler.execute(c_secondaryBatchRaw.get(), c_secondaryBatchOverSampled.get());
-    cuArraysAbs(c_secondaryBatchOverSampled.get(), r_secondaryBatchOverSampled.get(), stream);
+    cuArraysAbs(*c_secondaryBatchOverSampled, *r_secondaryBatchOverSampled, stream);
     dump(c_secondaryBatchOverSampled.get(), "c_secondaryBatchOverSampled");
     dump(r_secondaryBatchOverSampled.get(), "r_secondaryBatchOverSampled");
 
@@ -68,7 +68,7 @@ void cuAmpcorProcessorOnePass<arrayT>::run(int idxDown, int idxAcross, const chu
     dump(r_maxval.get(), "r_maxvalInit");
 
     // the surfaces around the peaks, for the oversampling (within the margin: all valid)
-    cuArraysCopyExtractCorr(r_corrBatch.get(), r_corrBatchZoomIn.get(), offsetInit.get(), stream);
+    cuArraysCopyExtractCorr(*r_corrBatch, *r_corrBatchZoomIn, *offsetInit, stream);
     dump(r_corrBatchZoomIn.get(), "r_corrBatchZoomIn");
 
     // the covariance of the offsets
@@ -76,8 +76,8 @@ void cuAmpcorProcessorOnePass<arrayT>::run(int idxDown, int idxAcross, const chu
         param.rawDataOversamplingFactor, r_covValue.get(), stream);
     // the SNR, as in the two-pass workflow: the peak over the mean of the correlation surface
     // around it (corrStatWindowSize), at the raw pixel spacing and within the search range
-    cuArraysCopyExtractCorr(r_corrBatch.get(), r_corrBatchRawZoomIn.get(), i_corrBatchZoomInValid.get(),
-        offsetInit.get(), param.rawDataOversamplingFactor, start, range, stream);
+    cuArraysCopyExtractCorr(*r_corrBatch, *r_corrBatchRawZoomIn, *i_corrBatchZoomInValid,
+        *offsetInit, param.rawDataOversamplingFactor, start, range, stream);
     cuArraysSumCorr(r_corrBatchRawZoomIn.get(), i_corrBatchZoomInValid.get(), r_corrBatchSum.get(),
         i_corrBatchValidCount.get(), stream);
     cuEstimateSnr(r_corrBatchSum.get(), i_corrBatchValidCount.get(), r_maxval.get(), r_snrValue.get(), stream);
