@@ -223,8 +223,8 @@ def image_info(fname, inps):
     if inps.length and inps.width:
         return inps.length, inps.width, inps.data_type or 'complex64'
     if use_gdal(fname, inps):
-        from osgeo import gdal
         ds = open_gdal(fname)
+        from osgeo import gdal
         data_type = 'complex64' if gdal.DataTypeIsComplex(ds.GetRasterBand(1).DataType) else 'float32'
         return ds.RasterYSize, ds.RasterXSize, inps.data_type or data_type
     if os.path.exists(fname + '.xml') and isce_available():
@@ -233,8 +233,8 @@ def image_info(fname, inps):
         img.load(fname + '.xml')
         data_type = 'complex64' if img.getDataType().upper().startswith('C') else 'float32'
         return img.getLength(), img.getWidth(), inps.data_type or data_type
-    from osgeo import gdal
     ds = open_gdal(fname + '.vrt' if os.path.exists(fname + '.vrt') else fname)
+    from osgeo import gdal
     gdal_type = gdal.GetDataTypeName(ds.GetRasterBand(1).DataType)
     data_type = next((name for name, (_, gdal_names) in DATA_TYPES.items() if gdal_type in gdal_names), None)
     if data_type is None and not inps.data_type:
