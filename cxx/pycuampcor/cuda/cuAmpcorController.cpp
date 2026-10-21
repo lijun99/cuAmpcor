@@ -30,19 +30,19 @@ struct LayerImages {
     std::unique_ptr<cuArrays<real_type>> peakValueRun, peakValue;   ///< the correlation peak
 
     /// allocate the run and output images of a layer
-    explicit LayerImages(const cuAmpcorParameter *param)
+    explicit LayerImages(const cuAmpcorParameter &param)
     {
         // the run images cover whole chunks: they may be larger than the output images
-        const int nWindowsDownRun = param->numberChunkDown * param->windowsDownInChunk;
-        const int nWindowsAcrossRun = param->numberChunkAcross * param->windowsAcrossInChunk;
+        const int nWindowsDownRun = param.numberChunkDown * param.windowsDownInChunk;
+        const int nWindowsAcrossRun = param.numberChunkAcross * param.windowsAcrossInChunk;
         newArray(offsetRun, nWindowsDownRun, nWindowsAcrossRun);
         newArray(snrRun, nWindowsDownRun, nWindowsAcrossRun);
         newArray(covRun, nWindowsDownRun, nWindowsAcrossRun);
         newArray(peakValueRun, nWindowsDownRun, nWindowsAcrossRun);
-        newArray(offset, param->numberWindowDown, param->numberWindowAcross);
-        newArray(snr, param->numberWindowDown, param->numberWindowAcross);
-        newArray(cov, param->numberWindowDown, param->numberWindowAcross);
-        newArray(peakValue, param->numberWindowDown, param->numberWindowAcross);
+        newArray(offset, param.numberWindowDown, param.numberWindowAcross);
+        newArray(snr, param.numberWindowDown, param.numberWindowAcross);
+        newArray(cov, param.numberWindowDown, param.numberWindowAcross);
+        newArray(peakValue, param.numberWindowDown, param.numberWindowAcross);
     }
 
     /// allocate an array of height x width in the device memory
@@ -54,7 +54,7 @@ struct LayerImages {
     }
 
     /// extract the run images to the output images, and write them (and the gross offsets) to files
-    void write(const cuAmpcorParameter *param, cudaStream_t stream)
+    void write(const cuAmpcorParameter &param, cudaStream_t stream)
     {
         cuArraysCopyExtract(offsetRun.get(), offset.get(), make_int2(0,0), stream);
         cuArraysCopyExtract(snrRun.get(), snr.get(), make_int2(0,0), stream);
@@ -66,22 +66,22 @@ struct LayerImages {
         offset->copyToHost(stream);
         checkCudaErrors(cudaDeviceSynchronize());
         // the gross offsets of the windows
-        cuArrays<real2_type> grossOffset(param->numberWindowDown, param->numberWindowAcross);
+        cuArrays<real2_type> grossOffset(param.numberWindowDown, param.numberWindowAcross);
         grossOffset.allocateHost();
-        for(int i=0; i< param->numberWindows; i++)
-            grossOffset.hostData[i] = make_real2(param->grossOffsetDown[i], param->grossOffsetAcross[i]);
+        for(int i=0; i< param.numberWindows; i++)
+            grossOffset.hostData[i] = make_real2(param.grossOffsetDown[i], param.grossOffsetAcross[i]);
         // the dense offsets, with the gross offsets added if they are merged
-        if (param->mergeGrossOffset) {
-            for(int i=0; i< param->numberWindows; i++)
+        if (param.mergeGrossOffset) {
+            for(int i=0; i< param.numberWindows; i++)
                 offset->hostData[i] += grossOffset.hostData[i];
         }
-        offset->outputHostToFile(param->offsetImageName);
-        grossOffset.outputHostToFile(param->grossOffsetImageName);
+        offset->outputHostToFile(param.offsetImageName);
+        grossOffset.outputHostToFile(param.grossOffsetImageName);
 
         // the statistics
-        snr->outputToFile(param->snrImageName, stream);
-        cov->outputToFile(param->covImageName, stream);
-        peakValue->outputToFile(param->peakValueImageName, stream);
+        snr->outputToFile(param.snrImageName, stream);
+        cov->outputToFile(param.covImageName, stream);
+        peakValue->outputToFile(param.peakValueImageName, stream);
     }
 };
 
@@ -162,11 +162,11 @@ void cuAmpcorController::runAmpcorLayers(const std::vector<cuAmpcorController *>
         params.push_back(layer->param.get());
     // check whether the parameters are set up and compatible, and get the chunks to load
     const auto footprints = chunkFootprints({params.begin(), params.end()});
-    const cuAmpcorParameter *param = params.front();
+    const cuAmpcorParameter &param = *params.front();
     const int nLayers = params.size();
 
     // select the device for this thread; all layers run on it
-    const int deviceID = gpuDeviceInit(param->deviceID);
+    const int deviceID = gpuDeviceInit(param.deviceID);
     for (auto *p : params)
         p->deviceID = deviceID;
 
@@ -174,41 +174,41 @@ void cuAmpcorController::runAmpcorLayers(const std::vector<cuAmpcorController *>
     int mmapSizeInGB = 0;
     for (const auto *p : params)
         mmapSizeInGB = std::max(mmapSizeInGB, p->mmapSizeInGB);
-    logInfo("Opening reference image ", param->referenceImageName, "...");
-    auto referenceImage = SlcImage::open(param->referenceImageName, param->referenceImageReader,
-        param->referenceImageHeight, param->referenceImageWidth,
-        pixelSize(param->referenceImageDataType), mmapSizeInGB);
-    logInfo("Opening secondary image ", param->secondaryImageName, "...");
-    auto secondaryImage = SlcImage::open(param->secondaryImageName, param->secondaryImageReader,
-        param->secondaryImageHeight, param->secondaryImageWidth,
-        pixelSize(param->secondaryImageDataType), mmapSizeInGB);
+    logInfo("Opening reference image ", param.referenceImageName, "...");
+    auto referenceImage = SlcImage::open(param.referenceImageName, param.referenceImageReader,
+        param.referenceImageHeight, param.referenceImageWidth,
+        pixelSize(param.referenceImageDataType), mmapSizeInGB);
+    logInfo("Opening secondary image ", param.secondaryImageName, "...");
+    auto secondaryImage = SlcImage::open(param.secondaryImageName, param.secondaryImageReader,
+        param.secondaryImageHeight, param.secondaryImageWidth,
+        pixelSize(param.secondaryImageDataType), mmapSizeInGB);
 
     // the output images of each layer
     std::vector<std::unique_ptr<LayerImages>> images;
     for (const auto *p : params)
-        images.push_back(std::make_unique<LayerImages>(p));
+        images.push_back(std::make_unique<LayerImages>(*p));
 
     // the workers, one per stream, each with its loader and the processors of the layers
-    const int nWorkers = param->nStreams;
+    const int nWorkers = param.nStreams;
     std::vector<std::unique_ptr<Worker>> workers(nWorkers);
     for (auto &worker : workers) {
         worker = std::make_unique<Worker>();
         worker->loader = std::make_unique<cuAmpcorChunkLoader>(
-            footprints.first, param->referenceImageDataType, referenceImage.get(),
-            footprints.second, param->secondaryImageDataType, secondaryImage.get(),
+            footprints.first, param.referenceImageDataType, *referenceImage,
+            footprints.second, param.secondaryImageDataType, *secondaryImage,
             worker->stream);
         for (int l = 0; l < nLayers; l++) {
             LayerImages &im = *images[l];
-            worker->processors.push_back(processor_t::create(params[l]->workflow, params[l],
-                im.offsetRun.get(), im.snrRun.get(), im.covRun.get(), im.peakValueRun.get(), worker->stream));
+            worker->processors.push_back(processor_t::create(params[l]->workflow, *params[l],
+                *im.offsetRun, *im.snrRun, *im.covRun, *im.peakValueRun, worker->stream));
         }
     }
 
-    const int nChunksDown = param->numberChunkDown;
-    const int nChunksAcross = param->numberChunkAcross;
+    const int nChunksDown = param.numberChunkDown;
+    const int nChunksAcross = param.numberChunkAcross;
     const int nChunks = nChunksDown*nChunksAcross;
     logInfo("Total number of windows (azimuth x range):  ",
-        param->numberWindowDown, " x ", param->numberWindowAcross);
+        param.numberWindowDown, " x ", param.numberWindowAcross);
     logInfo("to be processed in the number of chunks: ", nChunksDown, " x ", nChunksAcross);
     if (nLayers > 1)
         logInfo("for ", nLayers, " layers sharing the loaded chunks");
@@ -233,7 +233,7 @@ void cuAmpcorController::runAmpcorLayers(const std::vector<cuAmpcorController *>
 
     // write the outputs of each layer
     for (int l = 0; l < nLayers; l++)
-        images[l]->write(params[l], workers[0]->stream);
+        images[l]->write(*params[l], workers[0]->stream);
 }
 
 } // namespace

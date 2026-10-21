@@ -29,7 +29,7 @@ void cuAmpcorProcessorTwoPass<arrayT>::run(int idxDown, int idxAcross, const chu
     // ==== first pass, at the raw pixel spacing ====
 
     // the reference windows: their amplitudes, with the mean subtracted
-    copyToBatch(chunk.reference, param->referenceStartPixelDown, param->referenceStartPixelAcross,
+    copyToBatch(chunk.reference, param.referenceStartPixelDown, param.referenceStartPixelAcross,
         c_referenceBatchRaw.get());
     cuArraysAbs(c_referenceBatchRaw.get(), r_referenceBatchRaw.get(), stream);
     dump(c_referenceBatchRaw.get(), "c_referenceBatchRaw");
@@ -38,7 +38,7 @@ void cuAmpcorProcessorTwoPass<arrayT>::run(int idxDown, int idxAcross, const chu
     dump(r_referenceBatchRaw.get(), "r_referenceBatchRawSubMean");
 
     // the secondary windows: their amplitudes
-    copyToBatch(chunk.secondary, param->secondaryStartPixelDown, param->secondaryStartPixelAcross,
+    copyToBatch(chunk.secondary, param.secondaryStartPixelDown, param.secondaryStartPixelAcross,
         c_secondaryBatchRaw.get());
     cuArraysAbs(c_secondaryBatchRaw.get(), r_secondaryBatchRaw.get(), stream);
     dump(c_secondaryBatchRaw.get(), "c_secondaryBatchRaw");
@@ -73,14 +73,14 @@ void cuAmpcorProcessorTwoPass<arrayT>::run(int idxDown, int idxAcross, const chu
     // the starting pixels of the secondary windows around the peaks, with a half search range of
     // halfZoomWindowSizeRaw (e.g., 4 pixels) instead of halfSearchRange*Raw
     cuDetermineSecondaryExtractOffset(offsetInit.get(), maxLocShift.get(),
-        param->halfSearchRangeDownRaw, param->halfSearchRangeAcrossRaw,   // old range
-        param->halfZoomWindowSizeRaw, param->halfZoomWindowSizeRaw,       // new range
+        param.halfSearchRangeDownRaw, param.halfSearchRangeAcrossRaw,   // old range
+        param.halfZoomWindowSizeRaw, param.halfZoomWindowSizeRaw,       // new range
         stream);
     dump(offsetInit.get(), "i_offsetInitAdjusted");
     dump(maxLocShift.get(), "i_maxLocShift");
 
     // the reference windows: deramped, oversampled, their amplitudes with the mean subtracted
-    cuDeramp(param->derampMethod, c_referenceBatchRaw.get(), param->derampAxis, stream);
+    cuDeramp(param.derampMethod, c_referenceBatchRaw.get(), param.derampAxis, stream);
     dump(c_referenceBatchRaw.get(), "c_referenceBatchRawDeramped");
     referenceBatchOverSampler->execute(c_referenceBatchRaw.get(), c_referenceBatchOverSampled.get());
     cuArraysAbs(c_referenceBatchOverSampled.get(), r_referenceBatchOverSampled.get(), stream);
@@ -92,7 +92,7 @@ void cuAmpcorProcessorTwoPass<arrayT>::run(int idxDown, int idxAcross, const chu
     // the secondary windows around the peaks: deramped, oversampled, their amplitudes
     cuArraysCopyExtract(c_secondaryBatchRaw.get(), c_secondaryBatchZoomIn.get(), offsetInit.get(), stream);
     dump(c_secondaryBatchZoomIn.get(), "c_secondaryBatchZoomInRaw");
-    cuDeramp(param->derampMethod, c_secondaryBatchZoomIn.get(), param->derampAxis, stream);
+    cuDeramp(param.derampMethod, c_secondaryBatchZoomIn.get(), param.derampAxis, stream);
     dump(c_secondaryBatchZoomIn.get(), "c_secondaryBatchZoomInDeramped");
     secondaryBatchOverSampler->execute(c_secondaryBatchZoomIn.get(), c_secondaryBatchOverSampled.get());
     cuArraysAbs(c_secondaryBatchOverSampled.get(), r_secondaryBatchOverSampled.get(), stream);
@@ -116,8 +116,8 @@ void cuAmpcorProcessorTwoPass<arrayT>::run(int idxDown, int idxAcross, const chu
     // the offsets: the pixel peak (relative to the half search range) plus the sub-pixel peak,
     // (Init - HalfSearchRange) + ZoomIn/(2*ovs)
     cuSubPixelOffset2Pass(offsetInit.get(), offsetZoomIn.get(), offsetFinal.get(),
-        param->corrSurfaceOverSamplingFactor, param->rawDataOversamplingFactor,
-        param->halfSearchRangeDownRaw, param->halfSearchRangeAcrossRaw, stream);
+        param.corrSurfaceOverSamplingFactor, param.rawDataOversamplingFactor,
+        param.halfSearchRangeDownRaw, param.halfSearchRangeAcrossRaw, stream);
 
     writeResults();
 }
@@ -126,14 +126,14 @@ void cuAmpcorProcessorTwoPass<arrayT>::run(int idxDown, int idxAcross, const chu
  * A processor writing to the output images: allocate its buffers and workers
  */
 template <template <typename> class arrayT>
-cuAmpcorProcessorTwoPass<arrayT>::cuAmpcorProcessorTwoPass(const cuAmpcorParameter *param_,
-    array_type<real2_type> *offsetImage, array_type<real_type> *snrImage,
-    array_type<real3_type> *covImage, array_type<real_type> *peakValueImage, stream_type stream_)
+cuAmpcorProcessorTwoPass<arrayT>::cuAmpcorProcessorTwoPass(const cuAmpcorParameter &param_,
+    array_type<real2_type> &offsetImage, array_type<real_type> &snrImage,
+    array_type<real3_type> &covImage, array_type<real_type> &peakValueImage, stream_type stream_)
     : base_type(param_, offsetImage, snrImage, covImage, peakValueImage, stream_)
 {
     using traits = typename base_type::traits;
-    const int down = param->windowsDownInChunk;
-    const int across = param->windowsAcrossInChunk;
+    const int down = param.windowsDownInChunk;
+    const int across = param.windowsAcrossInChunk;
     // a batch of windows of height x width (one per window in a chunk)
     auto batch = [down, across](auto &array, int height, int width) {
         using array_t = typename std::remove_reference_t<decltype(array)>::element_type;
@@ -142,21 +142,21 @@ cuAmpcorProcessorTwoPass<arrayT>::cuAmpcorProcessorTwoPass(const cuAmpcorParamet
     };
 
     // first pass
-    batch(c_referenceBatchRaw, param->windowSizeHeightRaw, param->windowSizeWidthRaw);
-    batch(c_secondaryBatchRaw, param->searchWindowSizeHeightRaw, param->searchWindowSizeWidthRaw);
-    batch(r_referenceBatchRaw, param->windowSizeHeightRaw, param->windowSizeWidthRaw);
-    batch(r_secondaryBatchRaw, param->searchWindowSizeHeightRaw, param->searchWindowSizeWidthRaw);
-    batch(r_corrBatchRaw, param->searchWindowSizeHeightRaw - param->windowSizeHeightRaw + 1,
-        param->searchWindowSizeWidthRaw - param->windowSizeWidthRaw + 1);
+    batch(c_referenceBatchRaw, param.windowSizeHeightRaw, param.windowSizeWidthRaw);
+    batch(c_secondaryBatchRaw, param.searchWindowSizeHeightRaw, param.searchWindowSizeWidthRaw);
+    batch(r_referenceBatchRaw, param.windowSizeHeightRaw, param.windowSizeWidthRaw);
+    batch(r_secondaryBatchRaw, param.searchWindowSizeHeightRaw, param.searchWindowSizeWidthRaw);
+    batch(r_corrBatchRaw, param.searchWindowSizeHeightRaw - param.windowSizeHeightRaw + 1,
+        param.searchWindowSizeWidthRaw - param.windowSizeWidthRaw + 1);
 
     // second pass
-    batch(c_secondaryBatchZoomIn, param->searchWindowSizeHeightRawZoomIn, param->searchWindowSizeWidthRawZoomIn);
+    batch(c_secondaryBatchZoomIn, param.searchWindowSizeHeightRawZoomIn, param.searchWindowSizeWidthRawZoomIn);
     maxLocShift = std::make_unique<array_type<int2_type>>(down, across);
     maxLocShift->allocate();
-    batch(c_referenceBatchOverSampled, param->windowSizeHeight, param->windowSizeWidth);
-    batch(c_secondaryBatchOverSampled, param->searchWindowSizeHeight, param->searchWindowSizeWidth);
-    batch(r_referenceBatchOverSampled, param->windowSizeHeight, param->windowSizeWidth);
-    batch(r_secondaryBatchOverSampled, param->searchWindowSizeHeight, param->searchWindowSizeWidth);
+    batch(c_referenceBatchOverSampled, param.windowSizeHeight, param.windowSizeWidth);
+    batch(c_secondaryBatchOverSampled, param.searchWindowSizeHeight, param.searchWindowSizeWidth);
+    batch(r_referenceBatchOverSampled, param.windowSizeHeight, param.windowSizeWidth);
+    batch(r_secondaryBatchOverSampled, param.searchWindowSizeHeight, param.searchWindowSizeWidth);
     referenceBatchOverSampler = std::make_unique<oversampler_c2c_type>(
         c_referenceBatchRaw->height, c_referenceBatchRaw->width,                   // raw size
         c_referenceBatchOverSampled->height, c_referenceBatchOverSampled->width,   // oversampled size
@@ -165,25 +165,25 @@ cuAmpcorProcessorTwoPass<arrayT>::cuAmpcorProcessorTwoPass(const cuAmpcorParamet
         c_secondaryBatchZoomIn->height, c_secondaryBatchZoomIn->width,
         c_secondaryBatchOverSampled->height, c_secondaryBatchOverSampled->width,
         c_secondaryBatchRaw->count, stream);
-    batch(r_corrBatchZoomIn, param->searchWindowSizeHeight - param->windowSizeHeight + 1,
-        param->searchWindowSizeWidth - param->windowSizeWidth + 1);
-    batch(r_corrBatchZoomInAdjust, param->searchWindowSizeHeight - param->windowSizeHeight,
-        param->searchWindowSizeWidth - param->windowSizeWidth);
-    batch(r_corrBatchZoomInOverSampled, param->corrZoomWindowSize * param->corrSurfaceOverSamplingFactor,
-        param->corrZoomWindowSize * param->corrSurfaceOverSamplingFactor);
-    createSurfaceOversampler(param->corrZoomWindowSize, param->corrZoomWindowSize);
+    batch(r_corrBatchZoomIn, param.searchWindowSizeHeight - param.windowSizeHeight + 1,
+        param.searchWindowSizeWidth - param.windowSizeWidth + 1);
+    batch(r_corrBatchZoomInAdjust, param.searchWindowSizeHeight - param.windowSizeHeight,
+        param.searchWindowSizeWidth - param.windowSizeWidth);
+    batch(r_corrBatchZoomInOverSampled, param.corrZoomWindowSize * param.corrSurfaceOverSamplingFactor,
+        param.corrZoomWindowSize * param.corrSurfaceOverSamplingFactor);
+    createSurfaceOversampler(param.corrZoomWindowSize, param.corrZoomWindowSize);
 
     // the correlators (frequency domain) and the normalizers, of both passes
-    if (param->algorithm == Algorithm::Frequency) {
+    if (param.algorithm == Algorithm::Frequency) {
         cuCorrFreqDomain = std::make_unique<freq_correlator_type>(
-            param->searchWindowSizeHeightRaw, param->searchWindowSizeWidthRaw, down*across, stream);
+            param.searchWindowSizeHeightRaw, param.searchWindowSizeWidthRaw, down*across, stream);
         cuCorrFreqDomain_OverSampled = std::make_unique<freq_correlator_type>(
-            param->searchWindowSizeHeight, param->searchWindowSizeWidth, down*across, stream);
+            param.searchWindowSizeHeight, param.searchWindowSizeWidth, down*across, stream);
     }
-    corrNormalizerRaw = traits::newNormalizer(param->searchWindowSizeHeightRaw,
-        param->searchWindowSizeWidthRaw, down*across);
-    corrNormalizerOverSampled = traits::newNormalizer(param->searchWindowSizeHeight,
-        param->searchWindowSizeWidth, down*across);
+    corrNormalizerRaw = traits::newNormalizer(param.searchWindowSizeHeightRaw,
+        param.searchWindowSizeWidthRaw, down*across);
+    corrNormalizerOverSampled = traits::newNormalizer(param.searchWindowSizeHeight,
+        param.searchWindowSizeWidth, down*across);
 
     logDebug("all objects in chunk are created");
 }

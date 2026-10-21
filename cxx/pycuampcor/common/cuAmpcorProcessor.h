@@ -47,21 +47,22 @@ public:
     using surface_oversampler_type = typename traits::surface_oversampler_type;
 
     /// a processor writing to the output images
-    /// @param param the parameters (set up)
-    /// @param offsetImage, snrImage, covImage, peakValueImage the output images, covering whole chunks
+    /// @param param the parameters (set up), kept for the lifetime of the processor
+    /// @param offsetImage, snrImage, covImage, peakValueImage the output images, covering whole
+    ///     chunks, kept for the lifetime of the processor
     /// @param stream the stream on which the kernels are queued
-    cuAmpcorProcessor(const cuAmpcorParameter *param,
-        array_type<real2_type> *offsetImage, array_type<real_type> *snrImage,
-        array_type<real3_type> *covImage, array_type<real_type> *peakValueImage,
+    cuAmpcorProcessor(const cuAmpcorParameter &param,
+        array_type<real2_type> &offsetImage, array_type<real_type> &snrImage,
+        array_type<real3_type> &covImage, array_type<real_type> &peakValueImage,
         stream_type stream);
     /// release the buffers and workers (defined with the processors, where the workers are complete)
     virtual ~cuAmpcorProcessor();
 
     /// the processor of a workflow (two-pass or one-pass); the arguments are those of the constructor
     static std::unique_ptr<cuAmpcorProcessor> create(Workflow workflow,
-        const cuAmpcorParameter *param,
-        array_type<real2_type> *offsetImage, array_type<real_type> *snrImage,
-        array_type<real3_type> *covImage, array_type<real_type> *peakValueImage,
+        const cuAmpcorParameter &param,
+        array_type<real2_type> &offsetImage, array_type<real_type> &snrImage,
+        array_type<real3_type> &covImage, array_type<real_type> &peakValueImage,
         stream_type stream);
 
     /// process the chunk (idxDown, idxAcross), loaded by a chunk loader, and write its results to
@@ -69,11 +70,11 @@ public:
     virtual void run(int idxDown, int idxAcross, const chunk_type &chunk) = 0;
 
 protected:
-    const cuAmpcorParameter *param;          ///< the parameters
-    array_type<real2_type> *offsetImage;     ///< the output dense offsets
-    array_type<real_type> *snrImage;         ///< the output SNR
-    array_type<real3_type> *covImage;        ///< the output covariance
-    array_type<real_type> *peakValueImage;   ///< the output correlation peak
+    const cuAmpcorParameter &param;          ///< the parameters
+    array_type<real2_type> &offsetImage;     ///< the output dense offsets
+    array_type<real_type> &snrImage;         ///< the output SNR
+    array_type<real3_type> &covImage;        ///< the output covariance
+    array_type<real_type> &peakValueImage;   ///< the output correlation peak
     stream_type stream;                      ///< the stream on which the kernels are queued
 
     // the current chunk

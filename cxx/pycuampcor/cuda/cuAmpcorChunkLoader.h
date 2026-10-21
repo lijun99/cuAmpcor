@@ -42,8 +42,8 @@ public:
     /// @param secondary, secondaryDataType, secondaryImage the same for the secondary image
     /// @param stream the stream on which the chunks are copied to the device
     cuAmpcorChunkLoader(const cuAmpcorChunkFootprint &reference, DataType referenceDataType,
-        SlcImage *referenceImage, const cuAmpcorChunkFootprint &secondary,
-        DataType secondaryDataType, SlcImage *secondaryImage, cudaStream_t stream);
+        SlcImage &referenceImage, const cuAmpcorChunkFootprint &secondary,
+        DataType secondaryDataType, SlcImage &secondaryImage, cudaStream_t stream);
 
     /// load the idxChunk-th chunk of both images (the copies to the device are queued on the stream)
     /// @return the loaded chunks, valid until the next load
@@ -53,7 +53,7 @@ private:
     /// an image, the device buffer to load its chunks, and the staging memory
     struct Source {
         const cuAmpcorChunkFootprint &footprint;   ///< the chunks to load
-        SlcImage *image;                           ///< the image
+        SlcImage &image;                           ///< the image
         std::unique_ptr<cuArrays<image_complex_type>> complexBuffer;  ///< for complex images
         std::unique_ptr<cuArrays<image_real_type>> realBuffer;        ///< for real images
         /// page-locked host memory for the largest chunk, copied asynchronously to the device;
@@ -63,7 +63,7 @@ private:
         cudaEvent_t stagingDone = nullptr;
 
         /// a source with the device buffer and the staging memory for the largest chunk
-        Source(const cuAmpcorChunkFootprint &footprint, DataType dataType, SlcImage *image);
+        Source(const cuAmpcorChunkFootprint &footprint, DataType dataType, SlcImage &image);
         /// wait for the last copy, and free the staging memory
         ~Source();
         Source(const Source &) = delete;

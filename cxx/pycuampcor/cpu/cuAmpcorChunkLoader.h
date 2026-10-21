@@ -40,8 +40,8 @@ public:
     /// @param referenceImage the reference image
     /// @param secondary, secondaryDataType, secondaryImage the same for the secondary image
     cuAmpcorChunkLoader(const cuAmpcorChunkFootprint &reference, DataType referenceDataType,
-        SlcImage *referenceImage, const cuAmpcorChunkFootprint &secondary,
-        DataType secondaryDataType, SlcImage *secondaryImage);
+        SlcImage &referenceImage, const cuAmpcorChunkFootprint &secondary,
+        DataType secondaryDataType, SlcImage &secondaryImage);
 
     /// load the idxChunk-th chunk of both images
     /// @return the loaded chunks, valid until the next load
@@ -51,12 +51,12 @@ private:
     /// an image and the buffer to load its chunks
     struct Source {
         const cuAmpcorChunkFootprint &footprint;   ///< the chunks to load
-        SlcImage *image;                           ///< the image
+        SlcImage &image;                           ///< the image
         std::unique_ptr<array_type<image_complex_type>> complexBuffer;  ///< for complex images
         std::unique_ptr<array_type<image_real_type>> realBuffer;        ///< for real images
 
         /// a source with a buffer for the largest chunk of the footprint
-        Source(const cuAmpcorChunkFootprint &footprint, DataType dataType, SlcImage *image);
+        Source(const cuAmpcorChunkFootprint &footprint, DataType dataType, SlcImage &image);
         Source(const Source &) = delete;
         Source &operator=(const Source &) = delete;
         /// load the idxChunk-th chunk into the buffer, and describe it in chunk

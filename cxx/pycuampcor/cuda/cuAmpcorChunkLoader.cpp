@@ -19,7 +19,7 @@ namespace pycuampcor::cuda {
  * @param image_ the image
  */
 cuAmpcorChunkLoader::Source::Source(const cuAmpcorChunkFootprint &footprint_, DataType dataType,
-    SlcImage *image_)
+    SlcImage &image_)
     : footprint(footprint_), image(image_)
 {
     // allocate the device buffer once, for the largest chunk
@@ -35,7 +35,7 @@ cuAmpcorChunkLoader::Source::Source(const cuAmpcorChunkFootprint &footprint_, Da
         realBuffer->allocate();
     }
     // page-locked host memory for the largest chunk, so that the copies to the device are asynchronous
-    const size_t bytes = static_cast<size_t>(height) * width * image->pixelSize();
+    const size_t bytes = static_cast<size_t>(height) * width * image.pixelSize();
     if (cudaMallocHost(&staging, bytes) != cudaSuccess) {
         // e.g., limited page-locked memory: clear the error, and copy from pageable memory
         cudaGetLastError();
@@ -80,12 +80,12 @@ void cuAmpcorChunkLoader::Source::load(int idxChunk, cuAmpcorLoadedChunk &chunk,
     void *buffer = complexBuffer ? static_cast<void *>(complexBuffer->devData)
                                  : static_cast<void *>(realBuffer->devData);
     // the chunk is contiguous in both host and device memory
-    const size_t pitch = static_cast<size_t>(chunk.width) * image->pixelSize();
+    const size_t pitch = static_cast<size_t>(chunk.width) * image.pixelSize();
     if (staging) {
         // reuse the staging memory once its previous copy is done, then copy asynchronously,
         // so the stream can go on queuing its work (and the other streams can load) during the copy
         checkCudaErrors(cudaEventSynchronize(stagingDone));
-        image->loadToHost(staging, chunk.startDown, chunk.startAcross, chunk.height, chunk.width);
+        image.loadToHost(staging, chunk.startDown, chunk.startAcross, chunk.height, chunk.width);
         checkCudaErrors(cudaMemcpy2DAsync(buffer, pitch, staging, pitch, pitch, chunk.height,
             cudaMemcpyHostToDevice, stream));
         checkCudaErrors(cudaEventRecord(stagingDone, stream));
@@ -95,7 +95,7 @@ void cuAmpcorChunkLoader::Source::load(int idxChunk, cuAmpcorLoadedChunk &chunk,
         // a copy from pageable memory returns once the host buffer can be reused
         thread_local std::vector<char> host;
         host.resize(pitch * chunk.height);
-        image->loadToHost(host.data(), chunk.startDown, chunk.startAcross, chunk.height, chunk.width);
+        image.loadToHost(host.data(), chunk.startDown, chunk.startAcross, chunk.height, chunk.width);
         checkCudaErrors(cudaMemcpy2DAsync(buffer, pitch, host.data(), pitch, pitch, chunk.height,
             cudaMemcpyHostToDevice, stream));
     }
@@ -107,8 +107,8 @@ void cuAmpcorChunkLoader::Source::load(int idxChunk, cuAmpcorLoadedChunk &chunk,
  */
 cuAmpcorChunkLoader::cuAmpcorChunkLoader(
     const cuAmpcorChunkFootprint &referenceFootprint, DataType referenceDataType,
-    SlcImage *referenceImage, const cuAmpcorChunkFootprint &secondaryFootprint,
-    DataType secondaryDataType, SlcImage *secondaryImage, cudaStream_t stream_)
+    SlcImage &referenceImage, const cuAmpcorChunkFootprint &secondaryFootprint,
+    DataType secondaryDataType, SlcImage &secondaryImage, cudaStream_t stream_)
     : reference(referenceFootprint, referenceDataType, referenceImage),
       secondary(secondaryFootprint, secondaryDataType, secondaryImage),
       stream(stream_)

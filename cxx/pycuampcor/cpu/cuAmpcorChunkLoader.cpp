@@ -17,7 +17,7 @@ namespace pycuampcor::cpu {
  * @param image_ the image
  */
 cuAmpcorChunkLoader::Source::Source(const cuAmpcorChunkFootprint &footprint_, DataType dataType,
-    SlcImage *image_)
+    SlcImage &image_)
     : footprint(footprint_), image(image_)
 {
     // allocate the buffer once, for the largest chunk
@@ -51,7 +51,7 @@ void cuAmpcorChunkLoader::Source::load(int idxChunk, cuAmpcorLoadedChunk &chunk)
     // the work memory is host memory: read the chunk directly into the buffer
     void *buffer = complexBuffer ? static_cast<void *>(complexBuffer->devData)
                                  : static_cast<void *>(realBuffer->devData);
-    image->loadToHost(buffer, chunk.startDown, chunk.startAcross, chunk.height, chunk.width);
+    image.loadToHost(buffer, chunk.startDown, chunk.startAcross, chunk.height, chunk.width);
 }
 
 /**
@@ -59,8 +59,8 @@ void cuAmpcorChunkLoader::Source::load(int idxChunk, cuAmpcorLoadedChunk &chunk)
  */
 cuAmpcorChunkLoader::cuAmpcorChunkLoader(
     const cuAmpcorChunkFootprint &referenceFootprint, DataType referenceDataType,
-    SlcImage *referenceImage, const cuAmpcorChunkFootprint &secondaryFootprint,
-    DataType secondaryDataType, SlcImage *secondaryImage)
+    SlcImage &referenceImage, const cuAmpcorChunkFootprint &secondaryFootprint,
+    DataType secondaryDataType, SlcImage &secondaryImage)
     : reference(referenceFootprint, referenceDataType, referenceImage),
       secondary(secondaryFootprint, secondaryDataType, secondaryImage)
 {

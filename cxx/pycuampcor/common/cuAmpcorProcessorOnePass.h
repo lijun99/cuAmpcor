@@ -35,9 +35,9 @@ public:
     using window_type = complex_type;
 
     /// a processor writing to the output images (see cuAmpcorProcessor)
-    cuAmpcorProcessorOnePass(const cuAmpcorParameter *param,
-        array_type<real2_type> *offsetImage, array_type<real_type> *snrImage,
-        array_type<real3_type> *covImage, array_type<real_type> *peakValueImage,
+    cuAmpcorProcessorOnePass(const cuAmpcorParameter &param,
+        array_type<real2_type> &offsetImage, array_type<real_type> &snrImage,
+        array_type<real3_type> &covImage, array_type<real_type> &peakValueImage,
         stream_type stream);
     ~cuAmpcorProcessorOnePass() override;
 

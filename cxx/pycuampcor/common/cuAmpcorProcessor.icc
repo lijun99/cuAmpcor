@@ -25,9 +25,9 @@ namespace pycuampcor {
  */
 template <template <typename> class arrayT>
 std::unique_ptr<cuAmpcorProcessor<arrayT>> cuAmpcorProcessor<arrayT>::create(Workflow workflow,
-    const cuAmpcorParameter *param,
-    array_type<real2_type> *offsetImage, array_type<real_type> *snrImage,
-    array_type<real3_type> *covImage, array_type<real_type> *peakValueImage,
+    const cuAmpcorParameter &param,
+    array_type<real2_type> &offsetImage, array_type<real_type> &snrImage,
+    array_type<real3_type> &covImage, array_type<real_type> &peakValueImage,
     stream_type stream)
 {
     switch (workflow) {
@@ -46,15 +46,15 @@ std::unique_ptr<cuAmpcorProcessor<arrayT>> cuAmpcorProcessor<arrayT>::create(Wor
  * A processor writing to the output images: allocate the buffers of the per-window results
  */
 template <template <typename> class arrayT>
-cuAmpcorProcessor<arrayT>::cuAmpcorProcessor(const cuAmpcorParameter *param_,
-    array_type<real2_type> *offsetImage_, array_type<real_type> *snrImage_,
-    array_type<real3_type> *covImage_, array_type<real_type> *peakValueImage_,
+cuAmpcorProcessor<arrayT>::cuAmpcorProcessor(const cuAmpcorParameter &param_,
+    array_type<real2_type> &offsetImage_, array_type<real_type> &snrImage_,
+    array_type<real3_type> &covImage_, array_type<real_type> &peakValueImage_,
     stream_type stream_)
     : param(param_), offsetImage(offsetImage_), snrImage(snrImage_), covImage(covImage_),
       peakValueImage(peakValueImage_), stream(stream_)
 {
-    const int down = param->windowsDownInChunk;
-    const int across = param->windowsAcrossInChunk;
+    const int down = param.windowsDownInChunk;
+    const int across = param.windowsAcrossInChunk;
     // a batch of count windows of height x width (one per window in a chunk), in the work memory
     auto batch = [down, across](auto &array, int height, int width) {
         using array_t = typename std::remove_reference_t<decltype(array)>::element_type;
@@ -85,8 +85,8 @@ cuAmpcorProcessor<arrayT>::cuAmpcorProcessor(const cuAmpcorParameter *param_,
     values(r_corrBatchSum);
     values(i_corrBatchValidCount);
     // the correlation surfaces around the peaks, at the raw pixel spacing, for the SNR
-    batch(r_corrBatchRawZoomIn, param->corrRawZoomInHeight, param->corrRawZoomInWidth);
-    batch(i_corrBatchZoomInValid, param->corrRawZoomInHeight, param->corrRawZoomInWidth);
+    batch(r_corrBatchRawZoomIn, param.corrRawZoomInHeight, param.corrRawZoomInWidth);
+    batch(i_corrBatchZoomInValid, param.corrRawZoomInHeight, param.corrRawZoomInWidth);
 }
 
 /// the buffers and workers are released with their owners
@@ -101,12 +101,12 @@ void cuAmpcorProcessor<arrayT>::setIndex(int idxDown, int idxAcross)
 {
     idxChunkDown = idxDown;
     idxChunkAcross = idxAcross;
-    nWindowsDown = (idxChunkDown == param->numberChunkDown - 1)
-        ? param->numberWindowDown - param->windowsDownInChunk*(param->numberChunkDown - 1)
-        : param->windowsDownInChunk;
-    nWindowsAcross = (idxChunkAcross == param->numberChunkAcross - 1)
-        ? param->numberWindowAcross - param->windowsAcrossInChunk*(param->numberChunkAcross - 1)
-        : param->windowsAcrossInChunk;
+    nWindowsDown = (idxChunkDown == param.numberChunkDown - 1)
+        ? param.numberWindowDown - param.windowsDownInChunk*(param.numberChunkDown - 1)
+        : param.windowsDownInChunk;
+    nWindowsAcross = (idxChunkAcross == param.numberChunkAcross - 1)
+        ? param.numberWindowAcross - param.windowsAcrossInChunk*(param.numberChunkAcross - 1)
+        : param.windowsAcrossInChunk;
 }
 
 /**
@@ -117,13 +117,13 @@ template <template <typename> class arrayT>
 void cuAmpcorProcessor<arrayT>::getRelativeOffset(int *relative, const std::vector<int> &absolute,
     int chunkStart)
 {
-    for (int i = 0; i < param->windowsDownInChunk; ++i) {
+    for (int i = 0; i < param.windowsDownInChunk; ++i) {
         const int iDown = std::min(i, nWindowsDown - 1);
-        for (int j = 0; j < param->windowsAcrossInChunk; ++j) {
+        for (int j = 0; j < param.windowsAcrossInChunk; ++j) {
             const int iAcross = std::min(j, nWindowsAcross - 1);
-            const int idxInChunk = iDown*param->windowsAcrossInChunk + iAcross;
-            const int idxInAll = (iDown + idxChunkDown*param->windowsDownInChunk)*param->numberWindowAcross
-                + idxChunkAcross*param->windowsAcrossInChunk + iAcross;
+            const int idxInChunk = iDown*param.windowsAcrossInChunk + iAcross;
+            const int idxInAll = (iDown + idxChunkDown*param.windowsDownInChunk)*param.numberWindowAcross
+                + idxChunkAcross*param.windowsAcrossInChunk + iAcross;
             relative[idxInChunk] = absolute[idxInAll] - chunkStart;
         }
     }
@@ -152,7 +152,7 @@ void cuAmpcorProcessor<arrayT>::copyToBatch(const loaded_chunk_type &chunk,
     // windows outside the chunk (image) are padded with zeros
     if (chunk.complexData) {
         // complex image (e.g., SLC): amplitudes if not deramped, the complex values otherwise
-        if (param->derampMethod == DerampMethod::Magnitude)
+        if (param.derampMethod == DerampMethod::Magnitude)
             cuArraysCopyToBatchAbsWithOffset(chunk.complexData, chunk.height, chunk.width,
                 batch, chunkOffsetDown->devData, chunkOffsetAcross->devData, stream);
         else
@@ -174,7 +174,7 @@ void cuAmpcorProcessor<arrayT>::correlate(array_type<real_type> *reference,
     array_type<real_type> *secondary, array_type<real_type> *surface,
     freq_correlator_type *freqCorrelator, normalizer_type *normalizer, const std::string &name)
 {
-    if (param->algorithm == Algorithm::Frequency)
+    if (param.algorithm == Algorithm::Frequency)
         freqCorrelator->execute(reference, secondary, surface);
     else
         cuCorrTimeDomain(reference, secondary, surface, stream);
@@ -190,9 +190,9 @@ void cuAmpcorProcessor<arrayT>::correlate(array_type<real_type> *reference,
 template <template <typename> class arrayT>
 void cuAmpcorProcessor<arrayT>::createSurfaceOversampler(int height, int width)
 {
-    surfaceOverSampler = traits::newSurfaceOverSampler(param->corrSurfaceOverSamplingMethod,
-        height, width, param->corrSurfaceOverSamplingFactor, param->rawDataOversamplingFactor,
-        param->windowsDownInChunk*param->windowsAcrossInChunk, stream);
+    surfaceOverSampler = traits::newSurfaceOverSampler(param.corrSurfaceOverSamplingMethod,
+        height, width, param.corrSurfaceOverSamplingFactor, param.rawDataOversamplingFactor,
+        param.windowsDownInChunk*param.windowsAcrossInChunk, stream);
 }
 
 /**
@@ -213,12 +213,12 @@ template <template <typename> class arrayT>
 void cuAmpcorProcessor<arrayT>::writeResults()
 {
     // the first window of the chunk in the output images
-    const int down = idxChunkDown*param->windowsDownInChunk;
-    const int across = idxChunkAcross*param->windowsAcrossInChunk;
-    cuArraysCopyInsert(offsetFinal.get(), offsetImage, down, across, stream);
-    cuArraysCopyInsert(r_snrValue.get(), snrImage, down, across, stream);
-    cuArraysCopyInsert(r_covValue.get(), covImage, down, across, stream);
-    cuArraysCopyInsert(corrMaxValue.get(), peakValueImage, down, across, stream);
+    const int down = idxChunkDown*param.windowsDownInChunk;
+    const int across = idxChunkAcross*param.windowsAcrossInChunk;
+    cuArraysCopyInsert(offsetFinal.get(), &offsetImage, down, across, stream);
+    cuArraysCopyInsert(r_snrValue.get(), &snrImage, down, across, stream);
+    cuArraysCopyInsert(r_covValue.get(), &covImage, down, across, stream);
+    cuArraysCopyInsert(corrMaxValue.get(), &peakValueImage, down, across, stream);
 }
 
 /**
