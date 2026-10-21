@@ -49,6 +49,8 @@
 - The CUDA utilities adapted from the NVIDIA CUDA samples are replaced by our own: CUDA and cuFFT
   errors are reported with their names and the failed call; in Debug builds, the device is
   synchronized after each kernel, so that execution errors are reported at the failing kernel.
+- The SCons build files (`SConscript`, `src/SConscript`), out of date, are removed; pycuampcor
+  builds with CMake (ISCE2 keeps its own build files in `contrib/pycuampcor`).
 
 ### Fixes
 
