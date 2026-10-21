@@ -37,7 +37,7 @@ class Algorithm(_Option):
     """Cross-correlation algorithm"""
     FREQUENCY = 0  #: of the amplitudes, in the frequency domain, with FFTs (default)
     TIME = 1       #: of the amplitudes, in the time (spatial) domain
-    COHERENCE = 2  #: of the complex windows (the coherence; complex images, two-pass workflow)
+    COHERENCE = 2  #: of the complex windows (the coherence; experimental; complex images, two-pass workflow)
     FREQ = 0
 
 

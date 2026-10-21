@@ -267,8 +267,8 @@ PYBIND11_MODULE(PYCUAMPCOR_MODULE, m)
     // processing
     DEF_OPTION(algorithm, Algorithm,
         "Cross-correlation algorithm (Algorithm): of the amplitudes, 'frequency' (FFT) or 'time';\n"
-        "or 'coherence', of the complex windows (e.g., for coregistration; complex images, the\n"
-        "two-pass workflow, derampMethod 'complex' or 'none'; the peak value is the squared coherence).");
+        "or 'coherence' (experimental), of the complex windows (complex images, the two-pass\n"
+        "workflow, derampMethod 'complex' or 'none'; the peak value is the squared coherence).");
     DEF_PARAM(int, deviceID,
         "CUDA device to use (GPU only); CUDA_VISIBLE_DEVICES also selects the devices.");
     DEF_PARAM(int, nStreams,

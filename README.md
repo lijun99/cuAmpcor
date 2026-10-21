@@ -574,7 +574,7 @@ Note that this offset does not include the pre-defined gross offset. Users need 
 
 ROIPAC by default uses the sinc interpolator (the FFT method is included but one needs to change the FORTRAN code to switch). For since interpolator, there is no difference in implementations. For FFT, ROIPAC always enlarges the window to a size in power of 2.
 
-### 5.7 Coherent cross-correlation (algorithm=2)
+### 5.7 Coherent cross-correlation (algorithm=2, experimental)
 
 With *algorithm*=2 (*pycuampcor.Algorithm.COHERENCE*, or *"coherence"*), the complex windows are cross-correlated instead of their amplitudes, as for the coregistration of interferometric pairs. The correlation surface is the squared coherence at each shift,
 
@@ -583,5 +583,8 @@ With *algorithm*=2 (*pycuampcor.Algorithm.COHERENCE*, or *"coherence"*), the com
 the sums over the n pixels of the reference window t and of the secondary window s under it; it is computed with FFTs, and normalized with sum area tables of the secondary windows. The rest of the two-pass workflow is the same: the peak to the pixel, the windows around it oversampled, correlated again, and the surface oversampled around the peak. Before the oversampling, both windows are deramped with the phase ramp of the reference window, which keeps their relative (interferometric) phase. The peak value output is the squared coherence (for speckle, the correlation of the amplitudes is about the squared coherence too).
 
 * It needs complex images, the two-pass workflow, and *derampMethod* 1 (complex; or 2, none, for images without a Doppler centroid); other settings raise an error.
-* Where the images are coherent, it is more precise than the amplitude correlation, and it keeps working at low coherence, where the amplitude correlation fails (synthetic images: an RMS error of 0.016 vs 0.024 pixel at a coherence of about 0.5; 0.03 pixel vs failures at about 0.2). Where the coherence is lost (e.g., fast ice, long time spans, C-band in the melt season), it fails: use the amplitudes.
+* It is experimental; the amplitude correlation remains the default. So far:
+  * On synthetic images, where the decorrelation is additive noise, it is more precise than the amplitude correlation at moderate coherence (an RMS error of 0.016 vs 0.024 pixel at a coherence of about 0.5), and still works at about 0.2, where the amplitude correlation fails.
+  * On a real pair (NISAR, L-band, 12 days, Jakobshavn Isbræ; the roughness of the offsets between neighboring windows), it was about 15% more precise at a coherence of 0.3–0.5, as precise above 0.5, and worse below 0.3, where the phase within the windows varies.
+  * Where the coherence is lost (e.g., fast ice, long time spans, C-band in the melt season), it fails: use the amplitudes.
 * With *dense_offsets*: *--alg 2 --drmp 1*.

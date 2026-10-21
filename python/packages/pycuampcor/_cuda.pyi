@@ -87,8 +87,8 @@ class PyCuAmpcor:
     @property
     def algorithm(self) -> Algorithm:
         """Cross-correlation algorithm (Algorithm): of the amplitudes, 'frequency' (FFT) or 'time';
-        or 'coherence', of the complex windows (e.g., for coregistration; complex images, the
-        two-pass workflow, derampMethod 'complex' or 'none'; the peak value is the squared coherence).
+        or 'coherence' (experimental), of the complex windows (complex images, the two-pass
+        workflow, derampMethod 'complex' or 'none'; the peak value is the squared coherence).
 
         Default: Algorithm.FREQUENCY
         """
