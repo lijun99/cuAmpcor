@@ -77,8 +77,8 @@ private:
     std::unique_ptr<array_type<window_type>> c_secondaryBatchOverSampled;   ///< the oversampled secondary windows
     std::unique_ptr<array_type<real_type>> r_referenceBatchOverSampled;     ///< the amplitudes of the reference windows (not enlarged)
     std::unique_ptr<array_type<real_type>> r_secondaryBatchOverSampled;     ///< the amplitudes of the secondary windows
-    std::unique_ptr<oversampler_c2c_type> referenceBatchOverSampler;        ///< the oversampler of the reference windows
-    std::unique_ptr<oversampler_c2c_type> secondaryBatchOverSampler;        ///< the oversampler of the secondary windows
+    oversampler_c2c_type referenceBatchOverSampler;                         ///< the oversampler of the reference windows
+    oversampler_c2c_type secondaryBatchOverSampler;                         ///< the oversampler of the secondary windows
 
     // the correlation surfaces
     std::unique_ptr<array_type<real_type>> r_corrBatch;                     ///< the correlation surfaces

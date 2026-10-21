@@ -83,7 +83,7 @@ void cuAmpcorProcessorTwoPass<arrayT>::run(int idxDown, int idxAcross, const chu
     // the reference windows: deramped, oversampled, their amplitudes with the mean subtracted
     cuDeramp(param.derampMethod, c_referenceBatchRaw.get(), param.derampAxis, stream);
     dump(c_referenceBatchRaw.get(), "c_referenceBatchRawDeramped");
-    referenceBatchOverSampler->execute(c_referenceBatchRaw.get(), c_referenceBatchOverSampled.get());
+    referenceBatchOverSampler.execute(c_referenceBatchRaw.get(), c_referenceBatchOverSampled.get());
     cuArraysAbs(c_referenceBatchOverSampled.get(), r_referenceBatchOverSampled.get(), stream);
     dump(c_referenceBatchOverSampled.get(), "c_referenceBatchOverSampled");
     dump(r_referenceBatchOverSampled.get(), "r_referenceBatchOverSampled");
@@ -95,7 +95,7 @@ void cuAmpcorProcessorTwoPass<arrayT>::run(int idxDown, int idxAcross, const chu
     dump(c_secondaryBatchZoomIn.get(), "c_secondaryBatchZoomInRaw");
     cuDeramp(param.derampMethod, c_secondaryBatchZoomIn.get(), param.derampAxis, stream);
     dump(c_secondaryBatchZoomIn.get(), "c_secondaryBatchZoomInDeramped");
-    secondaryBatchOverSampler->execute(c_secondaryBatchZoomIn.get(), c_secondaryBatchOverSampled.get());
+    secondaryBatchOverSampler.execute(c_secondaryBatchZoomIn.get(), c_secondaryBatchOverSampled.get());
     cuArraysAbs(c_secondaryBatchOverSampled.get(), r_secondaryBatchOverSampled.get(), stream);
     dump(c_secondaryBatchOverSampled.get(), "c_secondaryBatchOverSampled");
     dump(r_secondaryBatchOverSampled.get(), "r_secondaryBatchOverSampled");
@@ -130,7 +130,15 @@ template <template <typename> class arrayT>
 cuAmpcorProcessorTwoPass<arrayT>::cuAmpcorProcessorTwoPass(const cuAmpcorParameter &param_,
     array_type<real2_type> &offsetImage, array_type<real_type> &snrImage,
     array_type<real3_type> &covImage, array_type<real_type> &peakValueImage, stream_type stream_)
-    : base_type(param_, offsetImage, snrImage, covImage, peakValueImage, stream_)
+    : base_type(param_, offsetImage, snrImage, covImage, peakValueImage, stream_),
+      // the reference windows, from the raw size to the oversampled size
+      referenceBatchOverSampler(param_.windowSizeHeightRaw, param_.windowSizeWidthRaw,
+          param_.windowSizeHeight, param_.windowSizeWidth,
+          param_.windowsDownInChunk*param_.windowsAcrossInChunk, stream_),
+      // the secondary windows around the first peak, from the raw size to the oversampled size
+      secondaryBatchOverSampler(param_.searchWindowSizeHeightRawZoomIn, param_.searchWindowSizeWidthRawZoomIn,
+          param_.searchWindowSizeHeight, param_.searchWindowSizeWidth,
+          param_.windowsDownInChunk*param_.windowsAcrossInChunk, stream_)
 {
     using traits = typename base_type::traits;
     const int down = param.windowsDownInChunk;
@@ -158,14 +166,6 @@ cuAmpcorProcessorTwoPass<arrayT>::cuAmpcorProcessorTwoPass(const cuAmpcorParamet
     batch(c_secondaryBatchOverSampled, param.searchWindowSizeHeight, param.searchWindowSizeWidth);
     batch(r_referenceBatchOverSampled, param.windowSizeHeight, param.windowSizeWidth);
     batch(r_secondaryBatchOverSampled, param.searchWindowSizeHeight, param.searchWindowSizeWidth);
-    referenceBatchOverSampler = std::make_unique<oversampler_c2c_type>(
-        c_referenceBatchRaw->height, c_referenceBatchRaw->width,                   // raw size
-        c_referenceBatchOverSampled->height, c_referenceBatchOverSampled->width,   // oversampled size
-        c_referenceBatchRaw->count, stream);
-    secondaryBatchOverSampler = std::make_unique<oversampler_c2c_type>(
-        c_secondaryBatchZoomIn->height, c_secondaryBatchZoomIn->width,
-        c_secondaryBatchOverSampled->height, c_secondaryBatchOverSampled->width,
-        c_secondaryBatchRaw->count, stream);
     batch(r_corrBatchZoomIn, param.searchWindowSizeHeight - param.windowSizeHeight + 1,
         param.searchWindowSizeWidth - param.windowSizeWidth + 1);
     batch(r_corrBatchZoomInAdjust, param.searchWindowSizeHeight - param.windowSizeHeight,

@@ -34,7 +34,7 @@ void cuAmpcorProcessorOnePass<arrayT>::run(int idxDown, int idxAcross, const chu
     dump(c_referenceBatchRaw.get(), "c_referenceBatchRaw");
     cuDeramp(param.derampMethod, c_referenceBatchRaw.get(), param.derampAxis, stream);
     dump(c_referenceBatchRaw.get(), "c_referenceBatchRawDeramped");
-    referenceBatchOverSampler->execute(c_referenceBatchRaw.get(), c_referenceBatchOverSampled.get());
+    referenceBatchOverSampler.execute(c_referenceBatchRaw.get(), c_referenceBatchOverSampled.get());
     const auto center = traits::make_int2(
         (c_referenceBatchOverSampled->height - r_referenceBatchOverSampled->height)/2,
         (c_referenceBatchOverSampled->width - r_referenceBatchOverSampled->width)/2);
@@ -50,7 +50,7 @@ void cuAmpcorProcessorOnePass<arrayT>::run(int idxDown, int idxAcross, const chu
     dump(c_secondaryBatchRaw.get(), "c_secondaryBatchRaw");
     cuDeramp(param.derampMethod, c_secondaryBatchRaw.get(), param.derampAxis, stream);
     dump(c_secondaryBatchRaw.get(), "c_secondaryBatchRawDeramped");
-    secondaryBatchOverSampler->execute(c_secondaryBatchRaw.get(), c_secondaryBatchOverSampled.get());
+    secondaryBatchOverSampler.execute(c_secondaryBatchRaw.get(), c_secondaryBatchOverSampled.get());
     cuArraysAbs(c_secondaryBatchOverSampled.get(), r_secondaryBatchOverSampled.get(), stream);
     dump(c_secondaryBatchOverSampled.get(), "c_secondaryBatchOverSampled");
     dump(r_secondaryBatchOverSampled.get(), "r_secondaryBatchOverSampled");
@@ -116,7 +116,15 @@ template <template <typename> class arrayT>
 cuAmpcorProcessorOnePass<arrayT>::cuAmpcorProcessorOnePass(const cuAmpcorParameter &param_,
     array_type<real2_type> &offsetImage, array_type<real_type> &snrImage,
     array_type<real3_type> &covImage, array_type<real_type> &peakValueImage, stream_type stream_)
-    : base_type(param_, offsetImage, snrImage, covImage, peakValueImage, stream_)
+    : base_type(param_, offsetImage, snrImage, covImage, peakValueImage, stream_),
+      // the reference windows (enlarged), from the raw size to the oversampled size
+      referenceBatchOverSampler(param_.windowSizeHeightRawEnlarged, param_.windowSizeWidthRawEnlarged,
+          param_.windowSizeHeightEnlarged, param_.windowSizeWidthEnlarged,
+          param_.windowsDownInChunk*param_.windowsAcrossInChunk, stream_),
+      // the secondary windows, from the raw size to the oversampled size
+      secondaryBatchOverSampler(param_.searchWindowSizeHeightRaw, param_.searchWindowSizeWidthRaw,
+          param_.searchWindowSizeHeight, param_.searchWindowSizeWidth,
+          param_.windowsDownInChunk*param_.windowsAcrossInChunk, stream_)
 {
     using traits = typename base_type::traits;
     const int down = param.windowsDownInChunk;
@@ -135,14 +143,6 @@ cuAmpcorProcessorOnePass<arrayT>::cuAmpcorProcessorOnePass(const cuAmpcorParamet
     batch(c_secondaryBatchOverSampled, param.searchWindowSizeHeight, param.searchWindowSizeWidth);
     batch(r_referenceBatchOverSampled, param.windowSizeHeight, param.windowSizeWidth);
     batch(r_secondaryBatchOverSampled, param.searchWindowSizeHeight, param.searchWindowSizeWidth);
-    referenceBatchOverSampler = std::make_unique<oversampler_c2c_type>(
-        c_referenceBatchRaw->height, c_referenceBatchRaw->width,                   // raw size
-        c_referenceBatchOverSampled->height, c_referenceBatchOverSampled->width,   // oversampled size
-        c_referenceBatchRaw->count, stream);
-    secondaryBatchOverSampler = std::make_unique<oversampler_c2c_type>(
-        c_secondaryBatchRaw->height, c_secondaryBatchRaw->width,
-        c_secondaryBatchOverSampled->height, c_secondaryBatchOverSampled->width,
-        c_secondaryBatchRaw->count, stream);
 
     // the correlation surfaces
     batch(r_corrBatch, param.corrWindowSize.x, param.corrWindowSize.y);

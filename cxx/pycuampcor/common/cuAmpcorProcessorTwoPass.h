@@ -87,8 +87,8 @@ private:
     std::unique_ptr<array_type<window_type>> c_secondaryBatchOverSampled;   ///< the oversampled secondary windows
     std::unique_ptr<array_type<real_type>> r_referenceBatchOverSampled;     ///< their amplitudes
     std::unique_ptr<array_type<real_type>> r_secondaryBatchOverSampled;     ///< their amplitudes
-    std::unique_ptr<oversampler_c2c_type> referenceBatchOverSampler;        ///< the oversampler of the reference windows
-    std::unique_ptr<oversampler_c2c_type> secondaryBatchOverSampler;        ///< the oversampler of the secondary windows
+    oversampler_c2c_type referenceBatchOverSampler;                         ///< the oversampler of the reference windows
+    oversampler_c2c_type secondaryBatchOverSampler;                         ///< the oversampler of the secondary windows
     std::unique_ptr<array_type<real_type>> r_corrBatchZoomIn;               ///< the correlation surfaces
     std::unique_ptr<array_type<real_type>> r_corrBatchZoomInAdjust;         ///< the same, of even size
     std::unique_ptr<array_type<real_type>> r_corrBatchZoomInOverSampled;    ///< the oversampled surfaces
