@@ -154,7 +154,7 @@ The headers are organized as in [pyre](https://github.com/pyre/pyre): in each of
 
 ## 3. User Guide
 
-The main procedures of PyCuAmpcor are implemented with CUDA/C++. A Python interface to configure and run PyCuAmpcor is offered. The package includes the dense offsets tool *pycuampcor.dense_offsets* (3.1), for images in radar geometry, and the displacement tool *pycuampcor.geo_offsets* (3.2), for georeferenced images such as optical images; the *examples* directory has a self-contained example on synthetic images (*simple_offsets.py*, 3.3) and a plotting script (*plotOffsets.py*, 3.4).
+The main procedures of PyCuAmpcor are implemented with CUDA/C++. A Python interface to configure and run PyCuAmpcor is offered. The package includes the dense offsets tool *pycuampcor.dense_offsets* (3.1), for images in radar geometry, and the displacement tool *pycuampcor.geo_offsets* (3.2), for georeferenced images such as optical images; the *examples* directory has a self-contained example on synthetic images (*simple_offsets.py*, 3.3), a plotting script (*plotOffsets.py*, 3.4), and examples of GeoTIFF and optical images (*examples/optical*: Sentinel-2 images of the Ridgecrest 2019 and Kahramanmaraş 2023 earthquakes, with scripts to download the images, plot the displacements and measure the fault slip; see its README).
 
 ### 3.1 pycuampcor.dense_offsets
 
