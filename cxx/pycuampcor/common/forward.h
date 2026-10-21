@@ -28,10 +28,11 @@ namespace pycuampcor {
     // the parameters (Parameter.h)
     struct Index2;
     class Parameter;
-    // the images (SlcImage.h, Hdf5SlcImage.h)
+    // the images (SlcImage.h, Hdf5SlcImage.h, GdalSlcImage.h)
     class SlcImage;
     class MmapSlcImage;
     class Hdf5SlcImage;
+    class GdalSlcImage;
     // the chunks of the layers processed together (Layers.h)
     struct ChunkFootprint;
     // the interfaces of the workers, for the arrays arrayT: the normalizer of the correlation

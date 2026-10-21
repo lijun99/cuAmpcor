@@ -6,6 +6,7 @@
 # Options:
 #   PYCUAMPCOR_CUDA   AUTO (default, build the CUDA backend if a CUDA compiler is found), ON, OFF
 #   PYCUAMPCOR_HDF5   AUTO (default, read images from HDF5 datasets if HDF5 and zlib are found), ON, OFF
+#   PYCUAMPCOR_GDAL   AUTO (default, read rasters such as GeoTIFF with GDAL if GDAL is found), ON, OFF
 #   PYCUAMPCOR_DOUBLE use double precision for internal computations (default OFF)
 #   PYCUAMPCOR_BUILD_TESTS build the C++ unit tests, run with ctest (default OFF)
 
@@ -24,6 +25,8 @@ set(PYCUAMPCOR_CUDA AUTO CACHE STRING "Build the CUDA backend (AUTO, ON, OFF)")
 set_property(CACHE PYCUAMPCOR_CUDA PROPERTY STRINGS AUTO ON OFF)
 set(PYCUAMPCOR_HDF5 AUTO CACHE STRING "Read images from HDF5 datasets (AUTO, ON, OFF)")
 set_property(CACHE PYCUAMPCOR_HDF5 PROPERTY STRINGS AUTO ON OFF)
+set(PYCUAMPCOR_GDAL AUTO CACHE STRING "Read rasters (GeoTIFF, VRT, ...) with GDAL (AUTO, ON, OFF)")
+set_property(CACHE PYCUAMPCOR_GDAL PROPERTY STRINGS AUTO ON OFF)
 option(PYCUAMPCOR_DOUBLE "Use double precision for internal computations" OFF)
 option(PYCUAMPCOR_BUILD_TESTS "Build the C++ unit tests (requires GoogleTest)" OFF)
 
@@ -104,6 +107,22 @@ if(PYCUAMPCOR_HDF5 STREQUAL "AUTO" OR PYCUAMPCOR_HDF5)
     endif()
 endif()
 
+# GDAL, for reading rasters (GeoTIFF, VRT, ...)
+set(PYCUAMPCOR_WITH_GDAL OFF)
+if(PYCUAMPCOR_GDAL STREQUAL "AUTO" OR PYCUAMPCOR_GDAL)
+    if(PYCUAMPCOR_GDAL STREQUAL "AUTO")
+        find_package(GDAL)
+    else()
+        find_package(GDAL REQUIRED)
+    endif()
+    if(GDAL_FOUND)
+        set(PYCUAMPCOR_WITH_GDAL ON)
+        message(STATUS "Reading rasters with GDAL ${GDAL_VERSION}")
+    else()
+        message(STATUS "GDAL is not found; rasters such as GeoTIFF can't be read")
+    endif()
+endif()
+
 # python and pybind11 requirement
 # prefer the python in the active (e.g., conda) environment over newer system versions
 set(Python_FIND_UNVERSIONED_NAMES FIRST)
@@ -119,6 +138,9 @@ include(${PYCUAMPCOR_CXX_DIR}/cuda/Sources.cmake)
 if(PYCUAMPCOR_WITH_HDF5)
     list(APPEND PYCUAMPCOR_COMMON_SOURCES Hdf5SlcImage.cpp)
 endif()
+if(PYCUAMPCOR_WITH_GDAL)
+    list(APPEND PYCUAMPCOR_COMMON_SOURCES GdalSlcImage.cpp)
+endif()
 list(TRANSFORM PYCUAMPCOR_COMMON_SOURCES PREPEND ${PYCUAMPCOR_CXX_DIR}/common/)
 list(TRANSFORM PYCUAMPCOR_CPU_SOURCES PREPEND ${PYCUAMPCOR_CXX_DIR}/cpu/)
 list(TRANSFORM PYCUAMPCOR_CUDA_SOURCES PREPEND ${PYCUAMPCOR_CXX_DIR}/cuda/)
@@ -133,6 +155,10 @@ target_include_directories(pycuampcor_common PUBLIC ${PYCUAMPCOR_CXX_DIR}/common
 if(PYCUAMPCOR_WITH_HDF5)
     target_compile_definitions(pycuampcor_common PUBLIC PYCUAMPCOR_WITH_HDF5)
     target_link_libraries(pycuampcor_common PUBLIC HDF5::HDF5 ZLIB::ZLIB)
+endif()
+if(PYCUAMPCOR_WITH_GDAL)
+    target_compile_definitions(pycuampcor_common PUBLIC PYCUAMPCOR_WITH_GDAL)
+    target_link_libraries(pycuampcor_common PUBLIC GDAL::GDAL)
 endif()
 
 # add a static library pycuampcor_<backend> with the sources of the package (cpu/ or cuda/),

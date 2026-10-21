@@ -27,6 +27,7 @@ from typing import List, Sequence, SupportsIndex, Tuple, TypedDict, Union, overl
 
 from .options import Algorithm, DataType, DerampAxis, DerampMethod, OversamplingMethod, Workflow
 
+has_gdal: bool
 has_hdf5: bool
 '''
 

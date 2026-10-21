@@ -229,6 +229,8 @@ PYBIND11_MODULE(PYCUAMPCOR_MODULE, m)
 
     // whether images can be read from HDF5 datasets (HDF5:<file>:<dataset>)
     m.attr("has_hdf5") = SlcImage::hasHdf5();
+    // whether rasters (GeoTIFF, VRT, ...) can be read with GDAL
+    m.attr("has_gdal") = SlcImage::hasGdal();
 
     // the level of the messages (pycuampcor.set_log_level sets it for both backends)
     m.def("_set_log_level", [](int level) { setLogLevel(static_cast<LogLevel>(level)); },
@@ -286,17 +288,17 @@ PYBIND11_MODULE(PYCUAMPCOR_MODULE, m)
 
     // images
     DEF_PARAM(str, referenceImageName,
-        "Reference (template) image: a raw binary file, or HDF5:<file>:<dataset>.");
+        "Reference (template) image: a raw binary file, HDF5:<file>:<dataset>, or a GDAL raster (e.g., GeoTIFF).");
     DEF_PARAM(str, referenceImageReader,
-        "Reader of the reference image: 'auto' (by the name), 'raw' or 'hdf5'.");
+        "Reader of the reference image: 'auto' (by the name), 'raw', 'hdf5' or 'gdal'.");
     DEF_PARAM(int, referenceImageHeight, "Height (lines) of the reference image.");
     DEF_PARAM(int, referenceImageWidth, "Width (columns) of the reference image.");
     DEF_OPTION(referenceImageDataType, DataType,
         "Pixel type of the reference image (DataType): 'complex64' or 'float32'.");
     DEF_PARAM(str, secondaryImageName,
-        "Secondary (search) image: a raw binary file, or HDF5:<file>:<dataset>.");
+        "Secondary (search) image: a raw binary file, HDF5:<file>:<dataset>, or a GDAL raster (e.g., GeoTIFF).");
     DEF_PARAM(str, secondaryImageReader,
-        "Reader of the secondary image: 'auto' (by the name), 'raw' or 'hdf5'.");
+        "Reader of the secondary image: 'auto' (by the name), 'raw', 'hdf5' or 'gdal'.");
     DEF_PARAM(int, secondaryImageHeight, "Height (lines) of the secondary image.");
     DEF_PARAM(int, secondaryImageWidth, "Width (columns) of the secondary image.");
     DEF_OPTION(secondaryImageDataType, DataType,

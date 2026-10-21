@@ -8,6 +8,7 @@
 // the standard library
 #include <algorithm>
 #include <atomic>
+#include <cctype>
 #include <cmath>
 #include <cstddef>
 #include <cstdio>
@@ -29,6 +30,12 @@
 // hdf5, to read images from HDF5 datasets
 #ifdef PYCUAMPCOR_WITH_HDF5
 #include <hdf5.h>
+#endif
+
+// gdal, to read rasters (GeoTIFF, VRT, ...)
+#ifdef PYCUAMPCOR_WITH_GDAL
+#include <cpl_error.h>
+#include <gdal.h>
 #endif
 
 //end of file

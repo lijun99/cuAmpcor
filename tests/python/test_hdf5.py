@@ -188,9 +188,9 @@ def test_reader_option(impl, images, raw_results, tmp_path):
     out = run_ampcor(impl, (names[0], images[1]), SHAPE, tmp_path / "mixed",
                      referenceImageReader="hdf5", secondaryImageReader="raw")
     assert_same(out, raw_results(impl))
-    ampcor, _ = configure_ampcor(impl, images, SHAPE, tmp_path / "out", referenceImageReader="gdal")
-    assert ampcor.referenceImageReader == "gdal" and ampcor.secondaryImageReader == "auto"
-    with pytest.raises(ValueError, match="Unknown image reader gdal"):
+    ampcor, _ = configure_ampcor(impl, images, SHAPE, tmp_path / "out", referenceImageReader="tiff")
+    assert ampcor.referenceImageReader == "tiff" and ampcor.secondaryImageReader == "auto"
+    with pytest.raises(ValueError, match="Unknown image reader tiff"):
         ampcor.runAmpcor()
 
 

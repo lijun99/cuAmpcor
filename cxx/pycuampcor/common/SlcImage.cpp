@@ -7,6 +7,9 @@
 #ifdef PYCUAMPCOR_WITH_HDF5
 #include "Hdf5SlcImage.h"
 #endif
+#ifdef PYCUAMPCOR_WITH_GDAL
+#include "GdalSlcImage.h"
+#endif
 
 // posix: the files and their memory maps
 #include <fcntl.h>
@@ -69,16 +72,42 @@ bool SlcImage::hasHdf5()
 }
 
 /**
- * Open an image with the given reader: an HDF5 dataset (Hdf5SlcImage) or a raw binary file
- * (MmapSlcImage)
+ * Whether rasters are read with GDAL (built with GDAL)
+ */
+bool SlcImage::hasGdal()
+{
+#ifdef PYCUAMPCOR_WITH_GDAL
+    return true;
+#else
+    return false;
+#endif
+}
+
+/**
+ * Whether the image name is of a GDAL raster for the auto reader: it ends with .tif, .tiff or
+ * .vrt, in any case
+ */
+bool SlcImage::isGdalName(const std::string& name)
+{
+    const size_t dot = name.rfind('.');
+    if (dot == std::string::npos)
+        return false;
+    std::string ext = name.substr(dot + 1);
+    std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) { return std::tolower(c); });
+    return ext == "tif" || ext == "tiff" || ext == "vrt";
+}
+
+/**
+ * Open an image with the given reader: an HDF5 dataset (Hdf5SlcImage), a GDAL raster
+ * (GdalSlcImage) or a raw binary file (MmapSlcImage)
  */
 std::unique_ptr<SlcImage> SlcImage::open(const std::string& filepath, const std::string& reader,
                                          size_t img_height, size_t img_width,
                                          size_t pixel_size, size_t buffer_size)
 {
-    if (reader != "auto" && reader != "raw" && reader != "hdf5")
+    if (reader != "auto" && reader != "raw" && reader != "hdf5" && reader != "gdal")
         throw std::invalid_argument("Unknown image reader " + reader + " for " + filepath
-            + "; expect auto, raw or hdf5");
+            + "; expect auto, raw, hdf5 or gdal");
     std::string file, dataset;
     if (reader == "hdf5" || (reader == "auto" && parseHdf5Name(filepath, file, dataset))) {
         // the HDF5: prefix is optional with the hdf5 reader
@@ -88,6 +117,13 @@ std::unique_ptr<SlcImage> SlcImage::open(const std::string& filepath, const std:
         return std::make_unique<Hdf5SlcImage>(file, dataset, img_height, img_width, pixel_size, buffer_size);
 #else
         throw std::runtime_error("Cannot read " + filepath + ": pycuampcor is built without HDF5 support");
+#endif
+    }
+    if (reader == "gdal" || (reader == "auto" && isGdalName(filepath))) {
+#ifdef PYCUAMPCOR_WITH_GDAL
+        return std::make_unique<GdalSlcImage>(filepath, img_height, img_width, pixel_size);
+#else
+        throw std::runtime_error("Cannot read " + filepath + ": pycuampcor is built without GDAL support");
 #endif
     }
     return std::make_unique<MmapSlcImage>(filepath, img_height, img_width, pixel_size, buffer_size);

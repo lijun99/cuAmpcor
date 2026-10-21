@@ -32,6 +32,9 @@
 #ifdef PYCUAMPCOR_WITH_HDF5
 #include "Hdf5SlcImage.h"
 #endif
+#ifdef PYCUAMPCOR_WITH_GDAL
+#include "GdalSlcImage.h"
+#endif
 // layers processed together
 #include "Layers.h"
 // the processors on the arrays of a package: what goes with the arrays, the interfaces of the

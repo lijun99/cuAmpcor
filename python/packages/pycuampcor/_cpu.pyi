@@ -4,6 +4,7 @@ from typing import List, Sequence, SupportsIndex, Tuple, TypedDict, Union, overl
 
 from .options import Algorithm, DataType, DerampAxis, DerampMethod, OversamplingMethod, Workflow
 
+has_gdal: bool
 has_hdf5: bool
 
 class PyCPUAmpcor:
@@ -139,7 +140,7 @@ class PyCPUAmpcor:
     def workflow(self, value: Union[Workflow, SupportsIndex, str]) -> None: ...
     @property
     def referenceImageName(self) -> str:
-        """Reference (template) image: a raw binary file, or HDF5:<file>:<dataset>.
+        """Reference (template) image: a raw binary file, HDF5:<file>:<dataset>, or a GDAL raster (e.g., GeoTIFF).
 
         Default: 'reference.slc'
         """
@@ -147,7 +148,7 @@ class PyCPUAmpcor:
     def referenceImageName(self, value: Union[str, os.PathLike[str]]) -> None: ...
     @property
     def referenceImageReader(self) -> str:
-        """Reader of the reference image: 'auto' (by the name), 'raw' or 'hdf5'.
+        """Reader of the reference image: 'auto' (by the name), 'raw', 'hdf5' or 'gdal'.
 
         Default: 'auto'
         """
@@ -179,7 +180,7 @@ class PyCPUAmpcor:
     def referenceImageDataType(self, value: Union[DataType, SupportsIndex, str]) -> None: ...
     @property
     def secondaryImageName(self) -> str:
-        """Secondary (search) image: a raw binary file, or HDF5:<file>:<dataset>.
+        """Secondary (search) image: a raw binary file, HDF5:<file>:<dataset>, or a GDAL raster (e.g., GeoTIFF).
 
         Default: 'secondary.slc'
         """
@@ -187,7 +188,7 @@ class PyCPUAmpcor:
     def secondaryImageName(self, value: Union[str, os.PathLike[str]]) -> None: ...
     @property
     def secondaryImageReader(self) -> str:
-        """Reader of the secondary image: 'auto' (by the name), 'raw' or 'hdf5'.
+        """Reader of the secondary image: 'auto' (by the name), 'raw', 'hdf5' or 'gdal'.
 
         Default: 'auto'
         """

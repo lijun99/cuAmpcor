@@ -63,7 +63,7 @@ The packages are on the conda-forge channel (`conda install -c conda-forge pycua
     pip install .
 ```
 
-The CUDA implementation is built if a CUDA compiler (nvcc) is found. The build requires a C++17 compiler, CMake >= 3.18, pybind11, FFTW (single precision), and optionally OpenMP, CUDA >= 11, and HDF5 (>= 1.14 for the fast reading of compressed datasets) with zlib to read images from HDF5 files. CMake options can be passed with `-C`, e.g.,
+The CUDA implementation is built if a CUDA compiler (nvcc) is found. The build requires a C++17 compiler, CMake >= 3.18, pybind11, FFTW (single precision), and optionally OpenMP, CUDA >= 11, HDF5 (>= 1.14 for the fast reading of compressed datasets) with zlib to read images from HDF5 files, and GDAL to read rasters such as GeoTIFF. CMake options can be passed with `-C`, e.g.,
 
 ```bash
     # CPU only
@@ -86,6 +86,7 @@ CMake options:
 
 * `PYCUAMPCOR_CUDA`: AUTO (default, build the CUDA implementation if a CUDA compiler is found), ON, or OFF;
 * `PYCUAMPCOR_HDF5`: AUTO (default, read images from HDF5 datasets if HDF5 and zlib are found), ON, or OFF;
+* `PYCUAMPCOR_GDAL`: AUTO (default, read rasters such as GeoTIFF with GDAL if GDAL is found), ON, or OFF;
 * `PYCUAMPCOR_DOUBLE`: use double precision for internal computations (default OFF);
 * `PYCUAMPCOR_INSTALL_DIR`: the directory to install the python package (default, `site-packages/pycuampcor` of the python in use);
 * `CMAKE_CUDA_ARCHITECTURES`: the targeted GPU architectures, e.g., `native` to detect the GPU(s) on the system, or `60` for P100, `70` for V100, `80` for A100.
@@ -102,7 +103,8 @@ The tests are organized as
     * *test_regression.py*: regression tests with the *ovs128-rho0.8* data (from isce3), against the isce3 outputs and against reference outputs of this package (*tests/data/ampcor/ovs128-rho0.8/golden*);
     * *test_api.py*: parameters, gross offsets, real images, and error handling;
     * *test_layers.py*: several layers (window sizes) run together with `runAmpcorLayers`, identical to separate runs;
-    * *test_hdf5.py*: images read from HDF5 datasets (compressed or not, chunked or contiguous), identical to the same images in raw files.
+    * *test_hdf5.py*: images read from HDF5 datasets (compressed or not, chunked or contiguous), identical to the same images in raw files;
+    * *test_gdal.py*: images read with GDAL (GeoTIFF, VRT; pixel types converted), identical to the same images in raw files.
 
 To build and run the C++ unit tests,
 
@@ -141,7 +143,7 @@ The package includes type stubs (`_cpu.pyi`, `_cuda.pyi`) for type checkers and 
 
 ### 2.6 Code organization
 
-* *cxx/pycuampcor/common*: the shared code, in namespace `pycuampcor`, compiled once (library `pycuampcor_common`): the parameters and their options, logging, the image readers (raw files and HDF5 datasets), and the layers processed together (chunk footprints); and the processors of the two-pass and one-pass workflows, written once as templates on the array type (*Processor\*.h*, with the definitions in *Processor\*Impl.h*, with the types that go with the arrays in `array_traits`) and instantiated by each package (*processors.cpp*);
+* *cxx/pycuampcor/common*: the shared code, in namespace `pycuampcor`, compiled once (library `pycuampcor_common`): the parameters and their options, logging, the image readers (raw files, HDF5 datasets and GDAL rasters), and the layers processed together (chunk footprints); and the processors of the two-pass and one-pass workflows, written once as templates on the array type (*Processor\*.h*, with the definitions in *Processor\*Impl.h*, with the types that go with the arrays in `array_traits`) and instantiated by each package (*processors.cpp*);
 * *cxx/pycuampcor/cpu*: the CPU package, in namespace `pycuampcor::cpu` (library `pycuampcor_cpu`): arrays and kernels, FFTs with FFTW, and the controller and chunk loader, running chunks in parallel with OpenMP threads;
 * *cxx/pycuampcor/cuda*: the CUDA package, in namespace `pycuampcor::cuda` (library `pycuampcor_cuda`): arrays and kernels, FFTs with cuFFT, and the controller and chunk loader, running chunks on CUDA streams;
 * *python/extensions*: the pybind11 bindings, compiled to `pycuampcor._cuda` and `pycuampcor._cpu`;
@@ -310,11 +312,11 @@ If you prefer to plot the offsets in 3D or overlay the velocity vectors (quiver)
 | PyCuAmpcor                | Notes                                                                   |
 |:--------------------------|:------------------------------------------------------------------------|
 | referenceImageName        | The file name of the reference/template image                           |
-| referenceImageReader      | How to read the reference image: auto (default), raw or hdf5            |
+| referenceImageReader      | How to read the reference image: auto (default), raw, hdf5 or gdal      |
 | referenceImageHeight      | The height of the reference image                                       |
 | referenceImageWidth       | The width of the reference image                                        |
 | secondaryImageName        | The file name of the secondary/search image                             |
-| secondaryImageReader      | How to read the secondary image: auto (default), raw or hdf5            |
+| secondaryImageReader      | How to read the secondary image: auto (default), raw, hdf5 or gdal      |
 | secondaryImageHeight      | The height of the secondary image                                       |
 | secondaryImageWidth       | The width of the secondary image                                        |
 | grossOffsetImageName      | The output file name for gross offsets                                  |
@@ -327,7 +329,9 @@ PyCuAmpcor reads images as raw binary files (e.g., ENVI format, or the data file
 
 If built with HDF5 (`pycuampcor.has_hdf5`), images may also be 2D datasets in HDF5 files, named as in GDAL, `HDF5:<file>:<dataset>` (or `HDF5:"<file>":<dataset>` if the file name contains ':'), e.g., `HDF5:rslc.h5:/science/LSAR/RSLC/swaths/frequencyA/HH`. The dataset must be float32 (real) or complex64 (a compound of two float32, as written by h5py and the NISAR products), with the given height and width. Chunked datasets compressed with deflate (gzip), with or without shuffle, as the NISAR products, or uncompressed, are read without the HDF5 library: the chunks are located once, read and decoded in parallel, and kept in a cache of `mmapSize` GB shared by the workers (CUDA streams or CPU threads). Other datasets (contiguous, other filters, or files with a user block) are read with the HDF5 library. The image is read directly from the HDF5 file, without an intermediate raw copy.
 
-The reader of each image is chosen by `referenceImageReader`/`secondaryImageReader`: `auto` (default) reads names starting with `HDF5:` as HDF5 datasets and other names as raw binary files; `raw` and `hdf5` choose the reader explicitly (with `hdf5`, the `HDF5:` prefix of the name is optional, e.g., `rslc.h5:/science/LSAR/RSLC/swaths/frequencyA/HH`).
+If built with GDAL (`pycuampcor.has_gdal`), images may also be rasters read with GDAL, e.g., GeoTIFF or VRT files, or any dataset name of GDAL. The first band is read, with the given height and width, and converted by GDAL to the pixel type of the image: a real band of any type (e.g., Byte, UInt16, Int16, Float64) to float32 (referenceImageDataType/secondaryImageDataType=1), a complex band (e.g., CInt16, CFloat32) to complex64. The reads of an image are serialized among the workers; raw files and HDF5 datasets remain the faster readers for large images.
+
+The reader of each image is chosen by `referenceImageReader`/`secondaryImageReader`: `auto` (default) reads names starting with `HDF5:` as HDF5 datasets, names ending with `.tif`, `.tiff` or `.vrt` with GDAL, and other names as raw binary files; `raw`, `hdf5` and `gdal` choose the reader explicitly (with `hdf5`, the `HDF5:` prefix of the name is optional, e.g., `rslc.h5:/science/LSAR/RSLC/swaths/frequencyA/HH`).
 
 The offset output is arranged in BIP format, with each pixel (azimuth offset, range offset). In addition to a static gross offset (i.e., a constant for all search windows), PyCuAmpcor supports varying gross offsets as inputs (e.g., for glaciers, users can compute the gross offsets with the velocity model for different locations and use them as inputs for PyCuAmpcor.
 

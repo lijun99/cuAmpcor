@@ -12,9 +12,11 @@ which sets the object up to run.
 Options (e.g., workflow, derampMethod) are integer enums of pycuampcor.options
 (e.g., Workflow), set by the member, the integer value or the name (e.g., "one_pass").
 
-Images are raw binary files, or 2D datasets in HDF5 files named as HDF5:<file>:<dataset>
-if built with HDF5 support (has_hdf5). The reader of each image is chosen by its name
-(referenceImageReader/secondaryImageReader = "auto", default) or set to "raw" or "hdf5".
+Images are raw binary files, 2D datasets in HDF5 files named as HDF5:<file>:<dataset> if
+built with HDF5 support (has_hdf5), or rasters read with GDAL (e.g., GeoTIFF; the first band,
+converted to the pixel type of the image) if built with GDAL support (has_gdal). The reader of
+each image is chosen by its name (referenceImageReader/secondaryImageReader = "auto", default:
+hdf5 for HDF5:..., gdal for .tif, .tiff, .vrt, raw otherwise) or set to "raw", "hdf5" or "gdal".
 
 The messages written (progress, warnings) are chosen with set_log_level, e.g.,
 set_log_level("warning") for the warnings only.
@@ -24,7 +26,7 @@ from ._version import __version__
 from .options import (Algorithm, DataType, DerampAxis, DerampMethod, LogLevel,
                       OversamplingMethod, Workflow)
 from . import _cpu
-from ._cpu import PyCPUAmpcor, has_hdf5
+from ._cpu import PyCPUAmpcor, has_gdal, has_hdf5
 
 try:
     from . import _cuda

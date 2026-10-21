@@ -1,6 +1,7 @@
 /**
  * @file  SlcImage.h
- * @brief Image sources (tile loaders) for SLC images: a raw binary file (mmap) or an HDF5 dataset
+ * @brief Image sources (tile loaders) for SLC images: a raw binary file (mmap), an HDF5 dataset,
+ *     or a raster read with GDAL
  */
 
 #pragma once
@@ -24,13 +25,15 @@ public:
                             size_t h_tile, size_t w_tile) = 0;
 
     /// open an image of image_height x image_width pixels of pixel_size bytes
-    /// @param fn the image name: a raw binary file (row major), or a 2D dataset in an HDF5 file
-    ///     as HDF5:<file>:<dataset> (as in GDAL; the file may be quoted, HDF5:"<file>":<dataset>)
+    /// @param fn the image name: a raw binary file (row major), a 2D dataset in an HDF5 file
+    ///     as HDF5:<file>:<dataset> (as in GDAL; the file may be quoted, HDF5:"<file>":<dataset>),
+    ///     or a raster read with GDAL (a GeoTIFF or VRT file, or any dataset name of GDAL)
     /// @param reader how to read the image: "raw" (a raw binary file), "hdf5" (an HDF5 dataset;
-    ///     the HDF5: prefix of the name is optional), or "auto" (hdf5 if the name starts with HDF5:,
-    ///     raw otherwise)
+    ///     the HDF5: prefix of the name is optional), "gdal" (the first band of a raster, converted
+    ///     to the pixel type), or "auto" (hdf5 if the name starts with HDF5:, gdal if it ends with
+    ///     .tif, .tiff or .vrt, raw otherwise)
     /// @param buffer_size the host memory buffer for reading the image, in GB
-    ///     (the mmap window for a raw file, the cache of decoded chunks for HDF5)
+    ///     (the mmap window for a raw file, the cache of decoded chunks for HDF5; not used by GDAL)
     static std::unique_ptr<SlcImage> open(const std::string& fn, const std::string& reader,
                                           size_t image_height, size_t image_width,
                                           size_t pixel_size, size_t buffer_size);
@@ -41,6 +44,13 @@ public:
 
     /// whether HDF5 datasets are supported (built with HDF5)
     static bool hasHdf5();
+
+    /// whether rasters are read with GDAL (built with GDAL)
+    static bool hasGdal();
+
+    /// whether the image name is of a GDAL raster for the auto reader (ends with .tif, .tiff or
+    /// .vrt, in any case)
+    static bool isGdalName(const std::string& name);
 };
 
 /// a raw binary image file, memory mapped in a window of up to buffer_size GB

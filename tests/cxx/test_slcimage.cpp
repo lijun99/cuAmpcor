@@ -98,8 +98,19 @@ TEST_F(SlcImageTest, Reader)
     // a raw file named as an HDF5 dataset
     EXPECT_THROW(SlcImage::open("HDF5:" + filename + ":/HH", "raw", H, W, sizeof(image_complex_type), 1),
                  std::runtime_error);
+    // a raw file (without a header) read with GDAL, or without GDAL support
+    EXPECT_THROW(SlcImage::open(filename, "gdal", H, W, sizeof(image_complex_type), 1), std::runtime_error);
     // an unknown reader
-    EXPECT_THROW(SlcImage::open(filename, "gdal", H, W, sizeof(image_complex_type), 1), std::invalid_argument);
+    EXPECT_THROW(SlcImage::open(filename, "tiff", H, W, sizeof(image_complex_type), 1), std::invalid_argument);
+}
+
+TEST(SlcImageName, Gdal)
+{
+    // the names read with GDAL by the auto reader
+    for (const char *name : {"a.tif", "a.tiff", "dir.v1/a.TIF", "a.slc.vrt", "a.VRT"})
+        EXPECT_TRUE(SlcImage::isGdalName(name)) << name;
+    for (const char *name : {"a.slc", "a.tif.xml", "tif", "dir.tif/a", "a.h5"})
+        EXPECT_FALSE(SlcImage::isGdalName(name)) << name;
 }
 
 TEST(SlcImageName, ParseHdf5)
