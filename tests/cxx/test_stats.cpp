@@ -1,5 +1,5 @@
 /**
- * @file test_stats.cpp
+ * @file  test_stats.cpp
  * @brief Tests for mean subtraction, sums, and the SNR/variance estimates
  */
 
@@ -69,7 +69,9 @@ TEST_F(StatsTest, EstimateSnr)
     }
 }
 
-// reference covariance from the curvature of the correlation surface at the peak
+/**
+ * Reference covariance from the curvature of the correlation surface at the peak
+ */
 static std::vector<double> refCovariance(const std::vector<real_type> &c, int NY, int2 loc,
     double peak, int templateSize, int d)
 {

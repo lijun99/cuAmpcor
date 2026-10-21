@@ -1,5 +1,5 @@
 /**
- * @file test_sinc.cpp
+ * @file  test_sinc.cpp
  * @brief Tests for the sinc interpolator of correlation surfaces
  */
 
@@ -7,19 +7,21 @@
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND::test {
 
+/// the tests of the sinc oversampler
 class SincTest : public BackendTest {
 protected:
-    static constexpr int n = 32;       // input size
-    static constexpr int covs = 8;     // oversampling factor
-    static constexpr int window = 2;   // only +/- window*covs around the center is interpolated
-    static constexpr double pi = 3.14159265358979323846;
+    static constexpr int n = 32;       ///< input size
+    static constexpr int covs = 8;     ///< oversampling factor
+    static constexpr int window = 2;   ///< only +/- window*covs around the center is interpolated
+    static constexpr double pi = 3.14159265358979323846;   ///< pi
 
-    // a slowly varying (band-limited) function
+    /// a slowly varying (band-limited) function
     static double f(double x, double y)
     {
         return std::cos(2*pi*0.04*x + 0.3)*std::cos(2*pi*0.05*y) + 0.2;
     }
 
+    /// count input images of n x n, sampling f
     std::vector<real_type> input(int count)
     {
         std::vector<real_type> v(n*n*count);
@@ -30,7 +32,7 @@ protected:
         return v;
     }
 
-    // check the interpolated values within the window centered at (center + shift*factor)
+    /// check the interpolated values within the window centered at (center + shift*factor)
     void check(const std::vector<real_type> &out, int k, int2 shift, int factor)
     {
         const int N = n*covs;

@@ -16,10 +16,12 @@ SHIFT = (1.3, -2.6)
 
 @pytest.fixture(scope="module")
 def images(tmp_path_factory):
+    """A pair of synthetic images with a known shift"""
     return make_images(tmp_path_factory.mktemp("images"), SHAPE, SHIFT)
 
 
 def test_module():
+    """The module attributes: version, CUDA availability, classes"""
     assert isinstance(pycuampcor.__version__, str)
     assert isinstance(pycuampcor.has_cuda, bool)
     assert hasattr(pycuampcor, "PyCPUAmpcor")
@@ -51,6 +53,7 @@ STR_PARAMS = ["referenceImageName", "secondaryImageName", "offsetImageName",
 
 
 def test_parameters(impl):
+    """The parameters have their defaults, and can be set and read back"""
     ampcor = new_ampcor(impl)
     for name, (value, default) in INT_PARAMS.items():
         assert getattr(ampcor, name) == default, name
@@ -63,6 +66,7 @@ def test_parameters(impl):
 
 
 def test_docstrings(impl):
+    """The class, its parameters (with their defaults) and methods have docstrings"""
     cls = type(new_ampcor(impl))
     assert cls.__doc__
     names = list(INT_PARAMS) + STR_PARAMS
@@ -78,6 +82,7 @@ def test_docstrings(impl):
 
 
 def test_isce3_alias(impl):
+    """corrImageName (the isce3 name) is an alias of peakValueImageName"""
     ampcor = new_ampcor(impl)
     ampcor.corrImageName = "peak"
     assert ampcor.peakValueImageName == "peak"
@@ -135,6 +140,7 @@ def test_constructor(impl, images, tmp_path, workflow):
 
 
 def test_constructor_parameters(impl, images, tmp_path):
+    """The keyword constructor sets the parameters and sets up the object to run"""
     cls = pycuampcor.PyCuAmpcor if impl == "gpu" else pycuampcor.PyCPUAmpcor
     ampcor = cls(referenceImageName=tmp_path / "ref.slc", corrImageName="peak",
                  windowSizeHeight=np.int32(48), numberWindowDown=3, numberWindowAcross=2)
@@ -211,6 +217,7 @@ def test_real_images(impl, tmp_path_factory, tmp_path):
 
 
 def test_check_pixel_in_image_range(impl, images):
+    """checkPixelInImageRange runs once set up"""
     ampcor = new_ampcor(impl)
     ampcor.referenceImageName, ampcor.secondaryImageName = images
     ampcor.setupParams()
@@ -219,6 +226,7 @@ def test_check_pixel_in_image_range(impl, images):
 
 
 def test_setup_errors(impl, images):
+    """Running before the setup or the gross offsets, and invalid parameters raise errors"""
     ampcor = new_ampcor(impl)
     # run before setting up
     with pytest.raises(RuntimeError, match="setupParams"):
@@ -255,6 +263,7 @@ OPTIONS = {
 
 
 def test_options(impl):
+    """The options are set by the member, the integer value or the name, and read as the member"""
     ampcor = new_ampcor(impl)
     for name, (member, value, names) in OPTIONS.items():
         other = next(m for m in type(member) if m != member)
@@ -279,6 +288,7 @@ def test_options(impl):
 
 
 def test_flags(impl):
+    """The flags are set by a bool or an integer, and read as a bool"""
     ampcor = new_ampcor(impl)
     for name in ["useMmap", "mergeGrossOffset"]:
         for value in [True, 1, np.int64(1), np.bool_(True)]:
@@ -295,6 +305,7 @@ def test_flags(impl):
 
 def test_image_errors(impl, images, tmp_path):
     # image size larger than the file
+    """Images smaller than their size, or missing, raise errors"""
     with pytest.raises(RuntimeError, match="smaller than the image size"):
         run_ampcor(impl, images, (2 * N, 2 * N), tmp_path, n_windows=(2, 2))
     # missing file
@@ -341,6 +352,7 @@ def test_auto_chunk_size(impl, images, tmp_path):
 
 @needs_gpu
 def test_gpu_device_errors(images, tmp_path):
+    """An invalid CUDA device raises an error"""
     with pytest.raises(RuntimeError, match="Invalid CUDA device 99"):
         run_ampcor("gpu", images, SHAPE, tmp_path, deviceID=99, n_windows=(2, 2))
     # invalid device when choosing the chunk size automatically

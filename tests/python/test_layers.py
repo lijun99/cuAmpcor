@@ -20,6 +20,7 @@ LAYERS = [dict(windowSizeHeight=32, windowSizeWidth=32, halfSearchRangeDown=8, h
 
 @pytest.fixture(scope="module")
 def images(tmp_path_factory):
+    """A pair of synthetic images with a known shift"""
     return make_images(tmp_path_factory.mktemp("images"), SHAPE, SHIFT)
 
 
@@ -37,6 +38,7 @@ def layer_kwargs(layer, margin=0):
 
 
 def gross_offsets(kind):
+    """Constant or varying (random, reproducible) gross offsets"""
     if kind == "constant":
         return (2, -1)
     rng = np.random.default_rng(7)
@@ -47,6 +49,7 @@ def gross_offsets(kind):
 @pytest.mark.parametrize("workflows", [(0, 0, 0), (1, 1, 1), (0, 1, 0)])
 @pytest.mark.parametrize("gross", ["constant", "varying"])
 def test_layers_match_separate_runs(impl, workflows, gross, images, tmp_path):
+    """Layers run together (runAmpcorLayers) give the results of separate runs"""
     go = gross_offsets(gross)
     kwargs = [dict(layer_kwargs(layer), workflow=wf, gross_offset=go) for layer, wf in zip(LAYERS, workflows)]
     separate = [run_ampcor(impl, images, SHAPE, tmp_path / f"separate{k}", **kw) for k, kw in enumerate(kwargs)]
@@ -66,7 +69,9 @@ def test_layers_match_separate_runs(impl, workflows, gross, images, tmp_path):
 
 
 def test_layers_errors(impl, images, tmp_path):
+    """Invalid layers (none, different numbers of windows or windows per chunk, the same output files) raise errors"""
     def layer(k, **kw):
+        """The k-th layer, configured with the keyword arguments kw"""
         return configure_ampcor(impl, images, SHAPE, tmp_path / f"layer{k}", **dict(layer_kwargs(LAYERS[k]), **kw))[0]
 
     cls = type(layer(0))

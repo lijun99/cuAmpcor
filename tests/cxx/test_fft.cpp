@@ -1,5 +1,5 @@
 /**
- * @file test_fft.cpp
+ * @file  test_fft.cpp
  * @brief Tests for the FFT oversamplers, correlators and the correlation surface normalization
  */
 
@@ -7,14 +7,19 @@
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND::test {
 
+/// the tests of the FFT oversamplers, correlators and normalizers
 class FFTTest : public BackendTest {
 protected:
+    /// check the normalizer of the correlation of windows of h x w with search windows of H x W,
+    /// the templates taken from the search windows at lag
     void checkNormalizer(int h, int w, int H, int W, int2 lag);
 };
 
-constexpr double pi = 3.14159265358979323846;
+constexpr double pi = 3.14159265358979323846;   ///< pi
 
-// complex exponential exp(i 2pi (kx x/nx + ky y/ny)) sampled on a nx x ny grid, with a scale factor
+/**
+ * Complex exponential exp(i 2pi (kx x/nx + ky y/ny)) sampled on a nx x ny grid, with a scale factor
+ */
 static std::vector<complex_type> exponential(int nx, int ny, int kx, int ky, double scale = 1)
 {
     std::vector<complex_type> v(nx*ny);
@@ -91,7 +96,9 @@ TEST_F(FFTTest, OverSamplerR2R)
             EXPECT_NEAR(r[x*ny*ratio + y], f(double(x)/(nx*ratio), double(y)/(ny*ratio)), 100*tol);
 }
 
-// direct (time domain) cross-correlation for reference
+/**
+ * Direct (time domain) cross-correlation, for reference
+ */
 static std::vector<double> naiveCorrelation(const std::vector<real_type> &t, int h, int w,
     const std::vector<real_type> &s, int H, int W, int n)
 {
@@ -131,7 +138,9 @@ TEST_F(FFTTest, Correlators)
     }
 }
 
-// normalized cross-correlation: the template is a (mean-subtracted) part of the search image
+/**
+ * Normalized cross-correlation: the template is a (mean-subtracted) part of the search image
+ */
 void FFTTest::checkNormalizer(int h, int w, int H, int W, int2 lag)
 {
     const int ch = H - h + 1, cw = W - w + 1, n = 1;

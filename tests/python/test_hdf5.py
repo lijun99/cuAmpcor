@@ -41,11 +41,13 @@ def write_h5(path, data, name=DATASET, userblock_size=0, write=None, **options):
 
 
 def read_raw(file, dtype=np.complex64):
+    """A raw binary image as an array"""
     return np.fromfile(file, dtype=dtype).reshape(SHAPE)
 
 
 @pytest.fixture(scope="module")
 def images(tmp_path_factory):
+    """A pair of synthetic raw images with a known shift"""
     return make_images(tmp_path_factory.mktemp("images"), SHAPE, SHIFT)
 
 
@@ -55,6 +57,7 @@ def raw_results(images, tmp_path_factory):
     cache = {}
 
     def get(impl):
+        """The results of the implementation impl (computed once)"""
         if impl not in cache:
             cache[impl] = run_ampcor(impl, images, SHAPE, tmp_path_factory.mktemp(f"raw_{impl}"))
         return cache[impl]
@@ -62,12 +65,14 @@ def raw_results(images, tmp_path_factory):
 
 
 def assert_same(out, expected):
+    """The outputs are equal to the expected ones"""
     for name in expected:
         np.testing.assert_array_equal(out[name], expected[name], err_msg=name)
 
 
 @pytest.mark.parametrize("layout", LAYOUTS)
 def test_hdf5_matches_raw(impl, layout, images, raw_results, tmp_path, capfd):
+    """HDF5 images of each layout give the results of the raw images, read by the expected path"""
     options, path = LAYOUTS[layout]
     h5 = tuple(write_h5(tmp_path / f"{k}.h5", read_raw(f), **options) for k, f in zip(("ref", "sec"), images))
     out = run_ampcor(impl, h5, SHAPE, tmp_path / "out")
@@ -203,6 +208,7 @@ def test_hdf5_corrupt_chunk(impl, images, tmp_path):
 
 
 def test_hdf5_errors(impl, images, tmp_path):
+    """Invalid HDF5 images (missing file or dataset, wrong size or type) raise errors"""
     ref, sec = (read_raw(f) for f in images)
     good = write_h5(tmp_path / "ref.h5", ref)
     cases = {

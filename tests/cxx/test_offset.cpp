@@ -1,5 +1,5 @@
 /**
- * @file test_offset.cpp
+ * @file  test_offset.cpp
  * @brief Tests for max location and offset determination
  */
 

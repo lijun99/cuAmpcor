@@ -1,5 +1,5 @@
 /**
- * @file test_copy.cpp
+ * @file  test_copy.cpp
  * @brief Tests for the copy/extract/insert/padding/conversion kernels
  */
 
@@ -9,7 +9,9 @@ namespace pycuampcor::PYCUAMPCOR_BACKEND::test {
 
 using CopyTest = BackendTest;
 
-// a chunk of image with values (i*width+j, -(i*width+j))
+/**
+ * A chunk of image with values (i*width+j, -(i*width+j))
+ */
 static std::vector<image_complex_type> chunkValues(int height, int width)
 {
     std::vector<image_complex_type> v(height*width);

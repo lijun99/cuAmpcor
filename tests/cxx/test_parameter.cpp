@@ -1,5 +1,5 @@
 /**
- * @file test_parameter.cpp
+ * @file  test_parameter.cpp
  * @brief Tests for the parameters: derived sizes, window/chunk starting pixels and setup checks
  */
 
@@ -10,6 +10,9 @@
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND::test {
 
+/**
+ * Set the window sizes, search ranges and numbers of windows of the tests
+ */
 static void setWindows(cuAmpcorParameter &p)
 {
     p.windowSizeWidthRaw = 64;

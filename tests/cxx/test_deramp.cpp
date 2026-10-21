@@ -1,5 +1,5 @@
 /**
- * @file test_deramp.cpp
+ * @file  test_deramp.cpp
  * @brief Tests for removing linear phase ramps from complex images
  */
 
@@ -9,7 +9,9 @@ namespace pycuampcor::PYCUAMPCOR_BACKEND::test {
 
 using DerampTest = BackendTest;
 
-// random amplitudes with a linear phase ramp exp(i(ax*x + ay*y))
+/**
+ * Random amplitudes with a linear phase ramp exp(i(ax*x + ay*y))
+ */
 static std::vector<complex_type> rampImage(int h, int w, double ax, double ay, std::vector<double> &amp)
 {
     std::mt19937 gen(9);

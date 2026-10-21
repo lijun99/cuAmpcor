@@ -33,16 +33,19 @@ GOLDEN_OUTPUTS = ("dense_offsets", "snr", "covariance", "correlation_peak")
 
 
 def run_dataset(impl, outdir, workflow, ovs_method):
+    """Run ampcor on the regression dataset, with the workflow and surface oversampling method"""
     return run_ampcor(impl, IMAGES, SHAPE, outdir, n_windows=N_WINDOWS,
                       workflow=workflow, corrSurfaceOverSamplingMethod=ovs_method,
                       **PARAMS)
 
 
 def golden_dir(workflow, ovs_method):
+    """The directory of the reference outputs of the workflow and surface oversampling method"""
     return os.path.join(DATASET, "golden", f"wf{workflow}_ovs{ovs_method}")
 
 
 def read_golden(path, name, shape):
+    """A reference output as a float32 array of shape"""
     return np.fromfile(os.path.join(path, name), dtype=np.float32).reshape(shape)
 
 

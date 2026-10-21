@@ -20,17 +20,20 @@ EDGE_SHIFT = (0.4, -9.3)
 
 @pytest.fixture(scope="module")
 def images(tmp_path_factory):
+    """A pair of synthetic images with a known shift"""
     return make_images(tmp_path_factory.mktemp("images"), SHAPE, SHIFT)
 
 
 @pytest.fixture(scope="module")
 def edge_images(tmp_path_factory):
+    """A pair of synthetic images with a shift close to the edge of the search range"""
     return make_images(tmp_path_factory.mktemp("edge_images"), SHAPE, EDGE_SHIFT)
 
 
 @pytest.mark.parametrize("workflow", [0, 1])
 @pytest.mark.parametrize("ovs_method", [0, 1])
 def test_known_shift(impl, workflow, ovs_method, images, tmp_path):
+    """The offsets of all workflows and surface oversampling methods match the known shift"""
     out = run_ampcor(impl, images, SHAPE, tmp_path, workflow=workflow,
                      corrSurfaceOverSamplingMethod=ovs_method)
     err = out["dense_offsets"] - np.array(SHIFT)
@@ -56,6 +59,7 @@ def test_search_edge(impl, ovs_method, edge_images, tmp_path):
 
 @pytest.mark.parametrize("workflow", [0, 1])
 def test_time_domain(impl, workflow, images, tmp_path):
+    """The time-domain correlation finds the known shift"""
     out = run_ampcor(impl, images, SHAPE, tmp_path, algorithm=1, workflow=workflow)
     err = out["dense_offsets"] - np.array(SHIFT)
     assert np.all(np.abs(err) < 0.1)
@@ -66,6 +70,7 @@ def narrowband_images(tmp_path_factory):
     # the amplitudes of speckle have twice the bandwidth of the complex signal;
     # a bandwidth <= 50% of the sampling rate avoids their aliasing (which biases
     # the offsets toward integer pixels)
+    """A pair of narrowband synthetic images (no aliasing of the amplitudes)"""
     return make_images(tmp_path_factory.mktemp("narrowband"), SHAPE, SHIFT, bandwidth=0.5)
 
 
@@ -115,6 +120,7 @@ def test_noisy_images(impl, workflow, tmp_path_factory, tmp_path):
 @pytest.mark.parametrize("workflow", [0, 1])
 @pytest.mark.parametrize("ovs_method", [0, 1])
 def test_cpu_gpu_consistency(workflow, ovs_method, images, tmp_path):
+    """The CPU and GPU implementations agree"""
     kw = dict(workflow=workflow, corrSurfaceOverSamplingMethod=ovs_method)
     cpu = run_ampcor("cpu", images, SHAPE, tmp_path / "cpu", **kw)
     gpu = run_ampcor("gpu", images, SHAPE, tmp_path / "gpu", **kw)
@@ -128,6 +134,7 @@ def test_cpu_gpu_consistency(workflow, ovs_method, images, tmp_path):
 
 
 def test_cpu_threads_deterministic(images, tmp_path):
+    """The CPU results don't depend on the number of threads"""
     one = run_ampcor("cpu", images, SHAPE, tmp_path / "one", nThreads=1)
     many = run_ampcor("cpu", images, SHAPE, tmp_path / "many", nThreads=4)
     for name in one:
@@ -136,6 +143,7 @@ def test_cpu_threads_deterministic(images, tmp_path):
 
 @needs_gpu
 def test_gpu_streams(images, tmp_path):
+    """The GPU results don't depend on the number of streams"""
     one = run_ampcor("gpu", images, SHAPE, tmp_path / "one", nStreams=1)
     many = run_ampcor("gpu", images, SHAPE, tmp_path / "many", nStreams=3)
     for name in one:

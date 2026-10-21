@@ -1,5 +1,5 @@
 /**
- * @file test_slcimage.cpp
+ * @file  test_slcimage.cpp
  * @brief Tests for loading image tiles with memory map, and image names
  */
 
@@ -13,12 +13,14 @@
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND::test {
 
+/// the tests of the image readers, with a raw image file of H x W written for each test
 class SlcImageTest : public BackendTest {
 protected:
-    static constexpr int H = 40, W = 30;
-    std::string filename;
-    std::vector<image_complex_type> values;
+    static constexpr int H = 40, W = 30;       ///< the size of the image
+    std::string filename;                      ///< the image file
+    std::vector<image_complex_type> values;    ///< the pixels of the image
 
+    /// write the image file
     void SetUp() override
     {
         BackendTest::SetUp();
@@ -32,6 +34,7 @@ protected:
         std::ofstream(filename, std::ios::binary).write((const char *)values.data(), H*W*sizeof(image_complex_type));
     }
 
+    /// remove the image file
     void TearDown() override
     {
         if (!filename.empty()) std::remove(filename.c_str());

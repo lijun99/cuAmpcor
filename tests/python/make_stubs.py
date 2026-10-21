@@ -133,6 +133,7 @@ def class_stub(cls):
 
 
 def module_stub(cls):
+    """The stub of the extension module of the class cls (with the device info for CUDA)"""
     cuda = hasattr(cls, "device_list")
     return HEADER + (DEVICE_INFO if cuda else "") + class_stub(cls)
 
@@ -146,6 +147,7 @@ def stubs():
 
 
 def main():
+    """Write the stubs of the extension modules"""
     for name, content in stubs().items():
         path = os.path.join(STUB_DIR, name)
         with open(path, "w") as f:

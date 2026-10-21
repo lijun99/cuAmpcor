@@ -1,5 +1,5 @@
 /**
- * @file test_arrays.cpp
+ * @file  test_arrays.cpp
  * @brief Tests for the arrays (cuArrays, Arrays) and their views: allocation, moves, copies
  *     between host and backend memory, indexing
  */

@@ -21,6 +21,7 @@ from test_regression import GOLDEN_OUTPUTS, golden_dir, run_dataset  # noqa: E40
 
 
 def main():
+    """Regenerate the reference outputs of all workflows and surface oversampling methods (CPU)"""
     with tempfile.TemporaryDirectory() as tmp:
         for workflow in (0, 1):
             for ovs_method in (0, 1):
