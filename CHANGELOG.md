@@ -15,9 +15,9 @@
   crops, and saved to a file without a display. It replaces `examples/plotOffsets.py`.
 - `examples/glacier`: glacier velocities with `dense_offsets`, without and with a velocity model
   for the gross offsets (README): NISAR RSLCs of Jakobshavn Isbræ with isce3 (geometry and
-  coregistration; `jakobshavn_isce3.sh`, `insar_runconfig.yaml`, `nisar_download.py`), Sentinel-1
-  SLCs with ISCE2 topsStack (on the GPU with the gpuresamp branch; `jakobshavn_isce2.sh`,
-  `s1_download.py` with the precise orbits, `make_dem.py` for a GLO-30 DEM), and
+  coregistration; `nisar_isce3/`: `jakobshavn.sh`, `insar_runconfig.yaml`, `nisar_download.py`),
+  Sentinel-1 SLCs with ISCE2 topsStack (on the GPU with the gpuresamp branch; `s1_isce2/`:
+  `jakobshavn.sh`, `s1_download.py` with the precise orbits, `make_dem.py` for a GLO-30 DEM), and
   `velocity_model.py` for the gross offsets of a velocity model (e.g., ITS_LIVE) and the velocities
   of the offsets.
 - `examples/optical`: GeoTIFF and optical images with `geo_offsets` (README), with scripts to search

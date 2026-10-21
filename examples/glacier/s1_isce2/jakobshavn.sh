@@ -67,13 +67,13 @@ python -m pycuampcor.dense_offsets -r $reference -s $secondary $grid_dense --sh 
 
 # 3b. with the model: the gross offsets from ITS_LIVE, a small search range around them
 #     (+/- 8 x 32 pixels), and the gross offsets added to the outputs (--mg 1)
-eval python "$here/velocity_model.py" gross $geometry $its_live $grid_model --search 8 32 -o out/gross.bin
+eval python "$here/../velocity_model.py" gross $geometry $its_live $grid_model --search 8 32 -o out/gross.bin
 python -m pycuampcor.dense_offsets -r $reference -s $secondary $grid_dense --sh 8 --sw 32 --drmp 0 \
     --gross 1 --gross-file out/gross.bin --mg 1 --op out/model
 
 # 4. the velocities (m/day, polar stereographic x and y), compared with ITS_LIVE
 for run in nomodel model; do
-    eval python "$here/velocity_model.py" velocity out/$run.bip $geometry $its_live $grid_model --min-snr 5 \
+    eval python "$here/../velocity_model.py" velocity out/$run.bip $geometry $its_live $grid_model --min-snr 5 \
         --vmax 30 -o out/velocity_$run --title "'Jakobshavn, Sentinel-1A 2025-03-19 / 2025-03-31, $run'"
 done
 python -m pycuampcor.plot_offsets out/model.bip --min-snr 5 -o out/model_offsets.png

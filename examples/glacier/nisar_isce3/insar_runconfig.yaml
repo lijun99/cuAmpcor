@@ -1,4 +1,4 @@
-# A minimal isce3 InSAR runconfig for the steps run by jakobshavn_isce3.sh: rdr2geo (the geometry),
+# A minimal isce3 InSAR runconfig for the steps run by jakobshavn.sh: rdr2geo (the geometry),
 # geo2rdr (the geometric offsets) and resample_slc --resample-type coarse (the secondary SLC
 # coregistered to the reference); the placeholders REFERENCE_RSLC, SECONDARY_RSLC and DEM_FILE are
 # replaced by the script. The other parameters take the isce3 defaults.
