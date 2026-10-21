@@ -8,7 +8,7 @@
 #include "cuSincOverSampler.h"
 
 // dependencies
-#include "cuAmpcorUtil.h"
+#include "float2.h"
 #include <cmath>
 
 namespace pycuampcor::cpu {

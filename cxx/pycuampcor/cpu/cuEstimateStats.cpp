@@ -5,7 +5,8 @@
  * 9/23/2017, Minyan Zhong
  */
 
-#include "cuAmpcorUtil.h"
+#include "cuEstimateStats.h"
+#include "float2.h"
 #include <algorithm>
 #include <cmath>
 

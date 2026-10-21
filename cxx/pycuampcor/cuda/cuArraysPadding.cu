@@ -3,8 +3,10 @@
  * @brief Utilities for padding zeros to cuArrays for FFT (zero padding in the middle)
  */
 
-#include "cuAmpcorUtil.h"
+#include "cuArraysPadding.h"
 #include "float2.h"
+#include "cudaUtil.h"
+#include "cudaError.h"
 
 namespace pycuampcor::cuda {
 

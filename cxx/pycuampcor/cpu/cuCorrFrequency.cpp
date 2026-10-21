@@ -4,9 +4,14 @@
  */
 
 #include "cuCorrFrequency.h"
-#include "cuAmpcorUtil.h"
+#include "float2.h"
+#include "cuArraysCopy.h"
 
 namespace pycuampcor::cpu {
+
+// coef*conj(image1)*image2, element-wise, in image1 (defined below)
+static void cuArraysElementMultiplyConjugate(cuArrays<complex_type> *image1,
+    cuArrays<complex_type> *image2, real_type coef, stream_t stream);
 
 // the mutex to guard the fftw planner (shared by all fftw users in this backend)
 std::mutex & fftwPlannerMutex()
@@ -82,7 +87,7 @@ void cuFreqCorrelator::execute(cuArrays<real_type> *templates, cuArrays<real_typ
  * @param[in] image2, the secondary image
  * @param[in] coef, usually the normalization factor
  */
-void cuArraysElementMultiplyConjugate(cuArrays<complex_type> *image1, cuArrays<complex_type> *image2, real_type coef, stream_t)
+static void cuArraysElementMultiplyConjugate(cuArrays<complex_type> *image1, cuArrays<complex_type> *image2, real_type coef, stream_t)
 {
     const size_t size = image1->getSize();
     for(size_t idx = 0; idx < size; idx++) {

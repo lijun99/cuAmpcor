@@ -1,7 +1,7 @@
 #include "cuAmpcorProcessor.h"
 #include "cuAmpcorProcessorTwoPass.h"
 #include "cuAmpcorProcessorOnePass.h"
-#include "cuAmpcorUtil.h"
+#include "cuArraysCopy.h"
 
 #include <stdexcept>
 

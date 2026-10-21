@@ -5,7 +5,9 @@
  */
 
 #include "cuCorrNormalizer.h"
-#include "cuAmpcorUtil.h"
+#include "float2.h"
+#include "cuCorrNormalization.h"
+#include "cuCorrNormalizationSAT.h"
 
 namespace pycuampcor::cuda {
 

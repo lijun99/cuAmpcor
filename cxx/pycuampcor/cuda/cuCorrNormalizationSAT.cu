@@ -11,7 +11,10 @@
 #endif
 
 // my declarations
-#include "cuAmpcorUtil.h"
+#include "cuCorrNormalizationSAT.h"
+#include "float2.h"
+#include "cudaUtil.h"
+#include "cudaError.h"
 
 namespace pycuampcor::cuda {
 

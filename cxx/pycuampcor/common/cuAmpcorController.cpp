@@ -11,9 +11,10 @@
 #include "SlcImage.h"
 #include "cuArrays.h"
 #include "cuAmpcorProcessor.h"
-#include "cuAmpcorUtil.h"
 #include "backend.h"
 #include "cuAmpcorChunkLoader.h"
+#include "cuArraysCopy.h"
+#include "float2.h"
 #include <algorithm>
 #include <atomic>
 #include <exception>

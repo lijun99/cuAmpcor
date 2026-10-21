@@ -5,7 +5,9 @@
  * This code is adapted from the nxcor package.
  */
 
-#include "cuAmpcorUtil.h"
+#include "cuCorrTimeDomain.h"
+#include "float2.h"
+#include "cudaError.h"
 #include <stdexcept>
 #include <string>
 

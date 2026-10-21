@@ -4,9 +4,16 @@
  */
 
 #include "cuCorrFrequency.h"
-#include "cuAmpcorUtil.h"
+#include "float2.h"
+#include "cuArraysCopy.h"
+#include "cudaUtil.h"
+#include "cudaError.h"
 
 namespace pycuampcor::cuda {
+
+// coef*conj(image1)*image2, element-wise, in image1 (defined below)
+static void cuArraysElementMultiplyConjugate(cuArrays<complex_type> *image1,
+    cuArrays<complex_type> *image2, real_type coef, cudaStream_t stream);
 
 /*
  * cuFreqCorrelator Constructor
@@ -115,7 +122,7 @@ __global__ void cudaKernel_elementMulConjugate(complex_type *ainout, complex_typ
  * @param[in] image2, the secondary image
  * @param[in] coef, usually the normalization factor
  */
-void cuArraysElementMultiplyConjugate(cuArrays<complex_type> *image1, cuArrays<complex_type> *image2, real_type coef, cudaStream_t stream)
+static void cuArraysElementMultiplyConjugate(cuArrays<complex_type> *image1, cuArrays<complex_type> *image2, real_type coef, cudaStream_t stream)
 {
     int size = image1->getSize();
     int threadsperblock = NTHREADS;

@@ -7,6 +7,7 @@
 #include "cuOverSampler.h"
 #include "cuCorrFrequency.h"
 #include "cuCorrNormalizer.h"
+#include "cuCorrTimeDomain.h"
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND::test {
 

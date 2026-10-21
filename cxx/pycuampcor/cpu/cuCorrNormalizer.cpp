@@ -5,7 +5,8 @@
  */
 
 #include "cuCorrNormalizer.h"
-#include "cuAmpcorUtil.h"
+#include "float2.h"
+#include "cuCorrNormalizationSAT.h"
 
 namespace pycuampcor::cpu {
 

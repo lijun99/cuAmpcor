@@ -11,7 +11,7 @@
 #include "data_types.h"
 #include "cudaUtil.h"
 #include "cudaError.h"
-#include "cuAmpcorUtil.h"
+#include "cuEstimateStats.h"
 #include <iostream>
 #include <iomanip>
 #include <cmath>

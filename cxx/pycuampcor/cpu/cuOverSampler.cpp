@@ -6,7 +6,10 @@
 // my declarations
 #include "cuOverSampler.h"
 // dependencies
-#include "cuAmpcorUtil.h"
+#include "float2.h"
+#include "cuArraysCopy.h"
+#include "cuArraysPadding.h"
+#include "cpuUtil.h"
 
 namespace pycuampcor::cpu {
 

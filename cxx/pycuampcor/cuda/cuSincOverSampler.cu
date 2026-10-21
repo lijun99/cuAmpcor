@@ -11,7 +11,7 @@
 #include "cuArrays.h"
 #include "cudaUtil.h"
 #include "cudaError.h"
-#include "cuAmpcorUtil.h"
+#include "float2.h"
 
 namespace pycuampcor::cuda {
 

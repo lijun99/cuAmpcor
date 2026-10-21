@@ -9,7 +9,6 @@
 
 #include "backend.h"
 #include "cuArrays.h"
-#include "cuAmpcorUtil.h"
 #include "data_types.h"
 
 #include <cmath>

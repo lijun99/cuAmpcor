@@ -12,8 +12,10 @@
  *
  */
 
-#include "cuAmpcorUtil.h"
+#include "cuDeramp.h"
+#include "float2.h"
 #include "logging.h"
+#include "debug.h"
 #include <cmath>
 #include <cstdio>
 
@@ -26,7 +28,7 @@ namespace pycuampcor::cpu {
  * @param[in,out] images input/output complex signals
  * @param[in] axis 0: deramp along x-axis; 1: deramp along y-axis; others: deramp along both axes
  */
-void cuLinearDeramp(cuArrays<complex_type> *images, const int axis, stream_t)
+static void cuLinearDeramp(cuArrays<complex_type> *images, const int axis, stream_t)
 {
     const int imageNX = images->height;
     const int imageNY = images->width;

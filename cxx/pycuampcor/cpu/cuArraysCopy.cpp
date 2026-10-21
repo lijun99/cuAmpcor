@@ -2,7 +2,7 @@
  * @file cuArraysCopy.cpp
  * @brief Utilities for copying/converting images to different format (CPU backend)
  *
- * All methods are declared in cuAmpcorUtil.h
+ * All methods are declared in cuArraysCopy.h
  * cudaArraysCopyToBatch to extract a batch of windows from the raw image
  *   various implementations include:
  *   1. fixed or varying offsets, as start pixels for windows
@@ -20,7 +20,9 @@
  */
 
 // dependencies
-#include "cuAmpcorUtil.h"
+#include "cuArraysCopy.h"
+#include "float2.h"
+#include "cpuUtil.h"
 
 namespace pycuampcor::cpu {
 

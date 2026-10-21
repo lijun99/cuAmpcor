@@ -17,7 +17,8 @@
 #include "data_types.h"
 #include "cudaError.h"
 #include "cudaUtil.h"
-#include "cuAmpcorUtil.h"
+#include "cuDeramp.h"
+#include "debug.h"
 #include <iostream>
 #include <iomanip>
 #include <cmath>
@@ -148,7 +149,7 @@ __global__ void cuLinearDeramp_kernel(real2_type *images, const int imageNX, int
  * @param[in,out] images input/output complex signals
  * @param[in] stream cuda stream
  */
-void cuLinearDeramp(cuArrays<real2_type> *images, const int axis, cudaStream_t stream)
+static void cuLinearDeramp(cuArrays<real2_type> *images, const int axis, cudaStream_t stream)
 {
 
     const dim3 grid(images->count);

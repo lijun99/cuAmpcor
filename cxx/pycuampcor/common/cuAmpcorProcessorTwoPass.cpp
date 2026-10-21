@@ -1,7 +1,13 @@
 #include "cuAmpcorProcessorTwoPass.h"
 #include "logging.h"
+#include "cuArraysCopy.h"
+#include "cuDeramp.h"
+#include "cuCorrNormalization.h"
+#include "cuOffset.h"
+#include "cuCorrTimeDomain.h"
+#include "cuEstimateStats.h"
+#include "debug.h"
 
-#include "cuAmpcorUtil.h"
 #include <iostream>
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND {
