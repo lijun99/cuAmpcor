@@ -154,7 +154,7 @@ The headers are organized as in [pyre](https://github.com/pyre/pyre): in each of
 
 ## 3. User Guide
 
-The main procedures of PyCuAmpcor are implemented with CUDA/C++. A Python interface to configure and run PyCuAmpcor is offered. The package includes the dense offsets tool *pycuampcor.dense_offsets* (3.1); the *examples* directory has a self-contained example on synthetic images (*simple_offsets.py*, 3.2) and a plotting script (*plotOffsets.py*, 3.3).
+The main procedures of PyCuAmpcor are implemented with CUDA/C++. A Python interface to configure and run PyCuAmpcor is offered. The package includes the dense offsets tool *pycuampcor.dense_offsets* (3.1), for images in radar geometry, and the displacement tool *pycuampcor.geo_offsets* (3.2), for georeferenced images such as optical images; the *examples* directory has a self-contained example on synthetic images (*simple_offsets.py*, 3.3) and a plotting script (*plotOffsets.py*, 3.4).
 
 ### 3.1 pycuampcor.dense_offsets
 
@@ -233,7 +233,20 @@ PyCuAmpcor supports two types of gross offset fields,
 * static (--gross=0), i.e., a constant shift between reference and secondary images. The static gross offsets can be passed by *--rr $rgshift --aa $azshift*. Note that the margin as well as the starting pixel may be adjusted.
 * dynamic (--gross=1), i.e., shifts between reference windows and secondary windows are varying in different locations. This is helpful to reduce the search range if you have a prior knowledge of the estimated offset fields, e.g., the velocity model of glaciers. You may prepare a binary file of the varying gross offsets, int32 pairs (down, across) for each window in the order of the output offset fields, and use the option *--gross-file $grossOffsetFilename*. If you need the coordinates of reference windows, you may run *pycuampcor.dense_offsets* at first to find out the location of the starting pixel and the total number of windows. The coordinate for the starting pixel of the (iDown, iAcross) window will be (startPixelDown+iDown\*skipDown, startPixelAcross+iAcross\*skipAcross).
 
-### 3.2 Customized Python Scripts
+### 3.2 pycuampcor.geo_offsets
+
+*pycuampcor.geo_offsets* estimates the displacement field between two georeferenced images, e.g., optical images (Sentinel-2, Landsat, Planet) before and after an earthquake, or of a glacier, or geocoded SAR amplitudes. It needs GDAL (the Python bindings) and pycuampcor built with GDAL.
+
+```bash
+python -m pycuampcor.geo_offsets -r T11SMV_20190628_B08.tif -s T11SMV_20190708_B08.tif --op offsets/ridgecrest --ww 64 --wh 64 --sw 8 --sh 8 --kw 16 --kh 16
+```
+
+* The images are read with GDAL (any format; one band, `--band`; any pixel type, read as float32, or complex64 if complex). They must have the same coordinate system and pixel size (use `gdalwarp` otherwise), but may have different extents.
+* The shift between the two grids is computed from the georeferencing and used as the gross offset; the windows cover the area of the reference image where the secondary search areas are available, or the part given by `--bbox xmin ymin xmax ymax` (in the coordinates of the images).
+* The output `<prefix>.tif` is a GeoTIFF on the grid of the window centers (one pixel per window, of `--kw` x `--kh` pixels of the images), with the bands `east` and `north` (the displacements in the units of the coordinate system, e.g., meters, without the shift of the grids), `snr`, `peak` (the correlation peak value), and `var_east`, `var_north`, `cov_east_north` (their covariance).
+* The windows with no-data pixels in the reference window or the secondary search area (`--nodata`, by default the no-data value of the images; `--max-nodata` for the fraction allowed) are NaN.
+
+### 3.3 Customized Python Scripts
 
 If you need more control of the computation, or incorporate the PyCuAmpcor procedure in your InSAR processing stacks, you may follow *examples/simple_offsets.py* (offsets of synthetic images with a known shift: `python simple_offsets.py [--cpu]`) or *pycuampcor/dense_offsets.py* to create your own Python script. The general steps are
 * create a PyCuAmpcor instance
@@ -283,7 +296,7 @@ Unknown parameter names and values of a wrong type raise a `TypeError`.
 
 The messages written while running (progress to stdout, warnings to stderr) are chosen with `pycuampcor.set_log_level`, e.g., `pycuampcor.set_log_level("warning")` for the warnings only (levels `quiet`, `warning`, `info` (default) and `debug`). File names may be given as strings or path-like objects (e.g., `pathlib.Path`).
 
-### 3.3 Offset visualization
+### 3.4 Offset visualization
 
 The output offset fields may be visualized by the *mdx.py* tool in the *ISCE2* package. Here, we also provide a python script *plotOffsets.py* for more visualization options. 
 

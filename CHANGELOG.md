@@ -9,6 +9,11 @@
 
 ### New
 
+- `python -m pycuampcor.geo_offsets`: the displacement field between two georeferenced images
+  (e.g., optical images of an earthquake or a glacier), read with GDAL: the shift of their grids
+  from the georeferencing as the gross offset, the windows over the area common to the images (or
+  `--bbox`), and a GeoTIFF of the east/north displacements, SNR, peak value and covariance on the
+  grid of the window centers, with the windows of no-data pixels masked.
 - Images can be rasters read with GDAL (GeoTIFF, VRT, ...), if built with GDAL (`PYCUAMPCOR_GDAL`,
   AUTO by default; `pycuampcor.has_gdal`): the first band, converted to the pixel type of the image
   (e.g., UInt16 to float32, CInt16 to complex64). The `auto` reader chooses GDAL for names ending
