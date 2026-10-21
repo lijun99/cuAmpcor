@@ -1,0 +1,6 @@
+# mypy stubtest: expected differences between the stubs and the extension modules
+# pybind11 classes have the pybind11_type metaclass
+pycuampcor._cpu.PyCPUAmpcor
+pycuampcor._cuda.PyCuAmpcor
+# a TypedDict for the type of the device_list items, only in the stub
+pycuampcor._cuda.DeviceInfo

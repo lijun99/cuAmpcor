@@ -201,7 +201,7 @@ else()
     endif()
     install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/python/packages/pycuampcor/
             DESTINATION ${PYCUAMPCOR_INSTALL_DIR}
-            FILES_MATCHING PATTERN "*.py")
+            FILES_MATCHING PATTERN "*.py" PATTERN "*.pyi" PATTERN "py.typed")
     message(STATUS "Installing pycuampcor to: ${PYCUAMPCOR_INSTALL_DIR}")
 endif()
 

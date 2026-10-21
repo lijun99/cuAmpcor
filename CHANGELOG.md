@@ -24,6 +24,9 @@
 - `useMmap` and `mergeGrossOffset` are booleans (set by a bool or an integer).
 - Docstrings for the class, its methods and all the parameters (with their default values), and
   argument names for `setConstantGrossOffset` / `setVaryingGrossOffset`.
+- Type stubs (`_cpu.pyi`, `_cuda.pyi`, with `py.typed`) for type checkers and IDEs: the types of
+  the parameters (as set and as read) and of the methods, the keyword constructor with all the
+  parameters, and the docstrings.
 
 ### Changes
 

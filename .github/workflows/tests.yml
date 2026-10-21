@@ -45,3 +45,7 @@ jobs:
         run: |
           pip install . -v --no-deps --no-build-isolation -Ccmake.define.PYCUAMPCOR_CUDA=OFF -Ccmake.define.PYCUAMPCOR_HDF5=ON
           pytest -v tests/python
+      - name: Type stubs
+        run: |
+          pip install mypy
+          python -m mypy.stubtest pycuampcor._cpu --allowlist tests/python/stubtest_allowlist.txt --ignore-unused-allowlist

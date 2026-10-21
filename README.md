@@ -133,6 +133,8 @@ The GPU tests are skipped if no GPU is available. If nvcc is not in the `PATH`, 
 
 If a change of the results is intended, regenerate the reference outputs with `python tests/python/make_golden.py` and commit them.
 
+The package includes type stubs (`_cpu.pyi`, `_cuda.pyi`) for type checkers and IDEs, generated from the bindings. If the bindings change (parameters, methods or docstrings), regenerate them with `python tests/python/make_stubs.py` (with pycuampcor built with CUDA) and commit them; `test_stubs.py` checks that they are up to date, and `python -m mypy.stubtest pycuampcor._cpu pycuampcor._cuda --allowlist tests/python/stubtest_allowlist.txt` checks them against the modules.
+
 ### 2.5 Installation with ISCE2
 
 PyCuAmpcor is included in [ISCE2](https://github.com/isce-framework/isce2) (as *contrib/pycuampcor*), and can be compiled/installed by CMake or SCons, together with ISCE2. An installation guide can be found at [isce-framework](https://github.com/isce-framework/isce2#building-isce).
