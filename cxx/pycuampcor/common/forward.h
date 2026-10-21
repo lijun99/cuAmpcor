@@ -11,6 +11,9 @@
 #include "externals.h"
 
 namespace pycuampcor {
+    // a view of a batch of 2D arrays (ArraysView.h)
+    template <typename T>
+    class ArraysView;
     // the options of the parameters (cuAmpcorOptions.h)
     enum class Algorithm : int;
     enum class Workflow : int;

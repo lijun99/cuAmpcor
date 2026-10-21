@@ -13,6 +13,7 @@
 #pragma once
 
 #include "forward.h"
+#include "ArraysView.h"
 
 namespace pycuampcor::cpu {
 
@@ -87,6 +88,15 @@ public:
         if(is_allocatedHost)
             deallocateHost();
     }
+
+    /// a view of the data in the (device) work memory
+    ArraysView<T> view() { return ArraysView<T>(devData, height, width, count); }
+    /// a read-only view of the data in the (device) work memory
+    ArraysView<const T> view() const { return ArraysView<const T>(devData, height, width, count); }
+    /// the arrays as a view, e.g., for the kernels
+    operator ArraysView<T>() { return view(); }
+    /// the arrays as a read-only view
+    operator ArraysView<const T>() const { return view(); }
 
     // set zeroes
     void setZero(stream_t stream);
