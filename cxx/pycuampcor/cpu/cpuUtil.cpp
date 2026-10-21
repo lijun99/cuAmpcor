@@ -8,6 +8,10 @@
 #include "logging.h"
 #include "cuAmpcorParameter.h"
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 namespace pycuampcor::cpu {
 
 int backendInit(cuAmpcorParameter *param)

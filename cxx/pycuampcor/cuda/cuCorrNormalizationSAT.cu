@@ -4,13 +4,17 @@
  *
  */
 
-
 // my declarations
 #include "cuCorrNormalizationSAT.h"
 #include "float2.h"
 #include "cudaUtil.h"
 #include "cudaError.h"
 #include "cuArrays.h"
+
+#include <cooperative_groups.h>
+#if __CUDACC_VER_MAJOR__ >= 11
+#include <cooperative_groups/reduce.h>
+#endif
 
 namespace pycuampcor::cuda {
 

@@ -10,6 +10,8 @@
 #include "cudaError.h"
 #include "float2.h"
 
+#include <fstream>
+
 namespace pycuampcor::cuda {
 
 // allocate arrays in device memory

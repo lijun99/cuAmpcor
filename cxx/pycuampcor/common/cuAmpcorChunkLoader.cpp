@@ -3,6 +3,8 @@
 #include "cuArrays.h"
 #include "SlcImage.h"
 
+#include <climits>
+
 namespace pycuampcor::PYCUAMPCOR_BACKEND {
 
 namespace {

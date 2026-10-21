@@ -4,6 +4,9 @@
 // posix: the file, read with pread
 #include <fcntl.h>
 #include <unistd.h>
+// threads and zlib, to decode the chunks in parallel
+#include <thread>
+#include <zlib.h>
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND {
 

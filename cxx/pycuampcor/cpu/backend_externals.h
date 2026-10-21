@@ -7,10 +7,6 @@
 
 // the fft library
 #include <fftw3.h>
-// openmp, for the threads
-#ifdef _OPENMP
-#include <omp.h>
-#endif
 
 // the precision and the vector types (real_type, complex_type, float2, ...)
 #include "data_types.h"

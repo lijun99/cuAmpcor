@@ -9,6 +9,9 @@
 #include "logging.h"
 #include "float2.h"
 
+#include <fstream>
+#include <new>
+
 namespace pycuampcor::cpu {
 
 // alignment for work arrays, suitable for SIMD instructions used by fftw

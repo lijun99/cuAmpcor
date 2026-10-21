@@ -13,6 +13,8 @@
 #include "cuArraysCopy.h"
 #include "float2.h"
 
+#include <set>
+
 // dependencies
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND {
