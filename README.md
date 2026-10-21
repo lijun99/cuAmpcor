@@ -55,14 +55,6 @@ conda install pycuampcor=*=cpu*   # CPU only
 conda install pycuampcor=*=cuda*  # CPU + GPU
 ```
 
-To build the conda packages from the recipe in *conda/recipe*,
-
-```bash
-conda build conda/recipe -c conda-forge
-```
-
-which builds both variants (for a single variant, use e.g. `--variants "{cuda_compiler: [None], cuda_compiler_version: [None]}"`).
-
 The recipe for conda-forge (building from a tagged release, with the variants defined by the conda-forge global pinning, e.g., cpu, cuda 12 and cuda 13) is in *conda/conda-forge*.
 
 ### 2.2 Installation with pip
@@ -152,8 +144,7 @@ PyCuAmpcor is included in [ISCE2](https://github.com/isce-framework/isce2) (as *
 * *cxx/pycuampcor/cpu*: the CPU backend, in namespace `pycuampcor::cpu`;
 * *python/extensions*: the pybind11 bindings, compiled to `pycuampcor._cuda` and `pycuampcor._cpu`;
 * *python/packages/pycuampcor*: the python package;
-* *tests/cxx*, *tests/python*, *tests/data*: tests and test data (see [2.4 Tests](#24-tests));
-* *conda/recipe*: the conda recipe.
+* *tests/cxx*, *tests/python*, *tests/data*: tests and test data (see [2.4 Tests](#24-tests)).
 
 ## 3. User Guide
 
