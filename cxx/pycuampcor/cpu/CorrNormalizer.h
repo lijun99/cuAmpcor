@@ -15,22 +15,22 @@ namespace pycuampcor::cpu {
 
 /// the normalizer of the correlation surfaces of count windows, with secondary windows of
 /// secondaryNX x secondaryNY
-std::unique_ptr<cuNormalizer<cuArrays>> newCuNormalizer(int secondaryNX, int secondaryNY, int count);
+std::unique_ptr<cuNormalizer<Arrays>> newCuNormalizer(int secondaryNX, int secondaryNY, int count);
 
 /// the normalizer with sum area tables of the secondary windows (computed in double precision)
-class cuNormalizeSAT : public cuNormalizer<cuArrays> {
+class cuNormalizeSAT : public cuNormalizer<Arrays> {
 public:
     /// a normalizer with the sum area tables for count secondary windows of secondaryNX x secondaryNY
     cuNormalizeSAT(int secondaryNX, int secondaryNY, int count);
     ~cuNormalizeSAT() override;
 
     /// normalize the correlation surfaces (see cuNormalizer::execute)
-    void execute(cuArrays<real_type> *correlation, cuArrays<real_type> *reference,
-        cuArrays<real_type> *secondary, stream_t stream) override;
+    void execute(array_type<real_type> *correlation, array_type<real_type> *reference,
+        array_type<real_type> *secondary, stream_t stream) override;
 
 private:
-    std::unique_ptr<cuArrays<double>> secondarySAT;    ///< the sum area tables of the secondary windows
-    std::unique_ptr<cuArrays<double>> secondarySAT2;   ///< the same, of their squares
+    std::unique_ptr<array_type<double>> secondarySAT;    ///< the sum area tables of the secondary windows
+    std::unique_ptr<array_type<double>> secondarySAT2;   ///< the same, of their squares
 };
 
 } // namespace

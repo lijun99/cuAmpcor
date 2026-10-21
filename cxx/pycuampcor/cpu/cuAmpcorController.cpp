@@ -26,10 +26,10 @@ namespace {
 /// the output images of a layer; the run images, written by the processors, are padded to
 /// whole chunks, and extracted to the output images at the end
 struct LayerImages {
-    std::unique_ptr<cuArrays<real2_type>> offsetRun, offset;        ///< the dense offsets
-    std::unique_ptr<cuArrays<real_type>> snrRun, snr;               ///< the SNR
-    std::unique_ptr<cuArrays<real3_type>> covRun, cov;              ///< the covariance
-    std::unique_ptr<cuArrays<real_type>> peakValueRun, peakValue;   ///< the correlation peak
+    std::unique_ptr<array_type<real2_type>> offsetRun, offset;        ///< the dense offsets
+    std::unique_ptr<array_type<real_type>> snrRun, snr;               ///< the SNR
+    std::unique_ptr<array_type<real3_type>> covRun, cov;              ///< the covariance
+    std::unique_ptr<array_type<real_type>> peakValueRun, peakValue;   ///< the correlation peak
 
     /// allocate the run and output images of a layer
     explicit LayerImages(const cuAmpcorParameter *param)
@@ -49,9 +49,9 @@ struct LayerImages {
 
     /// allocate an array of height x width in the work memory
     template <typename T>
-    static void newArray(std::unique_ptr<cuArrays<T>> &ptr, int height, int width)
+    static void newArray(std::unique_ptr<array_type<T>> &ptr, int height, int width)
     {
-        ptr = std::make_unique<cuArrays<T>>(height, width);
+        ptr = std::make_unique<array_type<T>>(height, width);
         ptr->allocate();
     }
 
@@ -67,7 +67,7 @@ struct LayerImages {
         // the gross offsets of the windows
         offset->allocateHost();
         offset->copyToHost(stream);
-        cuArrays<real2_type> grossOffset(param->numberWindowDown, param->numberWindowAcross);
+        array_type<real2_type> grossOffset(param->numberWindowDown, param->numberWindowAcross);
         grossOffset.allocateHost();
         for(int i=0; i< param->numberWindows; i++)
             grossOffset.hostData[i] = make_real2(param->grossOffsetDown[i], param->grossOffsetAcross[i]);

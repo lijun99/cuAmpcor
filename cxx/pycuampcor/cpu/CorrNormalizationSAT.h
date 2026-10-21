@@ -11,8 +11,8 @@
 
 namespace pycuampcor::cpu {
 
-void cuCorrNormalizeSAT(cuArrays<real_type> *correlation, cuArrays<real_type> *reference,
-    cuArrays<real_type> *secondary, cuArrays<double> *secondarySAT, cuArrays<double> *secondarySAT2,
+void cuCorrNormalizeSAT(array_type<real_type> *correlation, array_type<real_type> *reference,
+    array_type<real_type> *secondary, array_type<double> *secondarySAT, array_type<double> *secondarySAT2,
     stream_t stream);
 
 } // namespace

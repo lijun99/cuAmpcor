@@ -11,7 +11,7 @@
 
 namespace pycuampcor::cpu {
 
-void cuDeramp(DerampMethod method, cuArrays<complex_type> *images, DerampAxis axis,
+void cuDeramp(DerampMethod method, array_type<complex_type> *images, DerampAxis axis,
     stream_t stream);
 
 } // namespace

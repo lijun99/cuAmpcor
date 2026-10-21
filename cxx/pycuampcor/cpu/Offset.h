@@ -11,21 +11,21 @@
 
 namespace pycuampcor::cpu {
 
-void cuArraysMaxloc2D(cuArrays<real_type> *images, cuArrays<int2> *maxloc,
-    cuArrays<real_type> *maxval, stream_t stream);
+void cuArraysMaxloc2D(array_type<real_type> *images, array_type<int2> *maxloc,
+    array_type<real_type> *maxval, stream_t stream);
 
-void cuArraysMaxloc2D(cuArrays<real_type> *images, const int2 start, const int2 range,
-    cuArrays<int2> *maxloc, cuArrays<real_type> *maxval, stream_t stream);
+void cuArraysMaxloc2D(array_type<real_type> *images, const int2 start, const int2 range,
+    array_type<int2> *maxloc, array_type<real_type> *maxval, stream_t stream);
 
-void cuSubPixelOffset(cuArrays<int2> *offsetInit, cuArrays<int2> *offsetRoomIn,
-    cuArrays<real2_type> *offsetFinal, const int2 initOrigin, const int initFactor,
+void cuSubPixelOffset(array_type<int2> *offsetInit, array_type<int2> *offsetRoomIn,
+    array_type<real2_type> *offsetFinal, const int2 initOrigin, const int initFactor,
     const int2 zoomInOrigin, const int zoomInFactor, stream_t stream);
 
-void cuSubPixelOffset2Pass(cuArrays<int2> *offsetInit, cuArrays<int2> *offsetZoomIn,
-    cuArrays<real2_type> *offsetFinal, int OverSampleRatioZoomin, int OverSampleRatioRaw,
+void cuSubPixelOffset2Pass(array_type<int2> *offsetInit, array_type<int2> *offsetZoomIn,
+    array_type<real2_type> *offsetFinal, int OverSampleRatioZoomin, int OverSampleRatioRaw,
     int xHalfRangeInit, int yHalfRangeInit, stream_t stream);
 
-void cuDetermineSecondaryExtractOffset(cuArrays<int2> *maxLoc, cuArrays<int2> *maxLocShift,
+void cuDetermineSecondaryExtractOffset(array_type<int2> *maxLoc, array_type<int2> *maxLocShift,
     int xOldRange, int yOldRange, int xNewRange, int yNewRange, stream_t stream);
 
 } // namespace

@@ -16,7 +16,7 @@ namespace pycuampcor::cpu {
  * Compute and subtract mean values from images
  * @param[in,out] images Input/Output images
  */
-void cuArraysSubtractMean(cuArrays<real_type> *images, stream_t)
+void cuArraysSubtractMean(array_type<real_type> *images, stream_t)
 {
     const int imageSize = images->size;
     const real_type invSize = real_type(1)/imageSize;
@@ -38,8 +38,8 @@ void cuArraysSubtractMean(cuArrays<real_type> *images, stream_t)
  * @param[out] imagesSum sum of squares
  * @param[out] imagesValidCount count of total valid pixels
  */
-void cuArraysSumCorr(cuArrays<real_type> *images, cuArrays<int> *imagesValid, cuArrays<real_type> *imagesSum,
-    cuArrays<int> *imagesValidCount, stream_t)
+void cuArraysSumCorr(array_type<real_type> *images, array_type<int> *imagesValid, array_type<real_type> *imagesSum,
+    array_type<int> *imagesValidCount, stream_t)
 {
     const int imageSize = images->size;
     for(int idxImage = 0; idxImage < images->count; idxImage++) {

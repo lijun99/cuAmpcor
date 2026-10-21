@@ -1,6 +1,6 @@
 /*
  * @file  ArraysPadding.cpp
- * @brief Utilities for padding zeros to cuArrays for FFT (zero padding in the middle), CPU backend
+ * @brief Utilities for padding zeros to Arrays for FFT (zero padding in the middle), CPU backend
  */
 
 #include "ArraysPadding.h"
@@ -25,7 +25,7 @@ namespace pycuampcor::cpu {
  *             zeros 0...0,
  *             negative f [(N+1)/2, ..., N-1]
  */
-void cuArraysFFTPaddingMany(cuArrays<complex_type> *image1, cuArrays<complex_type> *image2, stream_t stream)
+void cuArraysFFTPaddingMany(array_type<complex_type> *image1, array_type<complex_type> *image2, stream_t stream)
 {
     const int height1 = image1->height, width1 = image1->width, size1 = image1->size;
     const int height2 = image2->height, width2 = image2->width, size2 = image2->size;

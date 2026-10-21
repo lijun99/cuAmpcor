@@ -13,6 +13,9 @@ namespace pycuampcor::cuda {
     // batches of 2D arrays, in the device memory (cuArrays.h)
     template <typename T>
     class cuArrays;
+    /// the arrays of the package: batches of 2D arrays of T (as array_type in the cpu package)
+    template <typename T>
+    using array_type = cuArrays<T>;
     // a cufft plan (cufftPlan.h)
     class CufftPlan;
     // fft oversamplers (cuOverSampler.h) and sinc oversampler (cuSincOverSampler.h)

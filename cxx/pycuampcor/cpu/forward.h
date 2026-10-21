@@ -12,7 +12,10 @@
 namespace pycuampcor::cpu {
     // batches of 2D arrays, in the work (host) memory (Arrays.h)
     template <typename T>
-    class cuArrays;
+    class Arrays;
+    /// the arrays of the package: batches of 2D arrays of T, used by all its modules
+    template <typename T>
+    using array_type = Arrays<T>;
     // an fftw plan (fftwUtil.h)
     class FftwPlan;
     // fft oversamplers (OverSampler.h) and sinc oversampler (SincOverSampler.h)

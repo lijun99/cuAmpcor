@@ -11,7 +11,7 @@
 
 namespace pycuampcor::cpu {
 
-std::unique_ptr<cuNormalizer<cuArrays>>
+std::unique_ptr<cuNormalizer<Arrays>>
 newCuNormalizer(int secondaryNX, int secondaryNY, int count)
 {
     // the sum area table algorithm applies to all sizes
@@ -21,16 +21,16 @@ newCuNormalizer(int secondaryNX, int secondaryNY, int count)
 cuNormalizeSAT::cuNormalizeSAT(int secondaryNX, int secondaryNY, int count)
 {
     // allocate the work arrays for secondary sum and sum square
-    secondarySAT = std::make_unique<cuArrays<double>>(secondaryNX, secondaryNY, count);
+    secondarySAT = std::make_unique<array_type<double>>(secondaryNX, secondaryNY, count);
     secondarySAT->allocate();
-    secondarySAT2 = std::make_unique<cuArrays<double>>(secondaryNX, secondaryNY, count);
+    secondarySAT2 = std::make_unique<array_type<double>>(secondaryNX, secondaryNY, count);
     secondarySAT2->allocate();
 }
 
 cuNormalizeSAT::~cuNormalizeSAT() = default;
 
-void cuNormalizeSAT::execute(cuArrays<real_type> *correlation,
-    cuArrays<real_type> *reference, cuArrays<real_type> *secondary, stream_t stream)
+void cuNormalizeSAT::execute(array_type<real_type> *correlation,
+    array_type<real_type> *reference, array_type<real_type> *secondary, stream_t stream)
 {
     cuCorrNormalizeSAT(correlation, reference, secondary,
         secondarySAT.get(), secondarySAT2.get(), stream);

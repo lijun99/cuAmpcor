@@ -16,8 +16,8 @@ namespace pycuampcor::cpu {
 
 /// a chunk of an image loaded to the work memory
 struct cuAmpcorLoadedChunk {
-    cuArrays<image_complex_type> *complexData = nullptr; ///< for complex images
-    cuArrays<image_real_type> *realData = nullptr;       ///< for real images
+    array_type<image_complex_type> *complexData = nullptr; ///< for complex images
+    array_type<image_real_type> *realData = nullptr;       ///< for real images
     int startDown = 0, startAcross = 0;  ///< first pixel of the chunk in the image
     int height = 0, width = 0;           ///< chunk size; 0 if entirely outside the image
 
@@ -52,8 +52,8 @@ private:
     struct Source {
         const cuAmpcorChunkFootprint &footprint;   ///< the chunks to load
         SlcImage *image;                           ///< the image
-        std::unique_ptr<cuArrays<image_complex_type>> complexBuffer;  ///< for complex images
-        std::unique_ptr<cuArrays<image_real_type>> realBuffer;        ///< for real images
+        std::unique_ptr<array_type<image_complex_type>> complexBuffer;  ///< for complex images
+        std::unique_ptr<array_type<image_real_type>> realBuffer;        ///< for real images
 
         /// a source with a buffer for the largest chunk of the footprint
         Source(const cuAmpcorChunkFootprint &footprint, DataType dataType, SlcImage *image);

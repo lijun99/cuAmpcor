@@ -4,7 +4,7 @@
  *
  * A processor runs a workflow (two-pass or one-pass) on the windows of a chunk, loaded by the
  * chunk loader, and writes the offsets and their statistics to the output images. The processors
- * are written once, as templates on the array type (e.g., cpu::cuArrays or cuda::cuArrays; see
+ * are written once, as templates on the array type (e.g., cpu::Arrays or cuda::cuArrays; see
  * cuAmpcorArrayTraits.h), and instantiated by each package (processors.cpp of the package).
  *
  * The base class holds what the workflows share: the parameters, the output images, the stream,

@@ -39,7 +39,7 @@ static inline complex_type toComplex(const image_real_type &v) { return make_com
  * @param strideH stride along height to extract chips
  * @param strideW stride along width to extract chips
  */
-void cuArraysCopyToBatch(cuArrays<image_complex_type> *image1, cuArrays<complex_type> *image2,
+void cuArraysCopyToBatch(array_type<image_complex_type> *image1, array_type<complex_type> *image2,
     int strideH, int strideW, stream_t)
 {
     const int inNY = image1->width;
@@ -59,7 +59,7 @@ void cuArraysCopyToBatch(cuArrays<image_complex_type> *image1, cuArrays<complex_
 // copy a chunk into a batch of chips with varying offsets, filling 0 for pixels outside the chunk
 template<typename T_in, typename Op>
 static void copyToBatchWithOffset(const T_in *imageIn, const int inNX, const int inNY,
-    cuArrays<complex_type> *image2, const int *offsetX, const int *offsetY, Op op)
+    array_type<complex_type> *image2, const int *offsetX, const int *offsetY, Op op)
 {
     const int outNX = image2->height, outNY = image2->width;
     for(int idxImage = 0; idxImage < image2->count; idxImage++)
@@ -84,8 +84,8 @@ static void copyToBatchWithOffset(const T_in *imageIn, const int inNX, const int
  * @param offsetH (varying) offsets along height to extract chips
  * @param offsetW (varying) offsets along width to extract chips
  */
-void cuArraysCopyToBatchWithOffset(cuArrays<image_complex_type> *image1, const int inNX, const int inNY,
-    cuArrays<complex_type> *image2, const int *offsetH, const int* offsetW, stream_t)
+void cuArraysCopyToBatchWithOffset(array_type<image_complex_type> *image1, const int inNX, const int inNY,
+    array_type<complex_type> *image2, const int *offsetH, const int* offsetW, stream_t)
 {
     copyToBatchWithOffset(image1->devData, inNX, inNY, image2, offsetH, offsetW,
         [](const image_complex_type &v) { return toComplex(v); });
@@ -95,8 +95,8 @@ void cuArraysCopyToBatchWithOffset(cuArrays<image_complex_type> *image1, const i
  * Copy a chunk into a batch of chips with varying offsets/strides
  * @note similar to cuArraysCopyToBatchWithOffset, but take amplitudes instead
  */
-void cuArraysCopyToBatchAbsWithOffset(cuArrays<image_complex_type> *image1, const int inNX, const int inNY,
-    cuArrays<complex_type> *image2, const int *offsetH, const int* offsetW, stream_t)
+void cuArraysCopyToBatchAbsWithOffset(array_type<image_complex_type> *image1, const int inNX, const int inNY,
+    array_type<complex_type> *image2, const int *offsetH, const int* offsetW, stream_t)
 {
     copyToBatchWithOffset(image1->devData, inNX, inNY, image2, offsetH, offsetW,
         [](const image_complex_type &v) { return make_complex_type(complexAbs(v), 0); });
@@ -106,8 +106,8 @@ void cuArraysCopyToBatchAbsWithOffset(cuArrays<image_complex_type> *image1, cons
  * Copy a chunk into a batch of chips with varying offsets/strides
  * @note used to load real images
  */
-void cuArraysCopyToBatchWithOffsetR2C(cuArrays<image_real_type> *image1, const int inNX, const int inNY,
-    cuArrays<complex_type> *image2, const int *offsetH, const int* offsetW, stream_t)
+void cuArraysCopyToBatchWithOffsetR2C(array_type<image_real_type> *image1, const int inNX, const int inNY,
+    array_type<complex_type> *image2, const int *offsetH, const int* offsetW, stream_t)
 {
     copyToBatchWithOffset(image1->devData, inNX, inNY, image2, offsetH, offsetW,
         [](const image_real_type &v) { return toComplex(v); });
@@ -120,7 +120,7 @@ void cuArraysCopyToBatchWithOffsetR2C(cuArrays<image_real_type> *image1, const i
  * @param strideH offsets along height to extract chips
  * @param strideW offsets along width to extract chips
  */
-void cuArraysCopyC2R(cuArrays<complex_type> *image1, cuArrays<real_type> *image2,
+void cuArraysCopyC2R(array_type<complex_type> *image1, array_type<real_type> *image2,
     int strideH, int strideW, stream_t)
 {
     const int inNY = image1->width;
@@ -145,7 +145,7 @@ void cuArraysCopyC2R(cuArrays<complex_type> *image1, cuArrays<real_type> *image2
  * @param[in] offsets, varying offsets for extraction
  */
 template<typename T>
-void cuArraysCopyExtract(cuArrays<T> *imagesIn, cuArrays<T> *imagesOut, cuArrays<int2> *offsets, stream_t)
+void cuArraysCopyExtract(array_type<T> *imagesIn, array_type<T> *imagesOut, array_type<int2> *offsets, stream_t)
 {
     const int inNX = imagesIn->height, inNY = imagesIn->width;
     const int outNX = imagesOut->height, outNY = imagesOut->width;
@@ -161,8 +161,8 @@ void cuArraysCopyExtract(cuArrays<T> *imagesIn, cuArrays<T> *imagesOut, cuArrays
 }
 
 // instantiate the above template for the data types we need
-template void cuArraysCopyExtract(cuArrays<real_type> *in, cuArrays<real_type> *out, cuArrays<int2> *offsets, stream_t);
-template void cuArraysCopyExtract(cuArrays<complex_type> *in, cuArrays<complex_type> *out, cuArrays<int2> *offsets, stream_t);
+template void cuArraysCopyExtract(array_type<real_type> *in, array_type<real_type> *out, array_type<int2> *offsets, stream_t);
+template void cuArraysCopyExtract(array_type<complex_type> *in, array_type<complex_type> *out, array_type<int2> *offsets, stream_t);
 
 /**
  * copy a tile of images centered at the max locations to another image
@@ -171,7 +171,7 @@ template void cuArraysCopyExtract(cuArrays<complex_type> *in, cuArrays<complex_t
  * @param[in] maxloc the max locations (as centers)
  * @note assume the extracted tiles are within the input images
  */
-void cuArraysCopyExtractCorr(cuArrays<real_type> *imagesIn, cuArrays<real_type> *imagesOut, cuArrays<int2> *maxloc, stream_t)
+void cuArraysCopyExtractCorr(array_type<real_type> *imagesIn, array_type<real_type> *imagesOut, array_type<int2> *maxloc, stream_t)
 {
     const int inNX = imagesIn->height, inNY = imagesIn->width;
     const int outNX = imagesOut->height, outNY = imagesOut->width;
@@ -195,7 +195,7 @@ void cuArraysCopyExtractCorr(cuArrays<real_type> *imagesIn, cuArrays<real_type> 
  * @param[out] imagesValid flags whether the pixels are within the input images (1) or not (0)
  * @param[in] maxloc the max locations (as centers)
  */
-void cuArraysCopyExtractCorr(cuArrays<real_type> *imagesIn, cuArrays<real_type> *imagesOut, cuArrays<int> *imagesValid, cuArrays<int2> *maxloc, stream_t stream)
+void cuArraysCopyExtractCorr(array_type<real_type> *imagesIn, array_type<real_type> *imagesOut, array_type<int> *imagesValid, array_type<int2> *maxloc, stream_t stream)
 {
     cuArraysCopyExtractCorr(imagesIn, imagesOut, imagesValid, maxloc, 1,
         make_int2(0, 0), make_int2(imagesIn->height, imagesIn->width), stream);
@@ -211,8 +211,8 @@ void cuArraysCopyExtractCorr(cuArrays<real_type> *imagesIn, cuArrays<real_type> 
  * @param[in] stride the spacing of the extracted pixels in the input images
  * @param[in] validStart, validRange the valid region of the input images
  */
-void cuArraysCopyExtractCorr(cuArrays<real_type> *imagesIn, cuArrays<real_type> *imagesOut, cuArrays<int> *imagesValid,
-    cuArrays<int2> *maxloc, int stride, int2 validStart, int2 validRange, stream_t)
+void cuArraysCopyExtractCorr(array_type<real_type> *imagesIn, array_type<real_type> *imagesOut, array_type<int> *imagesValid,
+    array_type<int2> *maxloc, int stride, int2 validStart, int2 validRange, stream_t)
 {
     const int inNY = imagesIn->width;
     const int inNX = imagesIn->height;
@@ -253,7 +253,7 @@ template<> struct ExtractConverter<complex_type, real_type> {
  * @note for complex to real, the real part is taken
  */
 template<typename T_in, typename T_out>
-void cuArraysCopyExtract(cuArrays<T_in> *imagesIn, cuArrays<T_out> *imagesOut, int2 offset, stream_t)
+void cuArraysCopyExtract(array_type<T_in> *imagesIn, array_type<T_out> *imagesOut, int2 offset, stream_t)
 {
     const int inNX = imagesIn->height, inNY = imagesIn->width;
     const int outNX = imagesOut->height, outNY = imagesOut->width;
@@ -267,16 +267,16 @@ void cuArraysCopyExtract(cuArrays<T_in> *imagesIn, cuArrays<T_out> *imagesOut, i
 }
 
 // instantiate the above template for the data types we need
-template void cuArraysCopyExtract(cuArrays<real_type> *in, cuArrays<real_type> *out, int2 offset, stream_t);
-template void cuArraysCopyExtract(cuArrays<complex_type> *in, cuArrays<real_type> *out, int2 offset, stream_t);
-template void cuArraysCopyExtract(cuArrays<complex_type> *in, cuArrays<complex_type> *out, int2 offset, stream_t);
-template void cuArraysCopyExtract(cuArrays<real3_type> *in, cuArrays<real3_type> *out, int2 offset, stream_t);
+template void cuArraysCopyExtract(array_type<real_type> *in, array_type<real_type> *out, int2 offset, stream_t);
+template void cuArraysCopyExtract(array_type<complex_type> *in, array_type<real_type> *out, int2 offset, stream_t);
+template void cuArraysCopyExtract(array_type<complex_type> *in, array_type<complex_type> *out, int2 offset, stream_t);
+template void cuArraysCopyExtract(array_type<real3_type> *in, array_type<real3_type> *out, int2 offset, stream_t);
 
 /**
  * copy/extract images from a large size to
  * a smaller size from the location (offsetX, offsetY), take amplitude
  */
-void cuArraysCopyExtractAbs(cuArrays<complex_type> *imagesIn, cuArrays<real_type> *imagesOut, int2 offset, stream_t)
+void cuArraysCopyExtractAbs(array_type<complex_type> *imagesIn, array_type<real_type> *imagesOut, int2 offset, stream_t)
 {
     const int inNX = imagesIn->height, inNY = imagesIn->width;
     const int outNX = imagesOut->height, outNY = imagesOut->width;
@@ -293,7 +293,7 @@ void cuArraysCopyExtractAbs(cuArrays<complex_type> *imagesIn, cuArrays<real_type
  * copy/insert images from a smaller size to a larger size from the location (offsetX, offsetY)
  */
 template<typename T>
-void cuArraysCopyInsert(cuArrays<T> *imageIn, cuArrays<T> *imageOut, int offsetX, int offsetY, stream_t)
+void cuArraysCopyInsert(array_type<T> *imageIn, array_type<T> *imageOut, int offsetX, int offsetY, stream_t)
 {
     const int inNX = imageIn->height, inNY = imageIn->width;
     const int outNY = imageOut->width;
@@ -303,10 +303,10 @@ void cuArraysCopyInsert(cuArrays<T> *imageIn, cuArrays<T> *imageOut, int offsetX
 }
 
 // instantiate the above template for the data types we need
-template void cuArraysCopyInsert(cuArrays<complex_type>* in, cuArrays<complex_type>* out, int offX, int offY, stream_t);
-template void cuArraysCopyInsert(cuArrays<real3_type>* in, cuArrays<real3_type>* out, int offX, int offY, stream_t);
-template void cuArraysCopyInsert(cuArrays<real_type>* in, cuArrays<real_type>* out, int offX, int offY, stream_t);
-template void cuArraysCopyInsert(cuArrays<int>* in, cuArrays<int>* out, int offX, int offY, stream_t);
+template void cuArraysCopyInsert(array_type<complex_type>* in, array_type<complex_type>* out, int offX, int offY, stream_t);
+template void cuArraysCopyInsert(array_type<real3_type>* in, array_type<real3_type>* out, int offX, int offY, stream_t);
+template void cuArraysCopyInsert(array_type<real_type>* in, array_type<real_type>* out, int offX, int offY, stream_t);
+template void cuArraysCopyInsert(array_type<int>* in, array_type<int>* out, int offX, int offY, stream_t);
 
 // element conversion for cuArraysCopyPadded
 template<typename T_in, typename T_out> struct PaddedConverter {
@@ -320,7 +320,7 @@ template<> struct PaddedConverter<real_type, complex_type> {
  * copy images from a smaller size to a larger size while padding 0 for extra elements
  */
 template<typename T_in, typename T_out>
-void cuArraysCopyPadded(cuArrays<T_in> *imageIn, cuArrays<T_out> *imageOut, stream_t)
+void cuArraysCopyPadded(array_type<T_in> *imageIn, array_type<T_out> *imageOut, stream_t)
 {
     const int inNX = imageIn->height, inNY = imageIn->width;
     const int outNX = imageOut->height, outNY = imageOut->width;
@@ -337,14 +337,14 @@ void cuArraysCopyPadded(cuArrays<T_in> *imageIn, cuArrays<T_out> *imageOut, stre
 }
 
 // instantiate the above template for the data types we need
-template void cuArraysCopyPadded(cuArrays<real_type> *imageIn, cuArrays<real_type> *imageOut, stream_t);
-template void cuArraysCopyPadded(cuArrays<real_type> *imageIn, cuArrays<complex_type> *imageOut, stream_t);
-template void cuArraysCopyPadded(cuArrays<complex_type> *imageIn, cuArrays<complex_type> *imageOut, stream_t);
+template void cuArraysCopyPadded(array_type<real_type> *imageIn, array_type<real_type> *imageOut, stream_t);
+template void cuArraysCopyPadded(array_type<real_type> *imageIn, array_type<complex_type> *imageOut, stream_t);
+template void cuArraysCopyPadded(array_type<complex_type> *imageIn, array_type<complex_type> *imageOut, stream_t);
 
 /**
  * Set real images to a constant value
  */
-void cuArraysSetConstant(cuArrays<real_type> *imageIn, real_type value, stream_t)
+void cuArraysSetConstant(array_type<real_type> *imageIn, real_type value, stream_t)
 {
     const size_t size = imageIn->getSize();
     for(size_t idx = 0; idx < size; idx++)
@@ -356,7 +356,7 @@ void cuArraysSetConstant(cuArrays<real_type> *imageIn, real_type value, stream_t
  * @param[in] image1 input images
  * @param[out] image2 output images
  */
-void cuArraysR2C(cuArrays<real_type> *image1, cuArrays<complex_type> *image2, stream_t)
+void cuArraysR2C(array_type<real_type> *image1, array_type<complex_type> *image2, stream_t)
 {
     const size_t size = image1->getSize();
     for(size_t idx = 0; idx < size; idx++)
@@ -368,7 +368,7 @@ void cuArraysR2C(cuArrays<real_type> *image1, cuArrays<complex_type> *image2, st
  * @param[in] image1 input images
  * @param[out] image2 output images
  */
-void cuArraysC2R(cuArrays<complex_type> *image1, cuArrays<real_type> *image2, stream_t)
+void cuArraysC2R(array_type<complex_type> *image1, array_type<real_type> *image2, stream_t)
 {
     const size_t size = image1->getSize();
     for(size_t idx = 0; idx < size; idx++)
@@ -380,7 +380,7 @@ void cuArraysC2R(cuArrays<complex_type> *image1, cuArrays<real_type> *image2, st
  * @param[in] image1 input images
  * @param[out] image2 output images
  */
-void cuArraysAbs(cuArrays<complex_type> *image1, cuArrays<real_type> *image2, stream_t)
+void cuArraysAbs(array_type<complex_type> *image1, array_type<real_type> *image2, stream_t)
 {
     const size_t size = image1->getSize();
     for(size_t idx = 0; idx < size; idx++)

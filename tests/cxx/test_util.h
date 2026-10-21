@@ -68,9 +68,9 @@ protected:
 
     /// allocate a batch of images in both backend and host memory
     template<typename T>
-    std::unique_ptr<cuArrays<T>> make(int height, int width, int countH = 1, int countW = 1)
+    std::unique_ptr<array_type<T>> make(int height, int width, int countH = 1, int countW = 1)
     {
-        auto array = std::make_unique<cuArrays<T>>(height, width, countH, countW);
+        auto array = std::make_unique<array_type<T>>(height, width, countH, countW);
         array->allocate();
         array->allocateHost();
         return array;
@@ -78,7 +78,7 @@ protected:
 
     /// copy values to the backend memory
     template<typename T>
-    void upload(cuArrays<T> &array, const std::vector<T> &values)
+    void upload(array_type<T> &array, const std::vector<T> &values)
     {
         ASSERT_EQ(values.size(), array.getSize());
         std::copy(values.begin(), values.end(), array.hostData);
@@ -88,7 +88,7 @@ protected:
 
     /// allocate and fill a batch of images
     template<typename T>
-    std::unique_ptr<cuArrays<T>> makeFrom(const std::vector<T> &values, int height, int width,
+    std::unique_ptr<array_type<T>> makeFrom(const std::vector<T> &values, int height, int width,
         int countH = 1, int countW = 1)
     {
         auto array = make<T>(height, width, countH, countW);
@@ -98,7 +98,7 @@ protected:
 
     /// copy values from the backend memory
     template<typename T>
-    std::vector<T> download(cuArrays<T> &array)
+    std::vector<T> download(array_type<T> &array)
     {
         synchronize();
         array.copyToHost(stream);

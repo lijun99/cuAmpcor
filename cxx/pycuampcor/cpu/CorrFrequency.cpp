@@ -11,8 +11,8 @@
 namespace pycuampcor::cpu {
 
 // coef*conj(image1)*image2, element-wise, in image1 (defined below)
-static void cuArraysElementMultiplyConjugate(cuArrays<complex_type> *image1,
-    cuArrays<complex_type> *image2, real_type coef, stream_t stream);
+static void cuArraysElementMultiplyConjugate(array_type<complex_type> *image1,
+    array_type<complex_type> *image2, real_type coef, stream_t stream);
 
 // the mutex to guard the fftw planner (shared by all fftw users in this backend)
 std::mutex & fftwPlannerMutex()
@@ -36,11 +36,11 @@ cuFreqCorrelator::cuFreqCorrelator(int imageNX, int imageNY, int nImages, stream
     int n[2] ={imageNX, imageNY};
 
     // set up work arrays
-    workFM = std::make_unique<cuArrays<complex_type>>(imageNX, (imageNY/2+1), nImages);
+    workFM = std::make_unique<array_type<complex_type>>(imageNX, (imageNY/2+1), nImages);
     workFM->allocate();
-    workFS = std::make_unique<cuArrays<complex_type>>(imageNX, (imageNY/2+1), nImages);
+    workFS = std::make_unique<array_type<complex_type>>(imageNX, (imageNY/2+1), nImages);
     workFS->allocate();
-    workT = std::make_unique<cuArrays<real_type>>(imageNX, imageNY, nImages);
+    workT = std::make_unique<array_type<real_type>>(imageNX, imageNY, nImages);
     workT->allocate();
 
     // set up fft plans
@@ -64,7 +64,7 @@ cuFreqCorrelator::~cuFreqCorrelator() = default;
  * @param[in] images the search windows
  * @param[out] results the correlation surfaces
  */
-void cuFreqCorrelator::execute(cuArrays<real_type> *templates, cuArrays<real_type> *images, cuArrays<real_type> *results)
+void cuFreqCorrelator::execute(array_type<real_type> *templates, array_type<real_type> *images, array_type<real_type> *results)
 {
     // pad the reference windows to the the size of search windows
     cuArraysCopyPadded(templates, workT.get(), stream);
@@ -88,7 +88,7 @@ void cuFreqCorrelator::execute(cuArrays<real_type> *templates, cuArrays<real_typ
  * @param[in] image2, the secondary image
  * @param[in] coef, usually the normalization factor
  */
-static void cuArraysElementMultiplyConjugate(cuArrays<complex_type> *image1, cuArrays<complex_type> *image2, real_type coef, stream_t)
+static void cuArraysElementMultiplyConjugate(array_type<complex_type> *image1, array_type<complex_type> *image2, real_type coef, stream_t)
 {
     const size_t size = image1->getSize();
     for(size_t idx = 0; idx < size; idx++) {

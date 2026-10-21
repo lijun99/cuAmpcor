@@ -12,7 +12,7 @@ namespace pycuampcor {
 
 /// the types and workers that go with the arrays of the CPU package, for the processors
 template <>
-struct array_traits<cpu::cuArrays> {
+struct array_traits<cpu::Arrays> {
     // the element types
     using real_type = cpu::real_type;
     using complex_type = cpu::complex_type;
@@ -28,8 +28,8 @@ struct array_traits<cpu::cuArrays> {
     using freq_correlator_type = cpu::cuFreqCorrelator;
     using oversampler_c2c_type = cpu::cuOverSamplerC2C;
     // the interfaces of the normalizer and of the surface oversampler (common/), implemented by the package
-    using normalizer_type = cuNormalizer<cpu::cuArrays>;
-    using surface_oversampler_type = cuSurfaceOverSampler<cpu::cuArrays>;
+    using normalizer_type = cuNormalizer<cpu::Arrays>;
+    using surface_oversampler_type = cuSurfaceOverSampler<cpu::Arrays>;
 
     /// an int2_type (x: down, y: across)
     static int2_type make_int2(int x, int y) { return cpu::make_int2(x, y); }

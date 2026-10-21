@@ -11,7 +11,7 @@
 
 namespace pycuampcor::cpu {
 
-void cuArraysFFTPaddingMany(cuArrays<complex_type> *image1, cuArrays<complex_type> *image2,
+void cuArraysFFTPaddingMany(array_type<complex_type> *image1, array_type<complex_type> *image2,
     stream_t stream);
 
 } // namespace

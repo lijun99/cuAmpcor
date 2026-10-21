@@ -24,11 +24,11 @@ cuAmpcorChunkLoader::Source::Source(const cuAmpcorChunkFootprint &footprint_, Da
     const int height = std::max(footprint.maxHeight, 1);
     const int width = std::max(footprint.maxWidth, 1);
     if (dataType == DataType::Complex64) {
-        complexBuffer = std::make_unique<cuArrays<image_complex_type>>(height, width);
+        complexBuffer = std::make_unique<array_type<image_complex_type>>(height, width);
         complexBuffer->allocate();
     }
     else {
-        realBuffer = std::make_unique<cuArrays<image_real_type>>(height, width);
+        realBuffer = std::make_unique<array_type<image_real_type>>(height, width);
         realBuffer->allocate();
     }
 }

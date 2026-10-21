@@ -11,8 +11,8 @@
 
 namespace pycuampcor::cpu {
 
-void cuCorrTimeDomain(cuArrays<real_type> *templates, cuArrays<real_type> *images,
-    cuArrays<real_type> *results, stream_t stream);
+void cuCorrTimeDomain(array_type<real_type> *templates, array_type<real_type> *images,
+    array_type<real_type> *results, stream_t stream);
 
 } // namespace
 //end of file

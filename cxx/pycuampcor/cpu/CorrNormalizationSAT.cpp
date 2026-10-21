@@ -18,8 +18,8 @@ namespace pycuampcor::cpu {
  * @param[out] secondarySat work array for the sum area table of the secondary windows
  * @param[out] secondarySat2 work array for the sum area table of the secondary windows squared
  */
-void cuCorrNormalizeSAT(cuArrays<real_type> *correlation, cuArrays<real_type> *reference, cuArrays<real_type> *secondary,
-    cuArrays<double> *secondarySat, cuArrays<double> *secondarySat2, stream_t)
+void cuCorrNormalizeSAT(array_type<real_type> *correlation, array_type<real_type> *reference, array_type<real_type> *secondary,
+    array_type<double> *secondarySat, array_type<double> *secondarySat2, stream_t)
 {
     const int corNX = correlation->height, corNY = correlation->width;
     const int referenceNX = reference->height, referenceNY = reference->width;

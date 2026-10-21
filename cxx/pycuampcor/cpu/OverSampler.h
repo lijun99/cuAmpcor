@@ -21,8 +21,8 @@ private:
      FftwPlan forwardPlan;   // forward fft handle
      FftwPlan backwardPlan;  // backward fft handle
      stream_t stream;              // stream (not used)
-     std::unique_ptr<cuArrays<complex_type>> workIn;  // work array to hold forward fft data
-     std::unique_ptr<cuArrays<complex_type>> workOut; // work array to hold padded data
+     std::unique_ptr<array_type<complex_type>> workIn;  // work array to hold forward fft data
+     std::unique_ptr<array_type<complex_type>> workOut; // work array to hold padded data
 public:
      // disable the default constructor
      cuOverSamplerC2C() = delete;
@@ -31,7 +31,7 @@ public:
      // set stream
      void setStream(stream_t stream_);
      // execute oversampling
-     void execute(cuArrays<complex_type> *imagesIn, cuArrays<complex_type> *imagesOut);
+     void execute(array_type<complex_type> *imagesIn, array_type<complex_type> *imagesOut);
      // destructor
      ~cuOverSamplerC2C();
 };
@@ -46,23 +46,23 @@ private:
      FftwPlan backwardPlanColumns[2]; // for the positive and negative frequency columns
      FftwPlan backwardPlanRows;
      stream_t stream;
-     std::unique_ptr<cuArrays<complex_type>> workSizeIn;   // the spectra of the input images
-     std::unique_ptr<cuArrays<complex_type>> workColumns;  // the spectrum of one image, padded along the columns
-     std::unique_ptr<cuArrays<complex_type>> workPadded;   // the inverse fft along the columns, padded along the rows
-     std::unique_ptr<cuArrays<complex_type>> workSizeOut;  // the oversampled image
+     std::unique_ptr<array_type<complex_type>> workSizeIn;   // the spectra of the input images
+     std::unique_ptr<array_type<complex_type>> workColumns;  // the spectrum of one image, padded along the columns
+     std::unique_ptr<array_type<complex_type>> workPadded;   // the inverse fft along the columns, padded along the rows
+     std::unique_ptr<array_type<complex_type>> workSizeOut;  // the oversampled image
 
 public:
     cuOverSamplerR2R() = delete;
     cuOverSamplerR2R(int inNX, int inNY, int outNX, int outNY, int nImages, stream_t stream_);
     void setStream(stream_t stream_);
-    void execute(cuArrays<real_type> *imagesIn, cuArrays<real_type> *imagesOut);
+    void execute(array_type<real_type> *imagesIn, array_type<real_type> *imagesOut);
     ~cuOverSamplerR2R();
 };
 
 /// an oversampler of count correlation surfaces of height x width around their peaks, by factor:
 /// FFT (cuOverSamplerR2R) or sinc (cuSincOverSamplerR2R), by method; with rawFactor, the
 /// oversampling of the windows (the sinc oversampler shifts the peaks by factor*rawFactor)
-std::unique_ptr<cuSurfaceOverSampler<cuArrays>> newSurfaceOverSampler(OversamplingMethod method,
+std::unique_ptr<cuSurfaceOverSampler<Arrays>> newSurfaceOverSampler(OversamplingMethod method,
     int height, int width, int factor, int rawFactor, int count, stream_t stream);
 
 } // namespace

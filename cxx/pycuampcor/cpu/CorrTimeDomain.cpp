@@ -16,9 +16,9 @@ namespace pycuampcor::cpu {
  * @param[in] images Secondary images
  * @param[out] results Output correlation surface
  */
-void cuCorrTimeDomain(cuArrays<real_type> *templates,
-               cuArrays<real_type> *images,
-               cuArrays<real_type> *results,
+void cuCorrTimeDomain(array_type<real_type> *templates,
+               array_type<real_type> *images,
+               array_type<real_type> *results,
                stream_t)
 {
     const int templateNX = templates->height, templateNY = templates->width;

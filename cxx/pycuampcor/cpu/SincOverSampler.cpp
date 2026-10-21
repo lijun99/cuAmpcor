@@ -133,8 +133,8 @@ static void sincInterpolation(const real_type *imageIn, const int inNX, const in
  * @param[in] rawOversamplingFactor the multiplier of the centerShift
  * @note rawOversamplingFactor is for the centerShift, not the signal oversampling factor
  */
-void cuSincOverSamplerR2R::execute(cuArrays<real_type> *imagesIn, cuArrays<real_type> *imagesOut,
-    cuArrays<int2> *centerShift, int rawOversamplingFactor)
+void cuSincOverSamplerR2R::execute(array_type<real_type> *imagesIn, array_type<real_type> *imagesOut,
+    array_type<int2> *centerShift, int rawOversamplingFactor)
 {
     const int inNX = imagesIn->height;
     const int inNY = imagesIn->width;
@@ -157,7 +157,7 @@ void cuSincOverSamplerR2R::execute(cuArrays<real_type> *imagesIn, cuArrays<real_
             r_filter.data(), i_covs, i_decfactor, i_intplength, i_int_startX, i_int_startY, i_int_size);
 }
 
-void cuSincOverSamplerR2R::execute(cuArrays<real_type> *imagesIn, cuArrays<real_type> *imagesOut,
+void cuSincOverSamplerR2R::execute(array_type<real_type> *imagesIn, array_type<real_type> *imagesOut,
     int2 centerShift, int rawOversamplingFactor)
 {
     const int inNX = imagesIn->height;

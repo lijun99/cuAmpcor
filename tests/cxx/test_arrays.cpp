@@ -11,7 +11,7 @@ using ArraysTest = BackendTest;
 
 TEST_F(ArraysTest, Sizes)
 {
-    cuArrays<real_type> a(3, 4, 2, 5);
+    array_type<real_type> a(3, 4, 2, 5);
     EXPECT_EQ(a.size, 12);
     EXPECT_EQ(a.count, 10);
     EXPECT_EQ(a.getSize(), 120u);

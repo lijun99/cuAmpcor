@@ -28,7 +28,7 @@ namespace pycuampcor::cpu {
  * @param[in,out] images input/output complex signals
  * @param[in] axis 0: deramp along x-axis; 1: deramp along y-axis; others: deramp along both axes
  */
-static void cuLinearDeramp(cuArrays<complex_type> *images, const int axis, stream_t)
+static void cuLinearDeramp(array_type<complex_type> *images, const int axis, stream_t)
 {
     const int imageNX = images->height;
     const int imageNY = images->width;
@@ -82,7 +82,7 @@ static void cuLinearDeramp(cuArrays<complex_type> *images, const int axis, strea
     }
 }
 
-void cuDeramp(DerampMethod method, cuArrays<complex_type> *images, DerampAxis axis, stream_t stream)
+void cuDeramp(DerampMethod method, array_type<complex_type> *images, DerampAxis axis, stream_t stream)
 {
     // the axis values (down 0, across 1, both 2) are those of cuLinearDeramp
     if (method == DerampMethod::Complex)

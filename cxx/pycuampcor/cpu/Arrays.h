@@ -1,6 +1,6 @@
 /**
  * @file  Arrays.h
- * @brief Header file for cuArrays class (CPU backend)
+ * @brief Header file for Arrays class (CPU backend)
  *
  * A class describes a batch of images (in 2d arrays).
  * Each image has size (height, width)
@@ -17,7 +17,7 @@
 namespace pycuampcor::cpu {
 
 template <typename T>
-class cuArrays{
+class Arrays{
 
 public:
     int height; ///< x, row, down, length, azimuth, along the track
@@ -34,28 +34,28 @@ public:
     T* hostData; // pointer to data in host memory
 
     // default constructor, empty
-    cuArrays() : height(0), width(0), size(0), countH(0), countW(0), count(0),
+    Arrays() : height(0), width(0), size(0), countH(0), countW(0), count(0),
         is_allocated(0), is_allocatedHost(0),
         devData(nullptr), hostData(nullptr) {}
 
     // constructor for single image
-    cuArrays(size_t h, size_t w) : height(h), width(w), size(h*w), countH(1), countW(1), count(1),
+    Arrays(size_t h, size_t w) : height(h), width(w), size(h*w), countH(1), countW(1), count(1),
         is_allocated(0), is_allocatedHost(0),
         devData(nullptr), hostData(nullptr) {}
 
     // constructor for multiple images with a total count
-    cuArrays(size_t h, size_t w, size_t n) : height(h), width(w), size(h*w), countH(1), countW(n), count(n),
+    Arrays(size_t h, size_t w, size_t n) : height(h), width(w), size(h*w), countH(1), countW(n), count(n),
         is_allocated(0), is_allocatedHost(0),
         devData(nullptr), hostData(nullptr) {}
 
     // constructor for multiple images with (countH, countW)
-    cuArrays(size_t h, size_t w, size_t ch, size_t cw) : height(h), width(w), size(h*w), countH(ch), countW(cw), count(ch*cw),
+    Arrays(size_t h, size_t w, size_t ch, size_t cw) : height(h), width(w), size(h*w), countH(ch), countW(cw), count(ch*cw),
         is_allocated(0), is_allocatedHost(0),
         devData(nullptr), hostData(nullptr) {}
 
     // disable copying
-    cuArrays(const cuArrays&) = delete;
-    cuArrays& operator=(const cuArrays&) = delete;
+    Arrays(const Arrays&) = delete;
+    Arrays& operator=(const Arrays&) = delete;
 
     // memory allocation
     void allocate();
@@ -80,7 +80,7 @@ public:
     }
 
     // destructor
-    ~cuArrays()
+    ~Arrays()
     {
         if(is_allocated)
             deallocate();

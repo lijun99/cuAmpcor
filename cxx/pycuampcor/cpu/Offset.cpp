@@ -21,9 +21,9 @@ namespace pycuampcor::cpu {
  * @param[out] maxval arrays to hold the max values
  * @note This routine is overloaded with the routine without start/range
  */
-void cuArraysMaxloc2D(cuArrays<real_type> *images,
+void cuArraysMaxloc2D(array_type<real_type> *images,
                       const int2 start, const int2 range,
-                      cuArrays<int2> *maxloc, cuArrays<real_type> *maxval, stream_t)
+                      array_type<int2> *maxloc, array_type<real_type> *maxval, stream_t)
 {
     const int imageNY = images->width;
     for(int imageIdx = 0; imageIdx < images->count; imageIdx++) {
@@ -56,8 +56,8 @@ void cuArraysMaxloc2D(cuArrays<real_type> *images,
  * @param[out] maxloc arrays to hold the max locations
  * @param[out] maxval arrays to hold the max values
  */
-void cuArraysMaxloc2D(cuArrays<real_type> *images,
-                      cuArrays<int2> *maxloc, cuArrays<real_type> *maxval, stream_t stream)
+void cuArraysMaxloc2D(array_type<real_type> *images,
+                      array_type<int2> *maxloc, array_type<real_type> *maxval, stream_t stream)
 {
     // if no start and range are provided, use the whole image
     cuArraysMaxloc2D(images, make_int2(0, 0), make_int2(images->height, images->width),
@@ -73,9 +73,9 @@ void cuArraysMaxloc2D(cuArrays<real_type> *images,
  * @param[in] initOrigin, initFactor origin and scale factor of offsetInit
  * @param[in] zoomInOrigin, zoomInFactor origin and scale factor of offsetZoomIn
  */
-void cuSubPixelOffset(cuArrays<int2> *offsetInit,
-    cuArrays<int2> *offsetZoomIn,
-    cuArrays<real2_type> *offsetFinal,
+void cuSubPixelOffset(array_type<int2> *offsetInit,
+    array_type<int2> *offsetZoomIn,
+    array_type<real2_type> *offsetFinal,
     const int2 initOrigin, const int initFactor,
     const int2 zoomInOrigin, const int zoomInFactor,
     stream_t)
@@ -105,8 +105,8 @@ void cuSubPixelOffset(cuArrays<int2> *offsetInit,
  * Final offset =  pixel size offset (offsetInit - half search range)
  *     + subpixel offset (offsetZoomIn / overall oversampling factor)
  */
-void cuSubPixelOffset2Pass(cuArrays<int2> *offsetInit, cuArrays<int2> *offsetZoomIn,
-    cuArrays<real2_type> *offsetFinal,
+void cuSubPixelOffset2Pass(array_type<int2> *offsetInit, array_type<int2> *offsetZoomIn,
+    array_type<real2_type> *offsetFinal,
     int OverSampleRatioZoomin, int OverSampleRatioRaw,
     int xHalfRangeInit,  int yHalfRangeInit,
     stream_t)
@@ -152,7 +152,7 @@ static inline int2 adjustOffset(const int oldRange, const int newRange, const in
  * @param[in] xOldRange, yOldRange are (half) search ranges in first step
  * @param[in] xNewRange, yNewRange are (half) search range
  */
-void cuDetermineSecondaryExtractOffset(cuArrays<int2> *maxLoc, cuArrays<int2> *maxLocShift,
+void cuDetermineSecondaryExtractOffset(array_type<int2> *maxLoc, array_type<int2> *maxLocShift,
     int xOldRange, int yOldRange, int xNewRange, int yNewRange, stream_t)
 {
     for(int imageIndex = 0; imageIndex < maxLoc->size; imageIndex++) {

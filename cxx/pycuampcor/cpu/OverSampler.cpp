@@ -40,15 +40,15 @@ cuOverSamplerC2C::cuOverSamplerC2C(int inNX, int inNY, int outNX, int outNY, int
     : stream(stream_)
 {
     // set up work arrays
-    workIn = std::make_unique<cuArrays<complex_type>>(inNX, inNY, nImages);
+    workIn = std::make_unique<array_type<complex_type>>(inNX, inNY, nImages);
     workIn->allocate();
-    workOut = std::make_unique<cuArrays<complex_type>>(outNX, outNY, nImages);
+    workOut = std::make_unique<array_type<complex_type>>(outNX, outNY, nImages);
     workOut->allocate();
 
     // set up fft plans (out-of-place), with temporary arrays in place of the input/output images
-    cuArrays<complex_type> planIn(inNX, inNY, nImages);
+    array_type<complex_type> planIn(inNX, inNY, nImages);
     planIn.allocate();
-    cuArrays<complex_type> planOut(outNX, outNY, nImages);
+    array_type<complex_type> planOut(outNX, outNY, nImages);
     planOut.allocate();
     std::lock_guard<std::mutex> lock(fftwPlannerMutex());
     // exp(+i) to the frequency domain and exp(-i) back, as the isce3 (v1) pycuampcor:
@@ -70,7 +70,7 @@ void cuOverSamplerC2C::setStream(stream_t stream_)
  * @param[in] imagesIn input batch of images
  * @param[out] imagesOut output batch of images
  */
-void cuOverSamplerC2C::execute(cuArrays<complex_type> *imagesIn, cuArrays<complex_type> *imagesOut)
+void cuOverSamplerC2C::execute(array_type<complex_type> *imagesIn, array_type<complex_type> *imagesOut)
 {
     // FFT to frequency domain
     PYCUAMPCOR_FFTW(execute_dft)(forwardPlan, fftwCast(imagesIn->devData), fftwCast(workIn->devData));
@@ -95,14 +95,14 @@ cuOverSamplerC2C::~cuOverSamplerC2C() = default;
 cuOverSamplerR2R::cuOverSamplerR2R(int inNX, int inNY, int outNX, int outNY, int nImages, stream_t stream_)
     : stream(stream_)
 {
-    workSizeIn = std::make_unique<cuArrays<complex_type>>(inNX, inNY, nImages);
+    workSizeIn = std::make_unique<array_type<complex_type>>(inNX, inNY, nImages);
     workSizeIn->allocate();
     // work arrays for one image
-    workColumns = std::make_unique<cuArrays<complex_type>>(outNX, inNY, 1);
+    workColumns = std::make_unique<array_type<complex_type>>(outNX, inNY, 1);
     workColumns->allocate();
-    workPadded = std::make_unique<cuArrays<complex_type>>(outNX, outNY, 1);
+    workPadded = std::make_unique<array_type<complex_type>>(outNX, outNY, 1);
     workPadded->allocate();
-    workSizeOut = std::make_unique<cuArrays<complex_type>>(outNX, outNY, 1);
+    workSizeOut = std::make_unique<array_type<complex_type>>(outNX, outNY, 1);
     workSizeOut->allocate();
 
     // the numbers of the positive and negative frequency columns, as in cuArraysFFTPaddingMany
@@ -145,7 +145,7 @@ void cuOverSamplerR2R::setStream(stream_t stream_)
  * @param[in] imagesIn input batch of images
  * @param[out] imagesOut output batch of images
  */
-void cuOverSamplerR2R::execute(cuArrays<real_type> *imagesIn, cuArrays<real_type> *imagesOut)
+void cuOverSamplerR2R::execute(array_type<real_type> *imagesIn, array_type<real_type> *imagesOut)
 {
     // forward fft of all images
     cuArraysCopyPadded(imagesIn, workSizeIn.get(), stream);
@@ -184,15 +184,15 @@ cuOverSamplerR2R::~cuOverSamplerR2R() = default;
 namespace {
 
 /// the FFT oversampler of correlation surfaces (the whole surfaces)
-class FFTSurfaceOverSampler : public cuSurfaceOverSampler<cuArrays> {
+class FFTSurfaceOverSampler : public cuSurfaceOverSampler<Arrays> {
 public:
     /// an oversampler of count surfaces of height x width, by factor
     FFTSurfaceOverSampler(int height, int width, int factor, int count, stream_t stream)
         : oversampler(height, width, height*factor, width*factor, count, stream) {}
 
     /// oversample the surfaces (the peaks need no shift: the whole surfaces are oversampled)
-    void execute(cuArrays<real_type> *surfaces, cuArrays<real_type> *oversampled,
-        cuArrays<int2_type> *) override
+    void execute(array_type<real_type> *surfaces, array_type<real_type> *oversampled,
+        array_type<int2_type> *) override
     {
         oversampler.execute(surfaces, oversampled);
     }
@@ -202,15 +202,15 @@ private:
 };
 
 /// the sinc oversampler of correlation surfaces (around their peaks only)
-class SincSurfaceOverSampler : public cuSurfaceOverSampler<cuArrays> {
+class SincSurfaceOverSampler : public cuSurfaceOverSampler<Arrays> {
 public:
     /// an oversampler by factor; the peaks are shifted by factor*rawFactor
     SincSurfaceOverSampler(int factor, int rawFactor, stream_t stream)
         : oversampler(factor, stream), shiftFactor(factor*rawFactor) {}
 
     /// oversample the surfaces around their peaks, shifted from the centers by shift (or not, if nullptr)
-    void execute(cuArrays<real_type> *surfaces, cuArrays<real_type> *oversampled,
-        cuArrays<int2_type> *shift) override
+    void execute(array_type<real_type> *surfaces, array_type<real_type> *oversampled,
+        array_type<int2_type> *shift) override
     {
         if (shift)
             oversampler.execute(surfaces, oversampled, shift, shiftFactor);
@@ -228,7 +228,7 @@ private:
 /**
  * An oversampler of correlation surfaces around their peaks: FFT or sinc, by method
  */
-std::unique_ptr<cuSurfaceOverSampler<cuArrays>> newSurfaceOverSampler(OversamplingMethod method,
+std::unique_ptr<cuSurfaceOverSampler<Arrays>> newSurfaceOverSampler(OversamplingMethod method,
     int height, int width, int factor, int rawFactor, int count, stream_t stream)
 {
     if (method == OversamplingMethod::Sinc)

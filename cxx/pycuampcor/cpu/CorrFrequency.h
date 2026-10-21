@@ -19,9 +19,9 @@ private:
     FftwPlan forwardPlan;
     FftwPlan backwardPlan;
     // work data
-    std::unique_ptr<cuArrays<complex_type>> workFM;
-    std::unique_ptr<cuArrays<complex_type>> workFS;
-    std::unique_ptr<cuArrays<real_type>> workT;
+    std::unique_ptr<array_type<complex_type>> workFM;
+    std::unique_ptr<array_type<complex_type>> workFS;
+    std::unique_ptr<array_type<real_type>> workT;
     // stream (not used)
     stream_t stream;
 
@@ -31,7 +31,7 @@ public:
     // destructor
     ~cuFreqCorrelator();
     // executor
-    void execute(cuArrays<real_type> *templates, cuArrays<real_type> *images, cuArrays<real_type> *results);
+    void execute(array_type<real_type> *templates, array_type<real_type> *images, array_type<real_type> *results);
 };
 
 } // namespace

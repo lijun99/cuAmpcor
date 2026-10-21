@@ -11,10 +11,10 @@
 
 namespace pycuampcor::cpu {
 
-void cuArraysSubtractMean(cuArrays<real_type> *images, stream_t stream);
+void cuArraysSubtractMean(array_type<real_type> *images, stream_t stream);
 
-void cuArraysSumCorr(cuArrays<real_type> *images, cuArrays<int> *imagesValid,
-    cuArrays<real_type> *imagesSum, cuArrays<int> *imagesValidCount, stream_t stream);
+void cuArraysSumCorr(array_type<real_type> *images, array_type<int> *imagesValid,
+    array_type<real_type> *imagesSum, array_type<int> *imagesValidCount, stream_t stream);
 
 } // namespace
 //end of file

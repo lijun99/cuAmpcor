@@ -1,6 +1,6 @@
 /**
  * \file  Arrays.cpp
- * \brief  Implementations for cuArrays class (CPU backend)
+ * \brief  Implementations for Arrays class (CPU backend)
  *
  */
 
@@ -29,7 +29,7 @@ static void * alignedAlloc(size_t bytes)
 
 // allocate arrays in (device) work memory
 template <typename T>
-void cuArrays<T>::allocate()
+void Arrays<T>::allocate()
 {
     devData = (T *)alignedAlloc(getByteSize());
     is_allocated = 1;
@@ -37,7 +37,7 @@ void cuArrays<T>::allocate()
 
 // allocate arrays in host memory
 template <typename T>
-void cuArrays<T>::allocateHost()
+void Arrays<T>::allocateHost()
 {
     hostData = (T *)alignedAlloc(getByteSize());
     is_allocatedHost = 1;
@@ -45,7 +45,7 @@ void cuArrays<T>::allocateHost()
 
 // deallocate arrays in (device) work memory
 template <typename T>
-void cuArrays<T>::deallocate()
+void Arrays<T>::deallocate()
 {
     std::free(devData);
     devData = nullptr;
@@ -54,7 +54,7 @@ void cuArrays<T>::deallocate()
 
 // deallocate arrays in host memory
 template <typename T>
-void cuArrays<T>::deallocateHost()
+void Arrays<T>::deallocateHost()
 {
     std::free(hostData);
     hostData = nullptr;
@@ -63,21 +63,21 @@ void cuArrays<T>::deallocateHost()
 
 // copy arrays from (device) work memory to host
 template <typename T>
-void cuArrays<T>::copyToHost(stream_t)
+void Arrays<T>::copyToHost(stream_t)
 {
     std::memcpy(hostData, devData, getByteSize());
 }
 
 // copy arrays from host to (device) work memory
 template <typename T>
-void cuArrays<T>::copyToDevice(stream_t)
+void Arrays<T>::copyToDevice(stream_t)
 {
     std::memcpy(devData, hostData, getByteSize());
 }
 
 // set to 0
 template <typename T>
-void cuArrays<T>::setZero(stream_t)
+void Arrays<T>::setZero(stream_t)
 {
     std::memset((void *)devData, 0, getByteSize());
 }
@@ -105,7 +105,7 @@ std::ostream& operator<<(std::ostream& os, const int2& p) {
 
 // output (partial) data when debugging
 template <typename T>
-void cuArrays<T>::debuginfo(stream_t stream) {
+void Arrays<T>::debuginfo(stream_t stream) {
     // output size info
     std::cout << "Image height,width,count: " << height << "," << width << "," << count << std::endl;
     // check whether host data is allocated
@@ -130,7 +130,7 @@ void cuArrays<T>::debuginfo(stream_t stream) {
 
 // output to file by copying to host at first
 template<typename T>
-void cuArrays<T>::outputToFile(std::string fn, stream_t stream)
+void Arrays<T>::outputToFile(std::string fn, stream_t stream)
 {
     if( !is_allocatedHost)
         allocateHost();
@@ -140,7 +140,7 @@ void cuArrays<T>::outputToFile(std::string fn, stream_t stream)
 
 // save the host data to (binary) file
 template <typename T>
-void cuArrays<T>::outputHostToFile(std::string fn)
+void Arrays<T>::outputHostToFile(std::string fn)
 {
     std::ofstream file;
     file.open(fn.c_str(),  std::ios_base::binary);
@@ -150,14 +150,14 @@ void cuArrays<T>::outputHostToFile(std::string fn)
 }
 
 // instantiations
-template class cuArrays<float>;
-template class cuArrays<float2>;
-template class cuArrays<float3>;
-template class cuArrays<double>;
-template class cuArrays<double2>;
-template class cuArrays<double3>;
-template class cuArrays<int2>;
-template class cuArrays<int>;
+template class Arrays<float>;
+template class Arrays<float2>;
+template class Arrays<float3>;
+template class Arrays<double>;
+template class Arrays<double2>;
+template class Arrays<double3>;
+template class Arrays<int2>;
+template class Arrays<int>;
 
 } // namespace
 // end of file

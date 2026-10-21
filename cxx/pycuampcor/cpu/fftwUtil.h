@@ -3,7 +3,7 @@
  * @brief Helpers to use fftw (single or double precision) for the CPU backend
  *
  * fftw planning routines are not thread-safe; plans are created/destroyed under a mutex.
- * Plans are executed with the new-array interface on arrays allocated with cuArrays,
+ * Plans are executed with the new-array interface on arrays allocated with Arrays,
  *   which have the same alignment as those used for planning.
  */
 

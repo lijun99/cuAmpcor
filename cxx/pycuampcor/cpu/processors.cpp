@@ -27,14 +27,14 @@
 #include "float2.h"
 
 // the factories of the workers, for the processors
-std::unique_ptr<pycuampcor::array_traits<pycuampcor::cpu::cuArrays>::normalizer_type>
-pycuampcor::array_traits<pycuampcor::cpu::cuArrays>::newNormalizer(int height, int width, int count)
+std::unique_ptr<pycuampcor::array_traits<pycuampcor::cpu::Arrays>::normalizer_type>
+pycuampcor::array_traits<pycuampcor::cpu::Arrays>::newNormalizer(int height, int width, int count)
 {
     return cpu::newCuNormalizer(height, width, count);
 }
 
-std::unique_ptr<pycuampcor::array_traits<pycuampcor::cpu::cuArrays>::surface_oversampler_type>
-pycuampcor::array_traits<pycuampcor::cpu::cuArrays>::newSurfaceOverSampler(OversamplingMethod method,
+std::unique_ptr<pycuampcor::array_traits<pycuampcor::cpu::Arrays>::surface_oversampler_type>
+pycuampcor::array_traits<pycuampcor::cpu::Arrays>::newSurfaceOverSampler(OversamplingMethod method,
     int height, int width, int factor, int rawFactor, int count, stream_type stream)
 {
     return cpu::newSurfaceOverSampler(method, height, width, factor, rawFactor, count, stream);
@@ -46,8 +46,8 @@ pycuampcor::array_traits<pycuampcor::cpu::cuArrays>::newSurfaceOverSampler(Overs
 #include "cuAmpcorProcessorOnePass.icc"
 
 // for the arrays of this package
-template class pycuampcor::cuAmpcorProcessor<pycuampcor::cpu::cuArrays>;
-template class pycuampcor::cuAmpcorProcessorTwoPass<pycuampcor::cpu::cuArrays>;
-template class pycuampcor::cuAmpcorProcessorOnePass<pycuampcor::cpu::cuArrays>;
+template class pycuampcor::cuAmpcorProcessor<pycuampcor::cpu::Arrays>;
+template class pycuampcor::cuAmpcorProcessorTwoPass<pycuampcor::cpu::Arrays>;
+template class pycuampcor::cuAmpcorProcessorOnePass<pycuampcor::cpu::Arrays>;
 
 //end of file
