@@ -153,7 +153,7 @@ void FFTTest::checkNormalizer(int h, int w, int H, int W, int2 lag)
     auto s = makeFrom(sv, H, W);
     auto c = makeFrom(cv, ch, cw);
     auto normalizer = newCuNormalizer(H, W, n);
-    normalizer->execute(c.get(), t.get(), s.get(), stream);
+    normalizer->execute(*c, *t, *s, stream);
     auto r = download(*c);
 
     double t2 = 0;

@@ -8,7 +8,6 @@
 
 #include "CorrNormalization.h"
 #include "float2.h"
-#include "Arrays.h"
 
 namespace pycuampcor::cpu {
 
@@ -16,12 +15,12 @@ namespace pycuampcor::cpu {
  * Compute and subtract mean values from images
  * @param[in,out] images Input/Output images
  */
-void cuArraysSubtractMean(array_type<real_type> *images, stream_t)
+void cuArraysSubtractMean(ArraysView<real_type> images, stream_t)
 {
-    const int imageSize = images->size;
+    const int imageSize = images.arraySize();
     const real_type invSize = real_type(1)/imageSize;
-    for(int idxImage = 0; idxImage < images->count; idxImage++) {
-        real_type *image = images->devData + static_cast<size_t>(idxImage)*imageSize;
+    for(int idxImage = 0; idxImage < images.count(); idxImage++) {
+        real_type *image = images.array(idxImage).data_handle();
         double sum = 0.0;
         for(int i = 0; i < imageSize; i++)
             sum += image[i];
@@ -38,21 +37,21 @@ void cuArraysSubtractMean(array_type<real_type> *images, stream_t)
  * @param[out] imagesSum sum of squares
  * @param[out] imagesValidCount count of total valid pixels
  */
-void cuArraysSumCorr(array_type<real_type> *images, array_type<int> *imagesValid, array_type<real_type> *imagesSum,
-    array_type<int> *imagesValidCount, stream_t)
+void cuArraysSumCorr(ArraysView<const real_type> images, ArraysView<const int> imagesValid,
+    ArraysView<real_type> imagesSum, ArraysView<int> imagesValidCount, stream_t)
 {
-    const int imageSize = images->size;
-    for(int idxImage = 0; idxImage < images->count; idxImage++) {
-        const real_type *image = images->devData + static_cast<size_t>(idxImage)*imageSize;
-        const int *imageValid = imagesValid->devData + static_cast<size_t>(idxImage)*imageSize;
+    const int imageSize = images.arraySize();
+    for(int idxImage = 0; idxImage < images.count(); idxImage++) {
+        const real_type *image = images.array(idxImage).data_handle();
+        const int *imageValid = imagesValid.array(idxImage).data_handle();
         double sum = 0.0;
         int count = 0;
         for(int i = 0; i < imageSize; i++) {
             sum += image[i]*image[i];
             count += imageValid[i];
         }
-        imagesSum->devData[idxImage] = sum;
-        imagesValidCount->devData[idxImage] = count;
+        imagesSum[idxImage] = sum;
+        imagesValidCount[idxImage] = count;
     }
 }
 

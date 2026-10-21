@@ -41,7 +41,7 @@ void cuAmpcorProcessorOnePass<arrayT>::run(int idxDown, int idxAcross, const chu
     cuArraysCopyExtractAbs(*c_referenceBatchOverSampled, *r_referenceBatchOverSampled, center, stream);
     dump(c_referenceBatchOverSampled.get(), "c_referenceBatchOverSampled");
     dump(r_referenceBatchOverSampled.get(), "r_referenceBatchOverSampled");
-    cuArraysSubtractMean(r_referenceBatchOverSampled.get(), stream);
+    cuArraysSubtractMean(*r_referenceBatchOverSampled, stream);
     dump(r_referenceBatchOverSampled.get(), "r_referenceBatchOverSampledSubMean");
 
     // the secondary windows: deramped, oversampled, their amplitudes
@@ -78,8 +78,8 @@ void cuAmpcorProcessorOnePass<arrayT>::run(int idxDown, int idxAcross, const chu
     // around it (corrStatWindowSize), at the raw pixel spacing and within the search range
     cuArraysCopyExtractCorr(*r_corrBatch, *r_corrBatchRawZoomIn, *i_corrBatchZoomInValid,
         *offsetInit, param.rawDataOversamplingFactor, start, range, stream);
-    cuArraysSumCorr(r_corrBatchRawZoomIn.get(), i_corrBatchZoomInValid.get(), r_corrBatchSum.get(),
-        i_corrBatchValidCount.get(), stream);
+    cuArraysSumCorr(*r_corrBatchRawZoomIn, *i_corrBatchZoomInValid, *r_corrBatchSum,
+        *i_corrBatchValidCount, stream);
     cuEstimateSnr(*r_corrBatchSum, *i_corrBatchValidCount, *r_maxval, *r_snrValue, stream);
     dump(r_snrValue.get(), "r_snrValue");
     dump(r_covValue.get(), "r_covValue");

@@ -35,7 +35,7 @@ void cuAmpcorProcessorTwoPass<arrayT>::run(int idxDown, int idxAcross, const chu
     cuArraysAbs(*c_referenceBatchRaw, *r_referenceBatchRaw, stream);
     dump(c_referenceBatchRaw.get(), "c_referenceBatchRaw");
     dump(r_referenceBatchRaw.get(), "r_referenceBatchRaw");
-    cuArraysSubtractMean(r_referenceBatchRaw.get(), stream);
+    cuArraysSubtractMean(*r_referenceBatchRaw, stream);
     dump(r_referenceBatchRaw.get(), "r_referenceBatchRawSubMean");
 
     // the secondary windows: their amplitudes
@@ -57,8 +57,8 @@ void cuAmpcorProcessorTwoPass<arrayT>::run(int idxDown, int idxAcross, const chu
     // the SNR: the peak over the mean of the correlation surface around it
     cuArraysCopyExtractCorr(*r_corrBatchRaw, *r_corrBatchRawZoomIn, *i_corrBatchZoomInValid,
         *offsetInit, stream);
-    cuArraysSumCorr(r_corrBatchRawZoomIn.get(), i_corrBatchZoomInValid.get(), r_corrBatchSum.get(),
-        i_corrBatchValidCount.get(), stream);
+    cuArraysSumCorr(*r_corrBatchRawZoomIn, *i_corrBatchZoomInValid, *r_corrBatchSum,
+        *i_corrBatchValidCount, stream);
     dump(r_maxval.get(), "r_maxval");
     dump(r_corrBatchRawZoomIn.get(), "r_corrBatchRawStatZoomIn");
     dump(i_corrBatchZoomInValid.get(), "i_corrBatchZoomInValid");
@@ -87,7 +87,7 @@ void cuAmpcorProcessorTwoPass<arrayT>::run(int idxDown, int idxAcross, const chu
     cuArraysAbs(*c_referenceBatchOverSampled, *r_referenceBatchOverSampled, stream);
     dump(c_referenceBatchOverSampled.get(), "c_referenceBatchOverSampled");
     dump(r_referenceBatchOverSampled.get(), "r_referenceBatchOverSampled");
-    cuArraysSubtractMean(r_referenceBatchOverSampled.get(), stream);
+    cuArraysSubtractMean(*r_referenceBatchOverSampled, stream);
     dump(r_referenceBatchOverSampled.get(), "r_referenceBatchOverSampledSubMean");
 
     // the secondary windows around the peaks: deramped, oversampled, their amplitudes

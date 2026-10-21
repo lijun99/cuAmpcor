@@ -29,11 +29,10 @@ cuNormalizeSAT::cuNormalizeSAT(int secondaryNX, int secondaryNY, int count)
 
 cuNormalizeSAT::~cuNormalizeSAT() = default;
 
-void cuNormalizeSAT::execute(array_type<real_type> *correlation,
-    array_type<real_type> *reference, array_type<real_type> *secondary, stream_t stream)
+void cuNormalizeSAT::execute(ArraysView<real_type> correlation,
+    ArraysView<const real_type> reference, ArraysView<const real_type> secondary, stream_t stream)
 {
-    cuCorrNormalizeSAT(correlation, reference, secondary,
-        secondarySAT.get(), secondarySAT2.get(), stream);
+    cuCorrNormalizeSAT(correlation, reference, secondary, *secondarySAT, *secondarySAT2, stream);
 }
 
 } // namespace

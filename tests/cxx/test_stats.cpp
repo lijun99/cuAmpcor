@@ -15,7 +15,7 @@ TEST_F(StatsTest, SubtractMean)
     auto v = randomReal(h*w*n);
     for (auto &x : v) x += 3;  // non-zero mean
     auto a = makeFrom(v, h, w, 1, n);
-    cuArraysSubtractMean(a.get(), stream);
+    cuArraysSubtractMean(*a, stream);
     auto r = download(*a);
     for (int k = 0; k < n; k++) {
         double mean = 0;
@@ -36,7 +36,7 @@ TEST_F(StatsTest, SumCorr)
     auto f = makeFrom(valid, h, w, 1, n);
     auto sum2 = make<real_type>(1, n);
     auto count = make<int>(1, n);
-    cuArraysSumCorr(a.get(), f.get(), sum2.get(), count.get(), stream);
+    cuArraysSumCorr(*a, *f, *sum2, *count, stream);
     auto s2 = download(*sum2);
     auto c = download(*count);
     for (int k = 0; k < n; k++) {

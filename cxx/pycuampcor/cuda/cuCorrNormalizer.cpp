@@ -52,16 +52,16 @@ cuNormalizeSAT::cuNormalizeSAT(int secondaryNX, int secondaryNY, int count)
 
 cuNormalizeSAT::~cuNormalizeSAT() = default;
 
-void cuNormalizeSAT::execute(cuArrays<real_type> *correlation,
-    cuArrays<real_type> *reference, cuArrays<real_type> *secondary, cudaStream_t stream)
+void cuNormalizeSAT::execute(ArraysView<real_type> correlation,
+    ArraysView<const real_type> reference, ArraysView<const real_type> secondary, cudaStream_t stream)
 {
     cuCorrNormalizeSAT(correlation, reference, secondary,
-        referenceSum2.get(), secondarySAT.get(), secondarySAT2.get(), stream);
+        *referenceSum2, *secondarySAT, *secondarySAT2, stream);
 }
 
 template<int Size>
-void cuNormalizeFixed<Size>::execute(cuArrays<real_type> *correlation,
-    cuArrays<real_type> *reference, cuArrays<real_type> *secondary, cudaStream_t stream)
+void cuNormalizeFixed<Size>::execute(ArraysView<real_type> correlation,
+    ArraysView<const real_type> reference, ArraysView<const real_type> secondary, cudaStream_t stream)
 {
     cuCorrNormalizeFixed<Size>(correlation, reference, secondary, stream);
 }

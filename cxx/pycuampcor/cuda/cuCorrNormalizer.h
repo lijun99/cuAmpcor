@@ -23,8 +23,8 @@ template <int Size>
 class cuNormalizeFixed : public cuNormalizer<cuArrays> {
 public:
     /// normalize the correlation surfaces (see cuNormalizer::execute)
-    void execute(cuArrays<real_type> *correlation, cuArrays<real_type> *reference,
-        cuArrays<real_type> *secondary, cudaStream_t stream) override;
+    void execute(ArraysView<real_type> correlation, ArraysView<const real_type> reference,
+        ArraysView<const real_type> secondary, cudaStream_t stream) override;
 };
 
 /// the normalizer with sum area tables of the secondary windows
@@ -35,8 +35,8 @@ public:
     ~cuNormalizeSAT() override;
 
     /// normalize the correlation surfaces (see cuNormalizer::execute)
-    void execute(cuArrays<real_type> *correlation, cuArrays<real_type> *reference,
-        cuArrays<real_type> *secondary, cudaStream_t stream) override;
+    void execute(ArraysView<real_type> correlation, ArraysView<const real_type> reference,
+        ArraysView<const real_type> secondary, cudaStream_t stream) override;
 
 private:
     std::unique_ptr<cuArrays<real_type>> referenceSum2;   ///< the sums of the squares of the reference windows

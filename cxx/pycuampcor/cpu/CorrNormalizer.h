@@ -25,8 +25,8 @@ public:
     ~cuNormalizeSAT() override;
 
     /// normalize the correlation surfaces (see cuNormalizer::execute)
-    void execute(array_type<real_type> *correlation, array_type<real_type> *reference,
-        array_type<real_type> *secondary, stream_t stream) override;
+    void execute(ArraysView<real_type> correlation, ArraysView<const real_type> reference,
+        ArraysView<const real_type> secondary, stream_t stream) override;
 
 private:
     std::unique_ptr<array_type<double>> secondarySAT;    ///< the sum area tables of the secondary windows

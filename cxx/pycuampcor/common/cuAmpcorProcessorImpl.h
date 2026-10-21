@@ -182,7 +182,7 @@ void cuAmpcorProcessor<arrayT>::correlate(array_type<real_type> *reference,
         cuCorrTimeDomain(*reference, *secondary, *surface, stream);
     dump(surface, name + "UnNorm");
 
-    normalizer->execute(surface, reference, secondary, stream);
+    normalizer->execute(*surface, *reference, *secondary, stream);
     dump(surface, name);
 }
 

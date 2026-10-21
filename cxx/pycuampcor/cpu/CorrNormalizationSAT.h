@@ -8,12 +8,18 @@
 #pragma once
 
 #include "forward.h"
+#include "ArraysView.h"
 
 namespace pycuampcor::cpu {
 
-void cuCorrNormalizeSAT(array_type<real_type> *correlation, array_type<real_type> *reference,
-    array_type<real_type> *secondary, array_type<double> *secondarySAT, array_type<double> *secondarySAT2,
-    stream_t stream);
+/// normalize the correlation surfaces (in place) by the norms of the reference windows (with the
+/// mean subtracted) and of the secondary windows under them, from the sum area tables of the
+/// secondary windows
+/// @param secondarySAT, secondarySAT2 work arrays: the sum area tables of the secondary windows and
+///     of their squares
+void cuCorrNormalizeSAT(ArraysView<real_type> correlation, ArraysView<const real_type> reference,
+    ArraysView<const real_type> secondary, ArraysView<double> secondarySAT,
+    ArraysView<double> secondarySAT2, stream_t stream);
 
 } // namespace
 //end of file

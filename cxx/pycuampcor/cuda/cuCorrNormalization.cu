@@ -23,7 +23,6 @@
 #include "float2.h"
 #include "device.h"
 #include "cudaError.h"
-#include "cuArrays.h"
 
 namespace pycuampcor::cuda {
 
@@ -61,63 +60,20 @@ __device__ real_type sumReduceBlock(real_type sum, real_type *shmem)
     return result;
 }
 
-// cuda kernel to subtract mean value from the images
-template<const int Nthreads>
-__global__ void cuArraysMean_kernel(real_type *images, real_type *image_sum, int imageSize, real_type invSize, int nImages)
-{
-    __shared__ real_type shmem[Nthreads];
-
-    const int tid = threadIdx.x;
-    const int bid = blockIdx.x;
-
-    if (bid >= nImages) return;
-
-    const int       imageIdx = bid;
-    const int imageOffset = imageIdx * imageSize;
-    real_type   *imageD = images + imageOffset;
-
-    real_type sum  = 0.0;
-    // perform the reduction beyond one block
-    // save the results for each thread in block
-    for (int i = tid; i < imageSize; i += Nthreads)
-            sum += imageD[i];
-    // reduction within the block
-    sum = sumReduceBlock<Nthreads>(sum, shmem);
-
-    const real_type mean = sum * invSize;
-    if(tid ==0) image_sum[bid] = mean;
-}
-
-/**
- * Compute mean values for images
- * @param[in] images Input images
- * @param[out] mean Output mean values
- * @param[in] stream cudaStream
- */
-void cuArraysMeanValue(cuArrays<real_type> *images, cuArrays<real_type> *mean, cudaStream_t stream)
-{
-    const dim3 grid(images->count, 1, 1);
-    const int imageSize = images->width*images->height;
-    const real_type invSize = real_type(1)/imageSize;
-
-    cuArraysMean_kernel<NTHREADS> <<<grid,NTHREADS,0,stream>>>(images->devData, mean->devData, imageSize, invSize, images->count);
-    checkCudaAsyncErrors();
-}
-
 // cuda kernel to compute and subtracts mean value from the images
 template<const int Nthreads>
-__global__ void cuArraysSubtractMean_kernel(real_type *images, int imageSize, real_type invSize, int nImages)
+__global__ void cuArraysSubtractMean_kernel(ArraysView<real_type> images, real_type invSize)
 {
     __shared__ real_type shmem[Nthreads];
 
     const int tid = threadIdx.x;
     const int bid = blockIdx.x;
 
-    if (bid >= nImages) return;
+    if (bid >= images.count()) return;
 
     const int       imageIdx = bid;
-    const int imageOffset = imageIdx * imageSize;
-    real_type   *imageD = images + imageOffset;
+    const int imageSize = images.arraySize();
+    real_type   *imageD = images.array(imageIdx).data_handle();
 
     // compute the sum
     real_type sum  = 0.0;
@@ -138,31 +94,33 @@ __global__ void cuArraysSubtractMean_kernel(real_type *images, int imageSize, re
  * @param[out] mean Output mean values
  * @param[in] stream cudaStream
  */
-void cuArraysSubtractMean(cuArrays<real_type> *images, cudaStream_t stream)
+void cuArraysSubtractMean(ArraysView<real_type> images, cudaStream_t stream)
 {
-    const dim3 grid(images->count, 1, 1);
-    const int imageSize = images->width*images->height;
+    const dim3 grid(images.count(), 1, 1);
+    const int imageSize = images.arraySize();
     const real_type invSize = real_type(1)/imageSize;
 
-    cuArraysSubtractMean_kernel<NTHREADS> <<<grid,NTHREADS,0,stream>>>(images->devData, imageSize, invSize, images->count);
+    cuArraysSubtractMean_kernel<NTHREADS> <<<grid,NTHREADS,0,stream>>>(images, invSize);
     checkCudaAsyncErrors();
 }
 
 // cuda kernel to compute summation on extracted correlation surface (Minyan)
 template<const int Nthreads>
-__global__ void cuArraysSumCorr_kernel(real_type *images, int *imagesValid, real_type *imagesSum, int *imagesValidCount, int imageSize, int nImages)
+__global__ void cuArraysSumCorr_kernel(ArraysView<const real_type> images,
+    ArraysView<const int> imagesValid, ArraysView<real_type> imagesSum,
+    ArraysView<int> imagesValidCount)
 {
     __shared__ real_type shmem[Nthreads];
 
     const int tid = threadIdx.x;
     const int bid = blockIdx.x;
 
-    if (bid >= nImages) return;
+    if (bid >= images.count()) return;
 
     const int imageIdx = bid;
-    const int imageOffset = imageIdx * imageSize;
-    real_type*    imageD = images + imageOffset;
-    int*      imageValidD = imagesValid + imageOffset;
+    const int imageSize = images.arraySize();
+    const real_type*    imageD = images.array(imageIdx).data_handle();
+    const int*      imageValidD = imagesValid.array(imageIdx).data_handle();
 
     real_type sum  = 0.0f;
     real_type count = 0;
@@ -189,14 +147,13 @@ __global__ void cuArraysSumCorr_kernel(real_type *images, int *imagesValid, real
  * @param[out] imagesValidCount count of total valid pixels
  * @param[in] stream cudaStream
  */
-void cuArraysSumCorr(cuArrays<real_type> *images, cuArrays<int> *imagesValid, cuArrays<real_type> *imagesSum,
-    cuArrays<int> *imagesValidCount, cudaStream_t stream)
+void cuArraysSumCorr(ArraysView<const real_type> images, ArraysView<const int> imagesValid,
+    ArraysView<real_type> imagesSum, ArraysView<int> imagesValidCount, cudaStream_t stream)
 {
-    const dim3 grid(images->count, 1, 1);
-    const int imageSize = images->width*images->height;
+    const dim3 grid(images.count(), 1, 1);
 
-    cuArraysSumCorr_kernel<NTHREADS> <<<grid,NTHREADS,0,stream>>>(images->devData, imagesValid->devData,
-        imagesSum->devData, imagesValidCount->devData, imageSize, images->count);
+    cuArraysSumCorr_kernel<NTHREADS> <<<grid,NTHREADS,0,stream>>>(images, imagesValid,
+        imagesSum, imagesValidCount);
     checkCudaAsyncErrors();
 }
 
@@ -239,27 +196,24 @@ __device__ real2_type partialSums(const real_type v, real_type* shmem, const int
 
 // cuda kernel for cuCorrNormalize
 template<const int Nthreads2>
-__global__ void cuCorrNormalize_kernel(
-    int nImages,
-    const real_type *templateIn, int templateNX, int templateNY, int templateSize,
-    const real_type *imageIn, int imageNX, int imageNY, int imageSize,
-    real_type *resultOut, int resultNX, int resultNY, int resultSize,
-    real_type templateCoeff)
+__global__ void cuCorrNormalize_kernel(ArraysView<const real_type> templates,
+    ArraysView<const real_type> images, ArraysView<real_type> results, real_type templateCoeff)
 {
     const int Nthreads = 1<<Nthreads2;
     __shared__ real_type shmem[Nthreads*3];
 
     const int tid = threadIdx.x;
     const int imageIdx = blockIdx.z;
-    if (imageIdx >= nImages) return;
+    if (imageIdx >= images.count()) return;
 
-    const int    imageOffset = imageIdx *    imageSize;
-    const int templateOffset = imageIdx * templateSize;
-    const int   resultOffset = imageIdx *   resultSize;
+    const int templateNX = templates.height(), templateNY = templates.width();
+    const int templateSize = templates.arraySize();
+    const int imageNY = images.width(), imageSize = images.arraySize();
+    const int resultNY = results.width();
 
-    const real_type *   imageD =    imageIn  +    imageOffset;
-    const real_type *templateD = templateIn  + templateOffset;
-    real_type *  resultD =   resultOut +   resultOffset;
+    const real_type *   imageD =    images.array(imageIdx).data_handle();
+    const real_type *templateD = templates.array(imageIdx).data_handle();
+    real_type *  resultD =   results.array(imageIdx).data_handle();
 
     // template sum^2
     real_type templateSum2 = 0.0;
@@ -324,70 +278,6 @@ __global__ void cuCorrNormalize_kernel(
     }
 }
 
-/**
- * Normalize a correlation surface
- * @param[in] templates Reference windows with mean subtracted
- * @param[in] images Secondary windows
- * @param[in,out] results un-normalized correlation surface as input and normalized as output
- * @param[in] stream cudaStream
- * @warning The current implementation uses one thread for one column, therefore,
- *   the secondary window width is limited to <=1024, the max threads in a block.
- */
-void cuCorrNormalize(cuArrays<real_type> *templates, cuArrays<real_type> *images, cuArrays<real_type> *results, cudaStream_t stream)
-{
-    const int nImages = images->count;
-    const int imageNY = images->width;
-    const dim3 grid(1, 1, nImages);
-    const real_type invTemplateSize = real_type(1)/templates->size;
-
-    if      (imageNY <=   64) {
-        cuCorrNormalize_kernel< 6><<<grid,  64, 0, stream>>>(nImages,
-            templates->devData, templates->height, templates->width, templates->size,
-            images->devData, images->height, images->width, images->size,
-            results->devData, results->height, results->width, results->size,
-            invTemplateSize);
-        checkCudaAsyncErrors();
-    }
-    else if (imageNY <=  128) {
-        cuCorrNormalize_kernel< 7><<<grid, 128, 0, stream>>>(nImages,
-            templates->devData, templates->height, templates->width, templates->size,
-            images->devData, images->height, images->width, images->size,
-            results->devData, results->height, results->width, results->size,
-            invTemplateSize);
-        checkCudaAsyncErrors();
-    }
-    else if (imageNY <=  256) {
-        cuCorrNormalize_kernel< 8><<<grid, 256, 0, stream>>>(nImages,
-            templates->devData, templates->height, templates->width, templates->size,
-            images->devData, images->height, images->width, images->size,
-            results->devData, results->height, results->width, results->size,
-            invTemplateSize);
-        checkCudaAsyncErrors();
-    }
-    else if (imageNY <=  512) {
-        cuCorrNormalize_kernel< 9><<<grid, 512, 0, stream>>>(nImages,
-            templates->devData, templates->height, templates->width, templates->size,
-            images->devData, images->height, images->width, images->size,
-            results->devData, results->height, results->width, results->size,
-            invTemplateSize);
-        checkCudaAsyncErrors();
-    }
-    else if (imageNY <= 1024) {
-        cuCorrNormalize_kernel<10><<<grid,1024, 0, stream>>>(nImages,
-            templates->devData, templates->height, templates->width, templates->size,
-            images->devData, images->height, images->width, images->size,
-            results->devData, results->height, results->width, results->size,
-            invTemplateSize);
-        checkCudaAsyncErrors();
-    }
-    else
-    {
-        throw std::invalid_argument("The (oversampled) window size along the across direction "
-            + std::to_string(imageNY) + " should be smaller than 1024.");
-    }
-
-}
-
 template<int N> struct Log2;
 template<> struct Log2<64> { static const int value = 6; };
 template<> struct Log2<128> { static const int value = 7; };
@@ -396,34 +286,27 @@ template<> struct Log2<512> { static const int value = 9; };
 template<> struct Log2<1024> { static const int value = 10; };
 
 template<int Size>
-void cuCorrNormalizeFixed(cuArrays<real_type> *correlation, cuArrays<real_type> *reference, cuArrays<real_type> *secondary, cudaStream_t stream)
+void cuCorrNormalizeFixed(ArraysView<real_type> correlation, ArraysView<const real_type> reference,
+    ArraysView<const real_type> secondary, cudaStream_t stream)
 {
-    const int nImages = correlation->count;
+    const int nImages = correlation.count();
     const dim3 grid(1, 1, nImages);
-    const real_type invReferenceSize = real_type(1)/reference->size;
-    cuCorrNormalize_kernel<Log2<Size>::value><<<grid, Size, 0, stream>>>(nImages,
-                reference->devData, reference->height, reference->width, reference->size,
-                secondary->devData, secondary->height, secondary->width, secondary->size,
-                correlation->devData, correlation->height, correlation->width, correlation->size,
-                invReferenceSize);
+    const real_type invReferenceSize = real_type(1)/reference.arraySize();
+    cuCorrNormalize_kernel<Log2<Size>::value><<<grid, Size, 0, stream>>>(reference, secondary,
+        correlation, invReferenceSize);
     checkCudaAsyncErrors();
 }
 
-template void cuCorrNormalizeFixed<64>(cuArrays<real_type> *correlation,
-        cuArrays<real_type> *reference, cuArrays<real_type> *secondary,
-        cudaStream_t stream);
-template void cuCorrNormalizeFixed<128>(cuArrays<real_type> *correlation,
-        cuArrays<real_type> *reference, cuArrays<real_type> *secondary,
-        cudaStream_t stream);
-template void cuCorrNormalizeFixed<256>(cuArrays<real_type> *correlation,
-        cuArrays<real_type> *reference, cuArrays<real_type> *secondary,
-        cudaStream_t stream);
-template void cuCorrNormalizeFixed<512>(cuArrays<real_type> *correlation,
-        cuArrays<real_type> *reference, cuArrays<real_type> *secondary,
-        cudaStream_t stream);
-template void cuCorrNormalizeFixed<1024>(cuArrays<real_type> *correlation,
-        cuArrays<real_type> *reference, cuArrays<real_type> *secondary,
-        cudaStream_t stream);
+template void cuCorrNormalizeFixed<64>(ArraysView<real_type> correlation,
+    ArraysView<const real_type> reference, ArraysView<const real_type> secondary, cudaStream_t stream);
+template void cuCorrNormalizeFixed<128>(ArraysView<real_type> correlation,
+    ArraysView<const real_type> reference, ArraysView<const real_type> secondary, cudaStream_t stream);
+template void cuCorrNormalizeFixed<256>(ArraysView<real_type> correlation,
+    ArraysView<const real_type> reference, ArraysView<const real_type> secondary, cudaStream_t stream);
+template void cuCorrNormalizeFixed<512>(ArraysView<real_type> correlation,
+    ArraysView<const real_type> reference, ArraysView<const real_type> secondary, cudaStream_t stream);
+template void cuCorrNormalizeFixed<1024>(ArraysView<real_type> correlation,
+    ArraysView<const real_type> reference, ArraysView<const real_type> secondary, cudaStream_t stream);
 
 // end of file
 

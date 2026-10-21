@@ -9,7 +9,6 @@
 #include "float2.h"
 #include "device.h"
 #include "cudaError.h"
-#include "cuArrays.h"
 
 #include <cooperative_groups.h>
 #if __CUDACC_VER_MAJOR__ >= 11
@@ -26,18 +25,17 @@ namespace cg = cooperative_groups;
  * compute the sum value square (std) of the reference image
  * @param[out] sum2 sum of value square
  * @param[in] images the reference images
- * @param[in] n total elements in one image nx*ny
- * @param[in] batch number of images
  * @note use one thread block for each image, blockIdx.x is image index
  **/
 
 #if __CUDACC_VER_MAJOR__ >= 11
 // use cg::reduce for NVCC 11 and above
-__global__ void sum_square_kernel(real_type *sum2, const real_type *images, int n, int batch)
+__global__ void sum_square_kernel(ArraysView<real_type> sum2, ArraysView<const real_type> images)
 {
     // get block id for each image
     int imageid = blockIdx.x;
-    const real_type *image = images + imageid*n;
+    const int n = images.arraySize();
+    const real_type *image = images.array(imageid).data_handle();
 
     // get the thread block
     cg::thread_block cta = cg::this_thread_block();
@@ -76,11 +74,12 @@ __global__ void sum_square_kernel(real_type *sum2, const real_type *images, int 
 
 #else
 // use warp-shuffle reduction for NVCC 9 & 10
-__global__ void sum_square_kernel(real_type *sum2, const real_type *images, int n, int batch)
+__global__ void sum_square_kernel(ArraysView<real_type> sum2, ArraysView<const real_type> images)
 {
     // get block id for each image
     int imageid = blockIdx.x;
-    const real_type *image = images + imageid*n;
+    const int n = images.arraySize();
+    const real_type *image = images.array(imageid).data_handle();
 
     // get the thread block
     cg::thread_block cta = cg::this_thread_block();
@@ -141,16 +140,18 @@ __global__ void sum_square_kernel(real_type *sum2, const real_type *images, int 
  * Compute the (inclusive) sum area table of the value and value^2 of a batch of 2d images.
  * @param[out] sat the sum area table
  * @param[out] sat2 the sum area table of value^2
- * @param[in] data search images
- * @param[in] nx image height (subleading dimension)
- * @param[in] ny image width (leading dimension)
- * @param[in] batch number of images
+ * @param[in] images search images
  **/
 
-__global__ void sat2d_kernel(real_type *sat, real_type * sat2, const real_type *data, int nx, int ny, int batch)
+__global__ void sat2d_kernel(ArraysView<real_type> sats, ArraysView<real_type> sats2,
+    ArraysView<const real_type> images)
 {
     // get block id for each image
     int imageid = blockIdx.x;
+    // image height (subleading dimension) and width (leading dimension)
+    const int nx = images.height(), ny = images.width();
+    real_type *sat = sats.data_handle(), *sat2 = sats2.data_handle();
+    const real_type *data = images.data_handle();
 
     // get the thread id for each row/column
     int tid =  threadIdx.x;
@@ -197,12 +198,14 @@ __global__ void sat2d_kernel(real_type *sat, real_type * sat2, const real_type *
     // all done
 }
 
-__global__ void cuCorrNormalizeSAT_kernel(real_type *correlation, const real_type *referenceSum2, const real_type *secondarySat,
-    const real_type *secondarySat2, const int corNX, const int corNY, const int referenceNX, const int referenceNY,
-    const int secondaryNX, const int secondaryNY)
+__global__ void cuCorrNormalizeSAT_kernel(ArraysView<real_type> correlation,
+    ArraysView<const real_type> referenceSum2, ArraysView<const real_type> secondarySat,
+    ArraysView<const real_type> secondarySat2, const int referenceNX, const int referenceNY)
 {
     //get the image id from block z index
     int imageid = blockIdx.z;
+    const int corNX = correlation.height(), corNY = correlation.width();
+    const int secondaryNY = secondarySat.width();
 
     // get the thread id as pixel in correlation surface
     int tx = threadIdx.x + blockDim.x*blockIdx.x;
@@ -214,7 +217,7 @@ __global__ void cuCorrNormalizeSAT_kernel(real_type *correlation, const real_typ
 
         // compute the sum and sum square of the search image from the sum area table
         // sum
-        const real_type *sat = secondarySat + imageid*secondaryNX*secondaryNY;
+        const real_type *sat = secondarySat.array(imageid).data_handle();
         // get sat values for four corners
         real_type topleft = (tx > 0 && ty > 0) ? sat[(tx-1)*secondaryNY+(ty-1)] : 0.0;
         real_type topright = (tx > 0 ) ? sat[(tx-1)*secondaryNY+(ty+referenceNY-1)] : 0.0;
@@ -223,7 +226,7 @@ __global__ void cuCorrNormalizeSAT_kernel(real_type *correlation, const real_typ
         // get the sum
         real_type secondarySum = bottomright + topleft - topright - bottomleft;
         // sum of value^2
-        const real_type *sat2 = secondarySat2 + imageid*secondaryNX*secondaryNY;
+        const real_type *sat2 = secondarySat2.array(imageid).data_handle();
         // get sat2 values for four corners
         topleft = (tx > 0 && ty > 0) ? sat2[(tx-1)*secondaryNY+(ty-1)] : 0.0;
         topright = (tx > 0 ) ? sat2[(tx-1)*secondaryNY+(ty+referenceNY-1)] : 0.0;
@@ -234,35 +237,31 @@ __global__ void cuCorrNormalizeSAT_kernel(real_type *correlation, const real_typ
         // compute the normalization
         real_type norm2 = (secondarySum2-secondarySum*secondarySum/(referenceNX*referenceNY))*refSum2;
         // normalize the correlation surface
-        correlation[(imageid*corNX+tx)*corNY+ty] *= rsqrt(norm2 + EPSILON);
+        correlation(imageid, tx, ty) *= rsqrt(norm2 + EPSILON);
     }
 }
 
-void cuCorrNormalizeSAT(cuArrays<real_type> *correlation, cuArrays<real_type> *reference, cuArrays<real_type> *secondary,
-    cuArrays<real_type> * referenceSum2, cuArrays<real_type> *secondarySat, cuArrays<real_type> *secondarySat2, cudaStream_t stream)
+void cuCorrNormalizeSAT(ArraysView<real_type> correlation, ArraysView<const real_type> reference,
+    ArraysView<const real_type> secondary, ArraysView<real_type> referenceSum2,
+    ArraysView<real_type> secondarySat, ArraysView<real_type> secondarySat2, cudaStream_t stream)
 {
     // compute the std of reference image
     // note that the mean is already subtracted
     int nthreads = 256;
     int sMemSize = nthreads*sizeof(real_type);
-    int nblocks = reference->count;
-    sum_square_kernel<<<nblocks, nthreads, sMemSize, stream>>>(referenceSum2->devData, reference->devData,
-        reference->width * reference->height, reference->count);
+    int nblocks = reference.count();
+    sum_square_kernel<<<nblocks, nthreads, sMemSize, stream>>>(referenceSum2, reference);
     checkCudaAsyncErrors();
 
     // compute the sum area table of the search images
-    sat2d_kernel<<<nblocks, nthreads, 0, stream>>>(secondarySat->devData, secondarySat2->devData, secondary->devData,
-        secondary->height, secondary->width, secondary->count);
+    sat2d_kernel<<<nblocks, nthreads, 0, stream>>>(secondarySat, secondarySat2, secondary);
     checkCudaAsyncErrors();
 
     nthreads = NTHREADS2D;
     dim3 blockSize(nthreads, nthreads, 1);
-    dim3 gridSize(divUp(correlation->height,nthreads), divUp(correlation->width,nthreads), correlation->count);
-    cuCorrNormalizeSAT_kernel<<<gridSize, blockSize, 0, stream>>>(correlation->devData,
-        referenceSum2->devData, secondarySat->devData, secondarySat2->devData,
-        correlation->height, correlation->width,
-        reference->height, reference->width,
-        secondary->height, secondary->width);
+    dim3 gridSize(divUp(correlation.height(),nthreads), divUp(correlation.width(),nthreads), correlation.count());
+    cuCorrNormalizeSAT_kernel<<<gridSize, blockSize, 0, stream>>>(correlation,
+        referenceSum2, secondarySat, secondarySat2, reference.height(), reference.width());
     checkCudaAsyncErrors();
 }
 

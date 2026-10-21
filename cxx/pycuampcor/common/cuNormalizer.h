@@ -13,6 +13,7 @@
 
 #include "forward.h"
 #include "cuAmpcorArrayTraits.h"
+#include "ArraysView.h"
 
 namespace pycuampcor {
 
@@ -30,8 +31,8 @@ public:
     /// @param reference the reference windows (with the mean subtracted)
     /// @param secondary the secondary windows
     /// @param stream the stream on which the kernels are queued
-    virtual void execute(arrayT<real_type> *correlation, arrayT<real_type> *reference,
-        arrayT<real_type> *secondary, stream_type stream) = 0;
+    virtual void execute(ArraysView<real_type> correlation, ArraysView<const real_type> reference,
+        ArraysView<const real_type> secondary, stream_type stream) = 0;
 };
 
 } // namespace
