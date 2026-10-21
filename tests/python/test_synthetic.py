@@ -65,7 +65,7 @@ def test_time_domain(impl, workflow, images, tmp_path):
 def narrowband_images(tmp_path_factory):
     # the amplitudes of speckle have twice the bandwidth of the complex signal;
     # a bandwidth <= 50% of the sampling rate avoids their aliasing (which biases
-    # the offsets towards integer pixels)
+    # the offsets toward integer pixels)
     return make_images(tmp_path_factory.mktemp("narrowband"), SHAPE, SHIFT, bandwidth=0.5)
 
 
