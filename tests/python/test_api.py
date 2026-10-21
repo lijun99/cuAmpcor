@@ -62,6 +62,21 @@ def test_parameters(impl):
     assert isinstance(ampcor.isDoublePrecision(), bool)
 
 
+def test_docstrings(impl):
+    cls = type(new_ampcor(impl))
+    assert cls.__doc__
+    names = list(INT_PARAMS) + STR_PARAMS
+    for name in names:
+        doc = getattr(cls, name).__doc__
+        assert doc and "\n\nDefault: " in doc, name
+    assert "Default: Workflow.TWO_PASS" in cls.workflow.__doc__
+    assert "Default: 64" in cls.windowSizeHeight.__doc__
+    for method in ["runAmpcor", "setupParams", "setConstantGrossOffset", "setVaryingGrossOffset",
+                   "checkPixelInImageRange", "isDoublePrecision", "runAmpcorLayers"]:
+        assert getattr(cls, method).__doc__, method
+    assert "grossOffsetDown" in cls.setConstantGrossOffset.__doc__
+
+
 def test_isce3_alias(impl):
     ampcor = new_ampcor(impl)
     ampcor.corrImageName = "peak"

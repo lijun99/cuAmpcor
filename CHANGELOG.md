@@ -22,6 +22,8 @@
   (e.g., `workflow="one_pass"`, `derampAxis="range"`), and read as the member, equal to the
   integer value. An invalid option raises a `ValueError` when set (instead of in `setupParams`).
 - `useMmap` and `mergeGrossOffset` are booleans (set by a bool or an integer).
+- Docstrings for the class, its methods and all the parameters (with their default values), and
+  argument names for `setConstantGrossOffset` / `setVaryingGrossOffset`.
 
 ### Changes
 

@@ -344,7 +344,7 @@ Note also PyCuAmpcor parameters refer to the names used by the PyCuAmpcor Python
 | devID                | The CUDA GPU to be used for computation, usually=0, or users can use the CUDA_VISIBLE_DEVICES=n environmental variable to choose GPU                            |
 | nStreams | The number of CUDA streams to be used, recommended=2, to overlap the CUDA kernels with data copying, more streams require more memory which isn't always better |
 | nThreads             | (CPU only) The number of CPU threads to be used, 0 (default) for the OpenMP default (e.g., set by the OMP_NUM_THREADS environmental variable)                  |
-| useMmap              | Whether to use memory map cached file I/O, recommended=1, supported by GDAL vrt driver (needs >=3.1.0) and GeoTIFF                                              |
+| useMmap              | Unused (raw images are always read with a memory map); kept for compatibility                                                                                  |
 | mmapSize             | The cache size used for memory map, in units of GB (enlarged if a chunk needs more). The larger the better, but not exceed 1/4 the total physical memory.        |
 | numberWindowDownInChunk | The number of windows processed in a batch/chunk, along lines; 0 (default) for automatic                                                                         |
 | numberWindowAcrossInChunk | The number of windows processed in a batch/chunk, along columns; 0 (default) for automatic                                                                    |
