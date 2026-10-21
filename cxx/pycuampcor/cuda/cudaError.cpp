@@ -1,54 +1,75 @@
 #include "cudaError.h"
 
-#include <cuda_runtime.h>
-#include <cufft.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
 #include <exception>
 #include <stdexcept>
 #include <string>
 
 namespace pycuampcor::cuda {
 
+namespace {
+
 // report an error: throw an exception (translated to a python RuntimeError),
 // or print the message if an exception is already propagating (e.g., in destructors during unwinding)
-static void reportError(const std::string &message)
+void reportError(const std::string &message)
 {
     if (std::uncaught_exceptions() > 0) {
-        fprintf(stderr, "%s\n", message.c_str());
+        std::fprintf(stderr, "%s\n", message.c_str());
         return;
     }
     throw std::runtime_error(message);
 }
 
-static const char * errorString(cudaError_t result) { return cudaGetErrorString(result); }
-static const char * errorString(cufftResult_t) { return "cufft error"; }
-
-template<typename T >
-void check(T result, char const *const func, const char *const file, int const line)
+const char *cufftErrorName(cufftResult result)
 {
-    if (result) {
-        char message[1024];
-        snprintf(message, sizeof(message), "CUDA error at %s:%d code=%d(%s) \"%s\"",
-                file, line, static_cast<unsigned int>(result), errorString(result), func);
-        reportError(message);
+    switch (result) {
+        case CUFFT_SUCCESS: return "CUFFT_SUCCESS";
+        case CUFFT_INVALID_PLAN: return "CUFFT_INVALID_PLAN";
+        case CUFFT_ALLOC_FAILED: return "CUFFT_ALLOC_FAILED";
+        case CUFFT_INVALID_TYPE: return "CUFFT_INVALID_TYPE";
+        case CUFFT_INVALID_VALUE: return "CUFFT_INVALID_VALUE";
+        case CUFFT_INTERNAL_ERROR: return "CUFFT_INTERNAL_ERROR";
+        case CUFFT_EXEC_FAILED: return "CUFFT_EXEC_FAILED";
+        case CUFFT_SETUP_FAILED: return "CUFFT_SETUP_FAILED";
+        case CUFFT_INVALID_SIZE: return "CUFFT_INVALID_SIZE";
+        case CUFFT_UNALIGNED_DATA: return "CUFFT_UNALIGNED_DATA";
+        case CUFFT_INVALID_DEVICE: return "CUFFT_INVALID_DEVICE";
+        case CUFFT_NO_WORKSPACE: return "CUFFT_NO_WORKSPACE";
+        case CUFFT_NOT_IMPLEMENTED: return "CUFFT_NOT_IMPLEMENTED";
+        case CUFFT_NOT_SUPPORTED: return "CUFFT_NOT_SUPPORTED";
+        default: return "unknown cuFFT error";
     }
 }
 
-template void check(cudaError_t, char const *const, const char *const, int const);
-template void check(cufftResult_t, char const *const, const char *const, int const);
-
-void __getLastCudaError(const char *errorMessage, const char *file, const int line)
+std::string location(const char *file, int line)
 {
-    cudaError_t err = cudaGetLastError();
+    return std::string(file) + ":" + std::to_string(line);
+}
 
-    if (cudaSuccess != err)
-    {
-        char message[1024];
-        snprintf(message, sizeof(message), "%s(%i) : CUDA error : %s : (%d) %s.",
-                file, line, errorMessage, (int)err, cudaGetErrorString(err));
-        reportError(message);
-    }
+} // namespace
+
+void checkCudaErrorsImpl(cudaError_t result, const char *call, const char *file, int line)
+{
+    if (result != cudaSuccess)
+        reportError("CUDA error " + std::string(cudaGetErrorName(result)) + " ("
+            + cudaGetErrorString(result) + ") in " + call + " at " + location(file, line));
+}
+
+void checkCudaErrorsImpl(cufftResult result, const char *call, const char *file, int line)
+{
+    if (result != CUFFT_SUCCESS)
+        reportError("cuFFT error " + std::to_string(static_cast<int>(result)) + " ("
+            + cufftErrorName(result) + ") in " + call + " at " + location(file, line));
+}
+
+void checkCudaAsyncErrorsImpl(const char *file, int line)
+{
+    // launch errors (clearing the non-sticky ones)
+    checkCudaErrorsImpl(cudaGetLastError(), "kernel launch", file, line);
+#ifdef CUAMPCOR_DEBUG
+    // execution errors, reported at the failing kernel
+    checkCudaErrorsImpl(cudaDeviceSynchronize(), "kernel execution", file, line);
+#endif
 }
 
 } // namespace

@@ -1,7 +1,11 @@
 /**
  * @file  cudaError.h
- * @brief Define error checking in cuda calls
+ * @brief Error checking of CUDA runtime and cuFFT calls, and of kernel launches
  *
+ * checkCudaErrors(call): check the result of a CUDA runtime or cuFFT call
+ * checkCudaAsyncErrors(): check the kernel launches (after them); in debug builds,
+ *     also synchronize the device and check the kernel executions
+ * Errors throw std::runtime_error (a python RuntimeError).
 **/
 
 // code guard
@@ -12,24 +16,24 @@
 
 #include "debug.h"
 
+#include <cuda_runtime.h>
+#include <cufft.h>
+
 namespace pycuampcor::cuda {
 
-template<typename T >
-void check(T result, char const *const func, const char *const file, int const line);
+// report an error with the failed call and its location
+void checkCudaErrorsImpl(cudaError_t result, const char *call, const char *file, int line);
+void checkCudaErrorsImpl(cufftResult result, const char *call, const char *file, int line);
+void checkCudaAsyncErrorsImpl(const char *file, int line);
 
-// This will output the proper error string when calling cudaGetLastError
-void __getLastCudaError(const char *errorMessage, const char *file, const int line);
+#define checkCudaErrors(call) \
+    ::pycuampcor::cuda::checkCudaErrorsImpl((call), #call, __FILE__, __LINE__)
+#define checkCudaAsyncErrors() \
+    ::pycuampcor::cuda::checkCudaAsyncErrorsImpl(__FILE__, __LINE__)
 
-// This will output the proper CUDA error strings in the event that a CUDA host call returns an error
-#ifdef CUDA_ERROR_CHECK
-#define checkCudaErrors(val)  check ( (val), #val, __FILE__, __LINE__ )
-#define cufft_Error(val)     check ( (val), #val, __FILE__, __LINE__ )
-#define getLastCudaError(var)   __getLastCudaError (var, __FILE__, __LINE__)
-#else
-#define checkCudaErrors(val) val
-#define cufft_Error(val)  val
-#define getLastCudaError(val)
-#endif //CUDA_ERROR_CHECK
+// previous names
+#define cufft_Error(call) checkCudaErrors(call)
+#define getLastCudaError(message) checkCudaAsyncErrors()
 
 } // namespace
 
