@@ -3,9 +3,9 @@
  * @brief Utilities for copying/converting images to different format
  *
  * All methods are declared in cuArraysCopy.h
- * cudaArraysCopyToBatch to extract a batch of windows from the raw image
+ * cuArraysCopyToBatch*WithOffset to extract a batch of windows from the raw image
  *   various implementations include:
- *   1. fixed or varying offsets, as start pixels for windows
+ *   1. varying offsets, as start pixels for windows
  *   2. complex to complex, usually
  *   3. complex to (amplitude,0), for TOPS
  *   4. real to complex, for real images
@@ -27,46 +27,6 @@
 #include "float2.h"
 
 namespace pycuampcor::cuda {
-
-// cuda kernel for cuArraysCopyToBatch
-__global__ void cuArraysCopyToBatch_kernel(const image_complex_type *imageIn, const int inNX, const int inNY,
-    complex_type *imageOut, const int outNX, const int outNY,
-    const int nImagesX, const int nImagesY,
-    const int strideX, const int strideY)
-{
-    int idxImage = blockIdx.z;
-    int outx = threadIdx.x + blockDim.x*blockIdx.x;
-    int outy = threadIdx.y + blockDim.y*blockIdx.y;
-    if(idxImage >=nImagesX*nImagesY|| outx >= outNX || outy >= outNY) return;
-    int idxOut = idxImage*outNX*outNY + outx*outNY + outy;
-    int idxImageX = idxImage/nImagesY;
-    int idxImageY = idxImage%nImagesY;
-    int idxIn = (idxImageX*strideX+outx)*inNY + idxImageY*strideY+outy;
-    imageOut[idxOut] = make_complex_type(imageIn[idxIn].x, imageIn[idxIn].y);
-}
-
-/**
- * Copy a chunk into a batch of chips for a given stride
- * @note used to extract chips from a raw image
- * @param image1 Input image as a large chunk
- * @param image2 Output images as a batch of chips
- * @param strideH stride along height to extract chips
- * @param strideW stride along width to extract chips
- * @param stream cudaStream
- */
-void cuArraysCopyToBatch(cuArrays<image_complex_type> *image1, cuArrays<complex_type> *image2,
-    int strideH, int strideW, cudaStream_t stream)
-{
-    const int nthreads = NTHREADS2D;
-    dim3 blockSize(nthreads, nthreads, 1);
-    dim3 gridSize(divUp(image2->height,nthreads), divUp(image2->width,nthreads), image2->count);
-    cuArraysCopyToBatch_kernel<<<gridSize,blockSize, 0 , stream>>> (
-        image1->devData, image1->height, image1->width,
-        image2->devData, image2->height, image2->width,
-        image2->countH, image2->countW,
-        strideH, strideW);
-    checkCudaAsyncErrors();
-}
 
 // kernel for cuArraysCopyToBatchWithOffset
 template<typename T_in, typename T_out>
@@ -223,47 +183,6 @@ void cuArraysCopyToBatchWithOffsetR2C(cuArrays<image_real_type> *image1, const i
         image1->devData, inNX, inNY,
         image2->devData, image2->height, image2->width, image2->count,
         offsetH, offsetW);
-    checkCudaAsyncErrors();
-}
-
-//copy a chunk into a series of chips, from complex to real
-__global__ void cuArraysCopyC2R_kernel(const complex_type *imageIn, const int inNX, const int inNY,
-    real_type *imageOut, const int outNX, const int outNY,
-    const int nImagesX, const int nImagesY,
-    const int strideX, const int strideY, const real_type factor)
-{
-    int idxImage = blockIdx.z;
-    int outx = threadIdx.x + blockDim.x*blockIdx.x;
-    int outy = threadIdx.y + blockDim.y*blockIdx.y;
-    if(idxImage >=nImagesX*nImagesY|| outx >= outNX || outy >= outNY) return;
-    int idxOut = idxImage*outNX*outNY + outx*outNY + outy;
-    int idxImageX = idxImage/nImagesY;
-    int idxImageY = idxImage%nImagesY;
-    int idxIn = (idxImageX*strideX+outx)*inNY + idxImageY*strideY+outy;
-    imageOut[idxOut] = complexAbs(imageIn[idxIn])*factor;
-}
-
-/**
- * Copy a chunk into a batch of chips with varying offsets/strides
- * @note similar to cuArraysCopyToBatchWithOffset, but take amplitudes instead
- * @param image1 Input image as a large chunk
- * @param image2 Output images as a batch of chips
- * @param strideH offsets along height to extract chips
- * @param strideW offsets along width to extract chips
- * @param stream cudaStream
- */
-void cuArraysCopyC2R(cuArrays<complex_type> *image1, cuArrays<real_type> *image2,
-    int strideH, int strideW, cudaStream_t stream)
-{
-    const int nthreads = 16;
-    dim3 blockSize(nthreads, nthreads, 1);
-    dim3 gridSize(divUp(image2->height,nthreads), divUp(image2->width,nthreads), image2->count);
-    real_type factor = real_type(1)/image1->size; //the FFT factor
-    cuArraysCopyC2R_kernel<<<gridSize,blockSize, 0 , stream>>> (
-        image1->devData, image1->height, image1->width,
-        image2->devData, image2->height, image2->width,
-        image2->countH, image2->countW,
-        strideH, strideW, factor);
     checkCudaAsyncErrors();
 }
 

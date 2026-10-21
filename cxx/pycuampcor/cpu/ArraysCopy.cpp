@@ -3,9 +3,9 @@
  * @brief Utilities for copying/converting images to different format (CPU backend)
  *
  * All methods are declared in ArraysCopy.h
- * cudaArraysCopyToBatch to extract a batch of windows from the raw image
+ * cuArraysCopyToBatch*WithOffset to extract a batch of windows from the raw image
  *   various implementations include:
- *   1. fixed or varying offsets, as start pixels for windows
+ *   1. varying offsets, as start pixels for windows
  *   2. complex to complex, usually
  *   3. complex to (amplitude,0), for TOPS
  *   4. real to complex, for real images
@@ -30,31 +30,6 @@ namespace pycuampcor::cpu {
 // convert image data to the internal complex type
 static inline complex_type toComplex(const image_complex_type &v) { return make_complex_type(v.x, v.y); }
 static inline complex_type toComplex(const image_real_type &v) { return make_complex_type(v, 0); }
-
-/**
- * Copy a chunk into a batch of chips for a given stride
- * @note used to extract chips from a raw image
- * @param image1 Input image as a large chunk
- * @param image2 Output images as a batch of chips
- * @param strideH stride along height to extract chips
- * @param strideW stride along width to extract chips
- */
-void cuArraysCopyToBatch(array_type<image_complex_type> *image1, array_type<complex_type> *image2,
-    int strideH, int strideW, stream_t)
-{
-    const int inNY = image1->width;
-    const int outNX = image2->height, outNY = image2->width;
-    for(int idxImage = 0; idxImage < image2->count; idxImage++) {
-        const int idxImageX = idxImage/image2->countW;
-        const int idxImageY = idxImage%image2->countW;
-        for(int outx = 0; outx < outNX; outx++)
-            for(int outy = 0; outy < outNY; outy++) {
-                int idxOut = idxImage*outNX*outNY + outx*outNY + outy;
-                int idxIn = (idxImageX*strideH+outx)*inNY + idxImageY*strideW+outy;
-                image2->devData[idxOut] = toComplex(image1->devData[idxIn]);
-            }
-    }
-}
 
 // copy a chunk into a batch of chips with varying offsets, filling 0 for pixels outside the chunk
 template<typename T_in, typename Op>
@@ -111,31 +86,6 @@ void cuArraysCopyToBatchWithOffsetR2C(array_type<image_real_type> *image1, const
 {
     copyToBatchWithOffset(image1->devData, inNX, inNY, image2, offsetH, offsetW,
         [](const image_real_type &v) { return toComplex(v); });
-}
-
-/**
- * Copy a chunk into a batch of chips for a given stride, taking amplitudes (with the FFT factor)
- * @param image1 Input image as a large chunk
- * @param image2 Output images as a batch of chips
- * @param strideH offsets along height to extract chips
- * @param strideW offsets along width to extract chips
- */
-void cuArraysCopyC2R(array_type<complex_type> *image1, array_type<real_type> *image2,
-    int strideH, int strideW, stream_t)
-{
-    const int inNY = image1->width;
-    const int outNX = image2->height, outNY = image2->width;
-    const real_type factor = real_type(1)/image1->size; //the FFT factor
-    for(int idxImage = 0; idxImage < image2->count; idxImage++) {
-        const int idxImageX = idxImage/image2->countW;
-        const int idxImageY = idxImage%image2->countW;
-        for(int outx = 0; outx < outNX; outx++)
-            for(int outy = 0; outy < outNY; outy++) {
-                int idxOut = idxImage*outNX*outNY + outx*outNY + outy;
-                int idxIn = (idxImageX*strideH+outx)*inNY + idxImageY*strideW+outy;
-                image2->devData[idxOut] = complexAbs(image1->devData[idxIn])*factor;
-            }
-    }
 }
 
 /**

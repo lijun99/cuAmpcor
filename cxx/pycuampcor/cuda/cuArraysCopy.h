@@ -11,9 +11,6 @@
 
 namespace pycuampcor::cuda {
 
-void cuArraysCopyToBatch(cuArrays<image_complex_type> *image1, cuArrays<complex_type> *image2,
-    int strideH, int strideW, stream_t stream);
-
 void cuArraysCopyToBatchWithOffset(cuArrays<image_complex_type> *image1, const int inNX,
     const int inNY, cuArrays<complex_type> *image2, const int *offsetH, const int* offsetW,
     stream_t stream);
@@ -25,9 +22,6 @@ void cuArraysCopyToBatchAbsWithOffset(cuArrays<image_complex_type> *image1, cons
 void cuArraysCopyToBatchWithOffsetR2C(cuArrays<image_real_type> *image1, const int inNX,
     const int inNY, cuArrays<complex_type> *image2, const int *offsetH, const int* offsetW,
     stream_t stream);
-
-void cuArraysCopyC2R(cuArrays<complex_type> *image1, cuArrays<real_type> *image2, int strideH,
-    int strideW, stream_t stream);
 
 template<typename T>
 void cuArraysCopyExtract(cuArrays<T> *imagesIn, cuArrays<T> *imagesOut, cuArrays<int2> *offset,
