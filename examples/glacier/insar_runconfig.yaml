@@ -1,0 +1,29 @@
+# A minimal isce3 InSAR runconfig for the steps run by jakobshavn_isce3.sh: rdr2geo (the geometry),
+# geo2rdr (the geometric offsets) and resample_slc --resample-type coarse (the secondary SLC
+# coregistered to the reference); the placeholders REFERENCE_RSLC, SECONDARY_RSLC and DEM_FILE are
+# replaced by the script. The other parameters take the isce3 defaults.
+runconfig:
+  name: NISAR_INSAR_RUNCONFIG
+  groups:
+    pge_name_group:
+      pge_name: INSAR_L_PGE
+    input_file_group:
+      reference_rslc_file: REFERENCE_RSLC
+      secondary_rslc_file: SECONDARY_RSLC
+    dynamic_ancillary_file_group:
+      dem_file: DEM_FILE
+    primary_executable:
+      product_type: ROFF
+    product_path_group:
+      product_path: output
+      scratch_path: scratch
+      sas_output_file: output/ROFF.h5
+    debug_level_group:
+      debug_switch: false
+    worker:
+      gpu_enabled: true        # false to run isce3 on the CPU
+    processing:
+      input_subset:
+        list_of_frequencies:
+          A:
+          - HH
