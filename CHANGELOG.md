@@ -34,6 +34,8 @@
 
 ### Changes
 
+- Compiled as standard C++17 (`-std=c++17`, without GNU extensions); the code also builds as
+  C++20.
 - `setupParams` keeps the parameters as set: `numberWindowDownInChunk` / `numberWindowAcrossInChunk`
   read 0 (automatic) after the setup; the numbers of windows in a chunk used are the new read-only
   `windowsDownInChunk` / `windowsAcrossInChunk`.
