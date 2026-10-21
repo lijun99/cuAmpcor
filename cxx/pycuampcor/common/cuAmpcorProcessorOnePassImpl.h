@@ -35,11 +35,14 @@ void cuAmpcorProcessorOnePass<arrayT>::run(int idxDown, int idxAcross, const chu
     copyToBatch(chunk.reference, param.referenceStartPixelDown, param.referenceStartPixelAcross,
         c_referenceBatchRaw);
     dump(c_referenceBatchRaw, "c_referenceBatchRaw");
+
     // the phase ramp removed, so that the spectrum is centered for the oversampling
     cuDeramp(param.derampMethod, c_referenceBatchRaw, param.derampAxis, stream);
     dump(c_referenceBatchRaw, "c_referenceBatchRawDeramped");
+
     // oversampled by rawDataOversamplingFactor (FFT, zero padding)
     referenceBatchOverSampler.execute(c_referenceBatchRaw, c_referenceBatchOverSampled);
+
     // the amplitudes of the center, of the (oversampled) reference size: oversampled as part of
     // the enlarged windows, the center is away from the edge effects of the FFT oversampling
     const auto center = traits::make_int2(
@@ -48,6 +51,7 @@ void cuAmpcorProcessorOnePass<arrayT>::run(int idxDown, int idxAcross, const chu
     cuArraysCopyExtractAbs(c_referenceBatchOverSampled, r_referenceBatchOverSampled, center, stream);
     dump(c_referenceBatchOverSampled, "c_referenceBatchOverSampled");
     dump(r_referenceBatchOverSampled, "r_referenceBatchOverSampled");
+
     // the mean subtracted (for the normalized correlation)
     cuArraysSubtractMean(r_referenceBatchOverSampled, stream);
     dump(r_referenceBatchOverSampled, "r_referenceBatchOverSampledSubMean");
@@ -57,11 +61,14 @@ void cuAmpcorProcessorOnePass<arrayT>::run(int idxDown, int idxAcross, const chu
     copyToBatch(chunk.secondary, param.secondaryStartPixelDown, param.secondaryStartPixelAcross,
         c_secondaryBatchRaw);
     dump(c_secondaryBatchRaw, "c_secondaryBatchRaw");
+
     // the phase ramp removed
     cuDeramp(param.derampMethod, c_secondaryBatchRaw, param.derampAxis, stream);
     dump(c_secondaryBatchRaw, "c_secondaryBatchRawDeramped");
+
     // oversampled by rawDataOversamplingFactor
     secondaryBatchOverSampler.execute(c_secondaryBatchRaw, c_secondaryBatchOverSampled);
+
     // their amplitudes
     cuArraysAbs(c_secondaryBatchOverSampled, r_secondaryBatchOverSampled, stream);
     dump(c_secondaryBatchOverSampled, "c_secondaryBatchOverSampled");
@@ -92,15 +99,18 @@ void cuAmpcorProcessorOnePass<arrayT>::run(int idxDown, int idxAcross, const chu
     // pixel spacing: rawDataOversamplingFactor oversampled pixels apart)
     cuEstimateVariance(r_corrBatch, offsetInit, r_maxval, r_referenceBatchOverSampled.arraySize(),
         param.rawDataOversamplingFactor, r_covValue, stream);
+
     // the SNR, as in the two-pass workflow: the peak over the mean of the correlation surface
     // around it (corrStatWindowSize), at the raw pixel spacing and within the search range;
     // first, the surfaces around the peaks at the raw pixel spacing, their pixels within the
     // search range marked as valid
     cuArraysCopyExtractCorr(r_corrBatch, r_corrBatchRawZoomIn, i_corrBatchZoomInValid,
         offsetInit, param.rawDataOversamplingFactor, start, range, stream);
+
     // the sum of their squares, and the number of their valid pixels
     cuArraysSumCorr(r_corrBatchRawZoomIn, i_corrBatchZoomInValid, r_corrBatchSum,
         i_corrBatchValidCount, stream);
+
     // the squared peak over the mean of the squares of the other pixels
     cuEstimateSnr(r_corrBatchSum, i_corrBatchValidCount, r_maxval, r_snrValue, stream);
     dump(r_snrValue, "r_snrValue");
@@ -111,6 +121,7 @@ void cuAmpcorProcessorOnePass<arrayT>::run(int idxDown, int idxAcross, const chu
     // the surfaces around the peaks, oversampled by corrSurfaceOverSamplingFactor (the surfaces
     // are extracted around their peaks: no shift)
     oversampleSurface(r_corrBatchZoomIn, r_corrBatchZoomInOverSampled, {});
+
     // the peaks of the oversampled surfaces, within +/- 1 raw pixel of the center
     const auto searchStart = traits::make_int2(param.corrZoomInOversampledSearchStart.x,
         param.corrZoomInOversampledSearchStart.y);
