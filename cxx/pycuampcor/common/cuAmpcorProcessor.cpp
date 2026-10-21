@@ -9,17 +9,17 @@ namespace pycuampcor::PYCUAMPCOR_BACKEND {
 
 // Factory method implementation
 // create the batch processor for a given {workflow}
-std::unique_ptr<cuAmpcorProcessor> cuAmpcorProcessor::create(int workflow,
+std::unique_ptr<cuAmpcorProcessor> cuAmpcorProcessor::create(Workflow workflow,
     cuAmpcorParameter *param_,
     cuArrays<real2_type> *offsetImage_, cuArrays<real_type> *snrImage_,
     cuArrays<real3_type> *covImage_, cuArrays<real_type> *peakValueImage_,
     stream_t stream_)
 {
-    if (workflow == 0) {
+    if (workflow == Workflow::TwoPass) {
         return std::unique_ptr<cuAmpcorProcessor>(new cuAmpcorProcessorTwoPass(
             param_, offsetImage_,
             snrImage_, covImage_, peakValueImage_, stream_));
-    } else if (workflow == 1) {
+    } else if (workflow == Workflow::OnePass) {
         return std::unique_ptr<cuAmpcorProcessor>(new cuAmpcorProcessorOnePass(
             param_, offsetImage_,
             snrImage_, covImage_, peakValueImage_, stream_));
@@ -115,7 +115,7 @@ void cuAmpcorProcessor::copyToBatch(const cuAmpcorLoadedChunk &chunk,
     if (chunk.complexData) {
         // complex image (e.g., SLC)
         // if derampMethod = 0 (no deramp), take amplitudes; otherwise, copy complex data
-        if (param->derampMethod == 0)
+        if (param->derampMethod == DerampMethod::Magnitude)
             cuArraysCopyToBatchAbsWithOffset(chunk.complexData, chunk.height, chunk.width,
                 batch, ChunkOffsetDown->devData, ChunkOffsetAcross->devData, stream);
         else

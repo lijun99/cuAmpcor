@@ -27,13 +27,13 @@ cuAmpcorParameter::cuAmpcorParameter()
 {
     // default settings
     // will be changed if they are set by python scripts
-    algorithm = 0; //0 freq; 1 time
+    algorithm = Algorithm::Frequency;
     deviceID = 0;
     nStreams = 1;
     nThreads = 0;
-    derampMethod = 0;
-    derampAxis = 2;
-    workflow = 0;
+    derampMethod = DerampMethod::Magnitude;
+    derampAxis = DerampAxis::Both;
+    workflow = Workflow::TwoPass;
 
     windowSizeWidthRaw = 64;
     windowSizeHeightRaw = 64;
@@ -45,18 +45,18 @@ cuAmpcorParameter::cuAmpcorParameter()
     rawDataOversamplingFactor = 2; //antialiasing
     zoomWindowSize = 16;  // correlation surface oversampling zoom
     corrSurfaceOverSamplingFactor = 16; // correlation surface oversampling
-    corrSurfaceOverSamplingMethod = 0;
+    corrSurfaceOverSamplingMethod = OversamplingMethod::FFT;
 
     referenceImageName = "reference.slc";
     referenceImageReader = "auto"; // by the name: HDF5:<file>:<dataset> or a raw file
     referenceImageWidth = 1000;
     referenceImageHeight = 1000;
-    referenceImageDataType = 2; // complex
+    referenceImageDataType = DataType::Complex64;
     secondaryImageName = "secondary.slc";
     secondaryImageReader = "auto";
     secondaryImageWidth = 1000;
     secondaryImageHeight = 1000;
-    secondaryImageDataType = 2; // complex
+    secondaryImageDataType = DataType::Complex64;
     offsetImageName = "DenseOffset.bip";
     grossOffsetImageName = "GrossOffset.bip";
     snrImageName = "snr.bip";
@@ -91,10 +91,10 @@ void cuAmpcorParameter::setupParameters()
     // workflow specific parameter settings
     //
     switch (workflow) {
-        case 0:
+        case Workflow::TwoPass:
             _setupParameters_TwoPass();
             break;
-        case 1:
+        case Workflow::OnePass:
             _setupParameters_OnePass();
             break;
         default:

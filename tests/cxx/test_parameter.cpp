@@ -31,7 +31,7 @@ TEST(ParameterTest, TwoPassSizes)
 {
     cuAmpcorParameter p;
     setWindows(p);
-    p.workflow = 0;
+    p.workflow = Workflow::TwoPass;
     p.setupParameters();
     EXPECT_EQ(p.corrZoomWindowSize, 16);
     EXPECT_EQ(p.halfZoomWindowSizeRaw, 4);
@@ -53,7 +53,7 @@ TEST(ParameterTest, TwoPassZoomWindowLimitedBySearchRange)
     cuAmpcorParameter p;
     setWindows(p);
     p.halfSearchRangeAcrossRaw = 3;
-    p.workflow = 0;
+    p.workflow = Workflow::TwoPass;
     p.setupParameters();
     // min(half search range)*2*oversampling
     EXPECT_EQ(p.corrZoomWindowSize, 3*2*2);
@@ -68,7 +68,7 @@ TEST(ParameterTest, OnePassSizes)
 {
     cuAmpcorParameter p;
     setWindows(p);
-    p.workflow = 1;
+    p.workflow = Workflow::OnePass;
     p.setupParameters();
     const int halfZoom = 16/(2*2);
     EXPECT_EQ(p.halfZoomWindowSizeRaw, halfZoom);
@@ -113,7 +113,7 @@ TEST(ParameterTest, SetupChecks)
 
     cuAmpcorParameter bad;
     setWindows(bad);
-    bad.workflow = 2;
+    bad.workflow = static_cast<Workflow>(2);
     EXPECT_THROW(bad.setupParameters(), std::invalid_argument);
     cuAmpcorParameter empty;
     setWindows(empty);
@@ -159,7 +159,7 @@ TEST(ParameterTest, AutoChunkSize)
 TEST(ParameterTest, WindowAndChunkPixels)
 {
     cuAmpcorParameter p;
-    p.workflow = 0;
+    p.workflow = Workflow::TwoPass;
     p.windowSizeWidthRaw = p.windowSizeHeightRaw = 16;
     p.halfSearchRangeDownRaw = p.halfSearchRangeAcrossRaw = 4;
     p.skipSampleDownRaw = p.skipSampleAcrossRaw = 16;

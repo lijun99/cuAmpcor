@@ -46,7 +46,7 @@ void cuAmpcorProcessorTwoPass::run(int idxDown_, int idxAcross_, const cuAmpcorC
 #endif
 
     //cross correlation for un-oversampled data
-    if(param->algorithm == 0) {
+    if(param->algorithm == Algorithm::Frequency) {
         cuCorrFreqDomain->execute(r_referenceBatchRaw, r_secondaryBatchRaw, r_corrBatchRaw);
     } else {
         cuCorrTimeDomain(r_referenceBatchRaw, r_secondaryBatchRaw, r_corrBatchRaw, stream); //time domain cross correlation
@@ -168,7 +168,7 @@ void cuAmpcorProcessorTwoPass::run(int idxDown_, int idxAcross_, const cuAmpcorC
 #endif
 
     // correlate oversampled images
-    if(param->algorithm == 0) {
+    if(param->algorithm == Algorithm::Frequency) {
         cuCorrFreqDomain_OverSampled->execute(r_referenceBatchOverSampled, r_secondaryBatchOverSampled, r_corrBatchZoomIn);
     }
     else {
@@ -197,7 +197,7 @@ void cuAmpcorProcessorTwoPass::run(int idxDown_, int idxAcross_, const cuAmpcorC
 #endif
 
     // oversample the correlation surface
-    if(param->corrSurfaceOverSamplingMethod) {
+    if(param->corrSurfaceOverSamplingMethod == OversamplingMethod::Sinc) {
         // sinc interpolator only computes (-i_sincwindow, i_sincwindow)*oversampling factor
         // we need the max loc as the center if shifted
         corrSincOverSampler->execute(r_corrBatchZoomInAdjust, r_corrBatchZoomInOverSampled,
@@ -397,7 +397,7 @@ cuAmpcorProcessorTwoPass::cuAmpcorProcessorTwoPass(cuAmpcorParameter *param_,
 
     // end of new arrays
 
-    if(param->corrSurfaceOverSamplingMethod) {
+    if(param->corrSurfaceOverSamplingMethod == OversamplingMethod::Sinc) {
         corrSincOverSampler = new cuSincOverSamplerR2R(param->corrSurfaceOverSamplingFactor, stream);
     }
     else {
@@ -407,7 +407,7 @@ cuAmpcorProcessorTwoPass::cuAmpcorProcessorTwoPass(cuAmpcorParameter *param_,
             param->windowsDownInChunk*param->windowsAcrossInChunk,
             stream);
     }
-    if(param->algorithm == 0) {
+    if(param->algorithm == Algorithm::Frequency) {
         cuCorrFreqDomain = new cuFreqCorrelator(
             param->searchWindowSizeHeightRaw, param->searchWindowSizeWidthRaw,
             param->windowsDownInChunk*param->windowsAcrossInChunk,
@@ -443,13 +443,13 @@ cuAmpcorProcessorTwoPass::~cuAmpcorProcessorTwoPass()
     corrNormalizerOverSampled.reset();
     corrNormalizerRaw.reset();
 
-    if(param->corrSurfaceOverSamplingMethod) {
+    if(param->corrSurfaceOverSamplingMethod == OversamplingMethod::Sinc) {
         delete corrSincOverSampler;
     }
     else {
         delete corrOverSampler;
     }
-    if(param->algorithm == 0) {
+    if(param->algorithm == Algorithm::Frequency) {
         delete cuCorrFreqDomain;
         delete cuCorrFreqDomain_OverSampled;
     }

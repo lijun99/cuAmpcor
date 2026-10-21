@@ -49,8 +49,8 @@ public:
     static std::pair<cuAmpcorChunkFootprint, cuAmpcorChunkFootprint>
         footprints(const std::vector<const cuAmpcorParameter *> &layers);
 
-    cuAmpcorChunkLoader(const cuAmpcorChunkFootprint &reference, int referenceDataType, SlcImage *referenceImage,
-        const cuAmpcorChunkFootprint &secondary, int secondaryDataType, SlcImage *secondaryImage,
+    cuAmpcorChunkLoader(const cuAmpcorChunkFootprint &reference, DataType referenceDataType, SlcImage *referenceImage,
+        const cuAmpcorChunkFootprint &secondary, DataType secondaryDataType, SlcImage *secondaryImage,
         stream_t stream);
 
     /// load the idxChunk-th chunk (asynchronously on the stream)
@@ -67,7 +67,7 @@ private:
         // (nullptr for CPU, or if it can't be allocated), and the event marking the end of its last copy
         void *staging = nullptr;
         event_t stagingDone;
-        Source(const cuAmpcorChunkFootprint &, int dataType, SlcImage *);
+        Source(const cuAmpcorChunkFootprint &, DataType dataType, SlcImage *);
         ~Source();
         Source(const Source &) = delete;
         Source &operator=(const Source &) = delete;

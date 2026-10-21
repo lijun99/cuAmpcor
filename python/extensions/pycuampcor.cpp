@@ -107,15 +107,16 @@ void defParam(pybind11::class_<cls> &c, Setters &setters, const char *name,
     defParam(c, setters, name, member, doc, [](const T &value) { return value; }, toParam<T>);
 }
 
-// an option (an int parameter), read as a member of the enum pycuampcor.options.<option>,
-// set by the member, the integer value, or the name
+// an option (a C++ enum), read as a member of the python enum pycuampcor.options.<option>
+// (with the same values), set by the member, the integer value, or the name
+template <typename E>
 void defOption(pybind11::class_<cls> &c, Setters &setters, const char *name,
-               int cuAmpcorParameter::*member, const char *option, const char *doc)
+               E cuAmpcorParameter::*member, const char *option, const char *doc)
 {
     defParam(c, setters, name, member, doc,
-        [option](int value) { return options().attr(option)(value); },
+        [option](E value) { return options().attr(option)(static_cast<int>(value)); },
         [option](pybind11::handle value) {
-            return options().attr(option).attr("from_value")(value).cast<int>();
+            return static_cast<E>(options().attr(option).attr("from_value")(value).cast<int>());
         });
 }
 

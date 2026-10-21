@@ -188,11 +188,11 @@ void cuAmpcorController::runAmpcorLayers(const std::vector<cuAmpcorController *>
     std::cout << "Opening reference image " << param->referenceImageName << "...\n";
     auto referenceImage = SlcImage::open(param->referenceImageName, param->referenceImageReader,
         param->referenceImageHeight, param->referenceImageWidth,
-        param->referenceImageDataType*sizeof(float), mmapSizeInGB);
+        pixelSize(param->referenceImageDataType), mmapSizeInGB);
     std::cout << "Opening secondary image " << param->secondaryImageName << "...\n";
     auto secondaryImage = SlcImage::open(param->secondaryImageName, param->secondaryImageReader,
         param->secondaryImageHeight, param->secondaryImageWidth,
-        param->secondaryImageDataType*sizeof(float), mmapSizeInGB);
+        pixelSize(param->secondaryImageDataType), mmapSizeInGB);
 
     // the area of each chunk to load, covering the windows of all layers
     const auto footprints = cuAmpcorChunkLoader::footprints(

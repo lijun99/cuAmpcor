@@ -57,14 +57,14 @@ cuAmpcorChunkLoader::footprints(const std::vector<const cuAmpcorParameter *> &la
     return {unionFootprint(layers, true), unionFootprint(layers, false)};
 }
 
-cuAmpcorChunkLoader::Source::Source(const cuAmpcorChunkFootprint &footprint_, int dataType, SlcImage *image_)
+cuAmpcorChunkLoader::Source::Source(const cuAmpcorChunkFootprint &footprint_, DataType dataType, SlcImage *image_)
     : footprint(footprint_), image(image_)
 {
     // allocate the buffer once for the largest chunk
     // (allocating/freeing device memory per chunk synchronizes the device and stalls the other streams)
     const int height = std::max(footprint.maxHeight, 1);
     const int width = std::max(footprint.maxWidth, 1);
-    if (dataType == 2) {
+    if (dataType == DataType::Complex64) {
         complexBuffer = std::make_unique<cuArrays<image_complex_type>>(height, width);
         complexBuffer->allocate();
     }
@@ -115,8 +115,8 @@ void cuAmpcorChunkLoader::Source::load(int idxChunk, cuAmpcorLoadedChunk &chunk,
 }
 
 cuAmpcorChunkLoader::cuAmpcorChunkLoader(
-    const cuAmpcorChunkFootprint &referenceFootprint, int referenceDataType, SlcImage *referenceImage,
-    const cuAmpcorChunkFootprint &secondaryFootprint, int secondaryDataType, SlcImage *secondaryImage,
+    const cuAmpcorChunkFootprint &referenceFootprint, DataType referenceDataType, SlcImage *referenceImage,
+    const cuAmpcorChunkFootprint &secondaryFootprint, DataType secondaryDataType, SlcImage *secondaryImage,
     stream_t stream_)
     : reference(referenceFootprint, referenceDataType, referenceImage),
       secondary(secondaryFootprint, secondaryDataType, secondaryImage),

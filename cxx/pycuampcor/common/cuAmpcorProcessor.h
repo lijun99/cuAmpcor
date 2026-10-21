@@ -59,7 +59,7 @@ public:
     virtual ~cuAmpcorProcessor() = default;
 
     // Factory method (virtual constructor)
-    static std::unique_ptr<cuAmpcorProcessor> create(int workflow,
+    static std::unique_ptr<cuAmpcorProcessor> create(Workflow workflow,
         cuAmpcorParameter *param_,
         cuArrays<real2_type> *offsetImage_, cuArrays<real_type> *snrImage_,
         cuArrays<real3_type> *covImage_, cuArrays<real_type> *peakValueImage_,

@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 #include "data_types.h" // for int2
+#include "cuAmpcorOptions.h"
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND {
 
@@ -35,13 +36,13 @@ namespace pycuampcor::PYCUAMPCOR_BACKEND {
 
 class cuAmpcorParameter{
 public:
-    int algorithm;      ///< Cross-correlation algorithm: 0=freq domain (default) 1=time domain
+    Algorithm algorithm;          ///< cross-correlation domain: frequency (default) or time
     int deviceID;       ///< Targeted GPU device ID: use -1 to auto select
     int nStreams;       ///< Number of streams to asynchonize data transfers and compute kernels
     int nThreads;       ///< Number of CPU threads (CPU backend only; 0 for the OpenMP default)
-    int derampMethod;   ///< Method for deramping 0=None, 1=average
-    int derampAxis;     ///< Axis for deramping 0=down, 1=across, 2=both
-    int workflow;       ///< Workflow 0: two passes, first pass without antialiasing oversampling, 1: one pass with antialiasing oversampling
+    DerampMethod derampMethod;    ///< phase ramp removal: magnitude (take the amplitudes, default), complex (linear ramp) or none
+    DerampAxis derampAxis;        ///< axis of the phase ramp: down, across or both (default)
+    Workflow workflow;            ///< workflow: two passes (default; the first pass without antialiasing oversampling) or one pass
 
     // chip or window size for raw data
     int windowSizeHeightRaw;        ///< Template window height (original size)
@@ -78,7 +79,7 @@ public:
     int halfZoomWindowSizeRaw; ///<  half of corrZoomWindowSize/rawDataOversamplingFactor
 
     int corrSurfaceOverSamplingFactor;  ///< Oversampling factor for interpolating correlation surface
-    int corrSurfaceOverSamplingMethod;  ///< correlation surface oversampling method 0 = fft (default)  1 = sinc
+    OversamplingMethod corrSurfaceOverSamplingMethod;  ///< correlation surface oversampling method: FFT (default) or sinc
 
     // correlation surface
     int2 corrWindowSize; // 2*halfSearchRange + 1
@@ -100,14 +101,14 @@ public:
     //reference image
     std::string referenceImageName;    ///< reference SLC image name
     std::string referenceImageReader;  ///< reference image reader: auto (default), raw or hdf5
-    int referenceImageDataType;        ///< reference image data type, 2=cfloat=complex=float2 1=float
+    DataType referenceImageDataType;   ///< reference image pixel type: complex64 (default) or float32
     int referenceImageHeight;          ///< reference image height
     int referenceImageWidth;           ///< reference image width
 
     //secondary image
     std::string secondaryImageName;     ///< secondary SLC image name
     std::string secondaryImageReader;   ///< secondary image reader: auto (default), raw or hdf5
-    int secondaryImageDataType;         ///< secondary image data type, 2=cfloat=complex=float2 1=float
+    DataType secondaryImageDataType;    ///< secondary image pixel type: complex64 (default) or float32
     int secondaryImageHeight;           ///< secondary image height
     int secondaryImageWidth;            ///< secondary image width
 

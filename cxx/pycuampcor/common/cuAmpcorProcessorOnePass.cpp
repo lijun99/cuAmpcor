@@ -83,7 +83,7 @@ void cuAmpcorProcessorOnePass::run(int idxDown_, int idxAcross_, const cuAmpcorC
 #endif
 
     // correlate oversampled images
-    if(param->algorithm == 0) {
+    if(param->algorithm == Algorithm::Frequency) {
         cuCorrFreqDomain_OverSampled->execute(r_referenceBatchOverSampled, r_secondaryBatchOverSampled, r_corrBatch);
     }
     else {
@@ -141,7 +141,7 @@ void cuAmpcorProcessorOnePass::run(int idxDown_, int idxAcross_, const cuAmpcorC
 #endif
 
     // oversample the correlation surface
-    if(param->corrSurfaceOverSamplingMethod) {
+    if(param->corrSurfaceOverSamplingMethod == OversamplingMethod::Sinc) {
         // sinc interpolator only computes (-i_sincwindow, i_sincwindow)*oversamplingfactor
         // we need the max loc as the center if shifted
         corrSincOverSampler->execute(r_corrBatchZoomIn, r_corrBatchZoomInOverSampled,
@@ -317,7 +317,7 @@ cuAmpcorProcessorOnePass::cuAmpcorProcessorOnePass(cuAmpcorParameter *param_,
 
     // end of new arrays
 
-    if(param->corrSurfaceOverSamplingMethod) {
+    if(param->corrSurfaceOverSamplingMethod == OversamplingMethod::Sinc) {
         corrSincOverSampler = new cuSincOverSamplerR2R(param->corrSurfaceOverSamplingFactor, stream);
     }
     else {
@@ -327,7 +327,7 @@ cuAmpcorProcessorOnePass::cuAmpcorProcessorOnePass(cuAmpcorParameter *param_,
             param->windowsDownInChunk*param->windowsAcrossInChunk,
             stream);
     }
-    if(param->algorithm == 0) {
+    if(param->algorithm == Algorithm::Frequency) {
         cuCorrFreqDomain_OverSampled = new cuFreqCorrelator(
             param->searchWindowSizeHeight, param->searchWindowSizeWidth,
             param->windowsDownInChunk * param->windowsAcrossInChunk,
@@ -353,13 +353,13 @@ cuAmpcorProcessorOnePass::~cuAmpcorProcessorOnePass()
 {
     corrNormalizerOverSampled.reset();
 
-    if(param->corrSurfaceOverSamplingMethod) {
+    if(param->corrSurfaceOverSamplingMethod == OversamplingMethod::Sinc) {
         delete corrSincOverSampler;
     }
     else {
         delete corrOverSampler;
     }
-    if(param->algorithm == 0) {
+    if(param->algorithm == Algorithm::Frequency) {
         delete cuCorrFreqDomain_OverSampled;
     }
 

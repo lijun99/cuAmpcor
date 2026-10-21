@@ -5,10 +5,10 @@
  * A phase ramp is equivalent to a frequency shift in frequency domain,
  *   which needs to be removed (deramping) in order to move the band center
  *   to zero. This is necessary before oversampling a complex signal.
- * Method 1: each signal is decomposed into real and imaginary parts,
+ * Method Complex: each signal is decomposed into real and imaginary parts,
  *   and the average phase shift is obtained as atan(\sum imag / \sum real).
  *   The average is weighted by the amplitudes (coherence).
- * Method 0 or else: skip deramping
+ * Other methods: skip deramping
  *
  */
 
@@ -176,15 +176,11 @@ void cuLinearDeramp(cuArrays<real2_type> *images, const int axis, cudaStream_t s
 }
 
 
-void cuDeramp(int method, cuArrays<real2_type> *images, const int axis, cudaStream_t stream)
+void cuDeramp(DerampMethod method, cuArrays<real2_type> *images, DerampAxis axis, cudaStream_t stream)
 {
-    switch(method) {
-    case 1:
-        cuLinearDeramp(images, axis, stream);
-        break;
-    default:
-        break;
-    }
+    // the axis values (down 0, across 1, both 2) are those of cuLinearDeramp
+    if (method == DerampMethod::Complex)
+        cuLinearDeramp(images, static_cast<int>(axis), stream);
 }
 
 // end of file
