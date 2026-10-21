@@ -11,10 +11,6 @@ readme = "README.md"
 requires-python = ">=3.8"
 dependencies = []
 
-[project.scripts]
-# the dense offsets tool, under the name used by the ISCE2 stack processors and MintPy
-"cuDenseOffsets.py" = "pycuampcor.dense_offsets:main"
-
 [project.optional-dependencies]
 test = ["pytest", "numpy"]
 

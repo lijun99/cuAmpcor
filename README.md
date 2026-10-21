@@ -137,7 +137,7 @@ The package includes type stubs (`_cpu.pyi`, `_cuda.pyi`) for type checkers and 
 
 ### 2.5 Installation with ISCE2
 
-[ISCE2](https://github.com/isce-framework/isce2) includes an older version of PyCuAmpcor (*contrib/PyCuAmpcor*, GPU only), built with ISCE2 (see the [ISCE2 installation guide](https://github.com/isce-framework/isce2#building-isce)) and used by *topsApp* and *alos2App* for dense offsets. This package can be installed in the same environment; its *cuDenseOffsets.py* (see 3.1) works with the images of the ISCE2 stack processors.
+[ISCE2](https://github.com/isce-framework/isce2) includes an older version of PyCuAmpcor (*contrib/PyCuAmpcor*, GPU only), built with ISCE2 (see the [ISCE2 installation guide](https://github.com/isce-framework/isce2#building-isce)) and used by *topsApp* and *alos2App* for dense offsets. This package can be installed in the same environment; its dense offsets tool (*pycuampcor.dense_offsets*, see 3.1) works with the images of the ISCE2 stack processors.
 
 ### 2.6 Code organization
 
@@ -152,14 +152,14 @@ The headers are organized as in [pyre](https://github.com/pyre/pyre): in each of
 
 ## 3. User Guide
 
-The main procedures of PyCuAmpcor are implemented with CUDA/C++. A Python interface to configure and run PyCuAmpcor is offered. The package installs the command-line tool *cuDenseOffsets.py* (3.1); the *examples* directory has a self-contained example on synthetic images (*simple_offsets.py*, 3.2) and a plotting script (*plotOffsets.py*, 3.3).
+The main procedures of PyCuAmpcor are implemented with CUDA/C++. A Python interface to configure and run PyCuAmpcor is offered. The package includes the dense offsets tool *pycuampcor.dense_offsets* (3.1); the *examples* directory has a self-contained example on synthetic images (*simple_offsets.py*, 3.2) and a plotting script (*plotOffsets.py*, 3.3).
 
-### 3.1 cuDenseOffsets.py
+### 3.1 pycuampcor.dense_offsets
 
-*cuDenseOffsets.py*, as used with the ISCE2 stack processors and [MintPy](https://github.com/insarlab/MintPy) (offset time series), serves as a general purpose script to run PyCuAmpcor. It is installed with the package (or run as `python -m pycuampcor.dense_offsets`), and uses *argparse* to pass parameters, either from a command line
+*pycuampcor.dense_offsets* (formerly *cuDenseOffsets.py* in ISCE2's *contrib/PyCuAmpcor/examples*, as used with [MintPy](https://github.com/insarlab/MintPy) for offset time series), run as `python -m pycuampcor.dense_offsets`, serves as a general purpose script to run PyCuAmpcor. It uses *argparse* to pass parameters, either from a command line
 
 ```bash
-cuDenseOffsets.py -r 20151120.slc.full -s 20151214.slc.full --outprefix ./20151120_20151214/offset --ww 64 --wh 64 --oo 32 --kw 32 --kh 32 --sw  20 --sh 20 --gpuid 0 --workflow 0
+python -m pycuampcor.dense_offsets -r 20151120.slc.full -s 20151214.slc.full --outprefix ./20151120_20151214/offset --ww 64 --wh 64 --oo 32 --kw 32 --kh 32 --sw  20 --sh 20 --gpuid 0 --workflow 0
  ```
 
 The images are raw binary files (one band of complex64 or float32 pixels, e.g., the SLCs of the ISCE2 stack processors). Their size and pixel type are read from their ISCE *.xml* files if [ISCE2](https://github.com/isce-framework/isce2) is installed, or else with GDAL (from the *.vrt* next to an image, or the image itself), or given with *--length*, *--width* and *--data-type* (*complex64* or *float32*). The headers of the outputs are ISCE *.xml* (and *.vrt*) files if ISCE2 is installed, or else ENVI *.hdr* and *.vrt* files; both are read by MintPy and GDAL. The offsets are computed on the GPU, or on the CPU with *--cpu* (or if the package is built without CUDA). The geometry options (*--full-geom*, *--out-geom*) need GDAL.
@@ -192,7 +192,7 @@ nwdc=0  # number of windows in a batch along height (0: automatic)
 workflow=0 # 0=two pass 1=one pass
 
 rm $outprefix$outsuffix*
-cuDenseOffsets.py --reference $reference --secondary $secondary --ww $ww --wh $wh --sw $sw --sh $sh \
+python -m pycuampcor.dense_offsets --reference $reference --secondary $secondary --ww $ww --wh $wh --sw $sw --sh $sh \
     --mm $mm --kw $kw --kh $kh --gross $gross --rr $rgshift --aa $azshift --oo $oo \
     --deramp $deramp --outprefix $outprefix --outsuffix $outsuffix \
     --gpuid $gpuid --mmapsize $mmapsize \
@@ -229,11 +229,11 @@ Please be advised, by enforcing the window locations and sizes, the windows near
 
 PyCuAmpcor supports two types of gross offset fields,
 * static (--gross=0), i.e., a constant shift between reference and secondary images. The static gross offsets can be passed by *--rr $rgshift --aa $azshift*. Note that the margin as well as the starting pixel may be adjusted.
-* dynamic (--gross=1), i.e., shifts between reference windows and secondary windows are varying in different locations. This is helpful to reduce the search range if you have a prior knowledge of the estimated offset fields, e.g., the velocity model of glaciers. You may prepare a binary file of the varying gross offsets, int32 pairs (down, across) for each window in the order of the output offset fields, and use the option *--gross-file $grossOffsetFilename*. If you need the coordinates of reference windows, you may run *cuDenseOffsets.py* at first to find out the location of the starting pixel and the total number of windows. The coordinate for the starting pixel of the (iDown, iAcross) window will be (startPixelDown+iDown\*skipDown, startPixelAcross+iAcross\*skipAcross).
+* dynamic (--gross=1), i.e., shifts between reference windows and secondary windows are varying in different locations. This is helpful to reduce the search range if you have a prior knowledge of the estimated offset fields, e.g., the velocity model of glaciers. You may prepare a binary file of the varying gross offsets, int32 pairs (down, across) for each window in the order of the output offset fields, and use the option *--gross-file $grossOffsetFilename*. If you need the coordinates of reference windows, you may run *pycuampcor.dense_offsets* at first to find out the location of the starting pixel and the total number of windows. The coordinate for the starting pixel of the (iDown, iAcross) window will be (startPixelDown+iDown\*skipDown, startPixelAcross+iAcross\*skipAcross).
 
 ### 3.2 Customized Python Scripts
 
-If you need more control of the computation, or incorporate the PyCuAmpcor procedure in your InSAR processing stacks, you may follow *examples/simple_offsets.py* (offsets of synthetic images with a known shift: `python simple_offsets.py [--cpu]`) or *cuDenseOffsets.py* (*pycuampcor/dense_offsets.py*) to create your own Python script. The general steps are
+If you need more control of the computation, or incorporate the PyCuAmpcor procedure in your InSAR processing stacks, you may follow *examples/simple_offsets.py* (offsets of synthetic images with a known shift: `python simple_offsets.py [--cpu]`) or *pycuampcor/dense_offsets.py* to create your own Python script. The general steps are
 * create a PyCuAmpcor instance
 ```python
 from pycuampcor import PyCuAmpcor, PyCPUAmpcor
@@ -339,7 +339,7 @@ The dimension/direction names used in PyCuAmpcor are:
 
 Note that ampcor.F and GDAL in general use y for rows and x for columns.
 
-Note also PyCuAmpcor parameters refer to the names used by the PyCuAmpcor Python class. They may be different from those used in C/C++/CUDA, or the cuDenseOffsets.py args.
+Note also PyCuAmpcor parameters refer to the names used by the PyCuAmpcor Python class. They may be different from those used in C/C++/CUDA, or the arguments of pycuampcor.dense_offsets.
 
 **Process Parameters**
 
@@ -372,7 +372,7 @@ another), and the default is one window per chunk.
 | referenceStartPixelDownStatic | the starting pixel location of the first reference window - along height component |
 |referenceStartPixelAcrossStatic | the starting pixel location of the first reference window - along width component |
 
-The C/C++/CUDA program accepts inputs with the total number of windows (numberWindowDown, numberWindowAcross) and the starting pixels of each reference window. The purpose is to establish multiple-threads/streams processing. Therefore, users are required to provide/compute these inputs, with tools available from PyCuAmpcor python class. The cuDenseOffsets.py script also does the job.
+The C/C++/CUDA program accepts inputs with the total number of windows (numberWindowDown, numberWindowAcross) and the starting pixels of each reference window. The purpose is to establish multiple-threads/streams processing. Therefore, users are required to provide/compute these inputs, with tools available from PyCuAmpcor python class. The pycuampcor.dense_offsets tool also does the job.
 
 We provide some examples below, assuming a PyCuAmpcor class object is created as
 

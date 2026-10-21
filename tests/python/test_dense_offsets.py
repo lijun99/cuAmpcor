@@ -1,5 +1,5 @@
 """
-Tests of the dense offsets tool (cuDenseOffsets.py, pycuampcor.dense_offsets) with synthetic images
+Tests of the dense offsets tool (python -m pycuampcor.dense_offsets) with synthetic images
 """
 
 import os

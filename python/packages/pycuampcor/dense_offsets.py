@@ -1,10 +1,10 @@
 """
-cuDenseOffsets.py: estimate the dense offset field between two SAR images with pycuampcor
+pycuampcor.dense_offsets: estimate the dense offset field between two SAR images with pycuampcor
 
-The command-line tool used by the ISCE2 stack processors and MintPy (offset time series): the
-offsets of the windows on a regular grid of the reference image, written as band-interleaved
-binary files (offset.bip, offset_snr.bip, ...) with their headers, and optionally the geometry
-(lat, lon, ...) on the same grid (--full-geom, --out-geom).
+The dense offsets tool (formerly cuDenseOffsets.py of ISCE2, used with MintPy for offset time
+series): the offsets of the windows on a regular grid of the reference image, written as
+band-interleaved binary files (offset.bip, offset_snr.bip, ...) with their headers, and optionally
+the geometry (lat, lon, ...) on the same grid (--full-geom, --out-geom).
 
 The images are raw binary files (single band, complex64 or float32, e.g., ISCE SLCs); their size
 and pixel type are given with --length, --width, --data-type, or read from their ISCE .xml
@@ -23,15 +23,15 @@ import time
 import pycuampcor
 
 EXAMPLE = '''example:
-  cuDenseOffsets.py -r ./SLC/20151120/20151120.slc.full -s ./SLC/20151214/20151214.slc.full
-  cuDenseOffsets.py -r ./SLC/20151120/20151120.slc.full -s ./SLC/20151214/20151214.slc.full --outprefix ./offsets/20151120_20151214/offset --ww 256 --wh 256 --sw 8 --sh 8 --oo 32 --kw 300 --kh 100 --gpuid 0
+  python -m pycuampcor.dense_offsets -r ./SLC/20151120/20151120.slc.full -s ./SLC/20151214/20151214.slc.full
+  python -m pycuampcor.dense_offsets -r ./SLC/20151120/20151120.slc.full -s ./SLC/20151214/20151214.slc.full --outprefix ./offsets/20151120_20151214/offset --ww 256 --wh 256 --sw 8 --sh 8 --oo 32 --kw 300 --kh 100 --gpuid 0
 
   # offset and its geometry
   # tip: re-run with --full/out-geom and without --redo to generate geometry only
-  cuDenseOffsets.py -r ./SLC/20151120/20151120.slc.full -s ./SLC/20151214/20151214.slc.full --outprefix ./offsets/20151120_20151214/offset --ww 256 --wh 256 --sw 8 --sh 8 --oo 32 --kw 300 --kh 100 --gpuid 0 --full-geom ./geom_reference --out-geom ./offset/geom_reference
+  python -m pycuampcor.dense_offsets -r ./SLC/20151120/20151120.slc.full -s ./SLC/20151214/20151214.slc.full --outprefix ./offsets/20151120_20151214/offset --ww 256 --wh 256 --sw 8 --sh 8 --oo 32 --kw 300 --kh 100 --gpuid 0 --full-geom ./geom_reference --out-geom ./offset/geom_reference
 
   # images without ISCE/GDAL metadata, on the CPU
-  cuDenseOffsets.py -r ref.slc -s sec.slc --length 2000 --width 1000 --data-type complex64 --op offsets/offset --cpu
+  python -m pycuampcor.dense_offsets -r ref.slc -s sec.slc --length 2000 --width 1000 --data-type complex64 --op offsets/offset --cpu
 '''
 
 # the pixel types of the images: name -> (bytes per pixel, GDAL names)
@@ -40,7 +40,8 @@ DATA_TYPES = {'complex64': (8, ('CFloat32',)), 'float32': (4, ('Float32',))}
 
 def create_parser():
     """The command-line parser"""
-    parser = argparse.ArgumentParser(description='Generate the offset field between two SAR images',
+    parser = argparse.ArgumentParser(prog='python -m pycuampcor.dense_offsets',
+                                     description='Generate the offset field between two SAR images',
                                      formatter_class=argparse.RawTextHelpFormatter,
                                      epilog=EXAMPLE)
 

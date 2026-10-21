@@ -9,8 +9,8 @@
 
 ### New
 
-- `cuDenseOffsets.py` is installed with the package (also `python -m pycuampcor.dense_offsets`),
-  the dense offsets tool of the ISCE2 stack processors and MintPy: ISCE2 is optional (the image
+- `python -m pycuampcor.dense_offsets`, the dense offsets tool (formerly `cuDenseOffsets.py` of
+  ISCE2, used with MintPy) in the package: ISCE2 is optional (the image
   size and type from the ISCE .xml, GDAL, or the options `--length`, `--width`, `--data-type`;
   the output headers ISCE .xml, or ENVI .hdr and .vrt), `--cpu` for the CPU implementation, and
   the numbers of windows in a chunk automatic by default.
