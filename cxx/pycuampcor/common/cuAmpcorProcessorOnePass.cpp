@@ -16,15 +16,15 @@ void cuAmpcorProcessorOnePass::run(int idxDown_, int idxAcross_, const cuAmpcorC
     setIndex(idxDown_, idxAcross_);
 
     // copy the reference windows from the loaded chunk
-    copyToBatch(chunk.reference, param->referenceStartPixelDown, param->referenceStartPixelAcross, c_referenceBatchRaw);
+    copyToBatch(chunk.reference, param->referenceStartPixelDown, param->referenceStartPixelAcross, c_referenceBatchRaw.get());
 
 #ifdef CUAMPCOR_DEBUG
     // dump the raw reference image(s)
-    c_referenceBatchRaw->outputToFile("c_referenceBatchRaw", stream);
+    c_referenceBatchRaw->outputToFile("c_referenceBatchRaw.get()", stream);
 #endif
 
     // deramp reference
-    cuDeramp(param->derampMethod, c_referenceBatchRaw, param->derampAxis, stream);
+    cuDeramp(param->derampMethod, c_referenceBatchRaw.get(), param->derampAxis, stream);
 
 #ifdef CUAMPCOR_DEBUG
     // dump the deramped reference image(s)
@@ -32,23 +32,23 @@ void cuAmpcorProcessorOnePass::run(int idxDown_, int idxAcross_, const cuAmpcorC
 #endif
 
     // oversample reference
-    referenceBatchOverSampler->execute(c_referenceBatchRaw, c_referenceBatchOverSampled);
+    referenceBatchOverSampler->execute(c_referenceBatchRaw.get(), c_referenceBatchOverSampled.get());
 
     // offset to extract
     int2 offset = make_int2((c_referenceBatchOverSampled->height - r_referenceBatchOverSampled->height)/2,
         (c_referenceBatchOverSampled->width - r_referenceBatchOverSampled->width)/2);
 
     // extract and take amplitudes
-    cuArraysCopyExtractAbs(c_referenceBatchOverSampled, r_referenceBatchOverSampled, offset, stream);
+    cuArraysCopyExtractAbs(c_referenceBatchOverSampled.get(), r_referenceBatchOverSampled.get(), offset, stream);
 
 #ifdef CUAMPCOR_DEBUG
     // dump the oversampled reference image(s)
-    c_referenceBatchOverSampled->outputToFile("c_referenceBatchOverSampled", stream);
-    r_referenceBatchOverSampled->outputToFile("r_referenceBatchOverSampled", stream);
+    c_referenceBatchOverSampled->outputToFile("c_referenceBatchOverSampled.get()", stream);
+    r_referenceBatchOverSampled->outputToFile("r_referenceBatchOverSampled.get()", stream);
 #endif
 
     // compute and subtract the mean value
-    cuArraysSubtractMean(r_referenceBatchOverSampled, stream);
+    cuArraysSubtractMean(r_referenceBatchOverSampled.get(), stream);
 
 #ifdef CUAMPCOR_DEBUG
     // dump the oversampled reference image(s) with mean subtracted
@@ -56,15 +56,15 @@ void cuAmpcorProcessorOnePass::run(int idxDown_, int idxAcross_, const cuAmpcorC
 #endif
 
     // copy the secondary windows from the loaded chunk
-    copyToBatch(chunk.secondary, param->secondaryStartPixelDown, param->secondaryStartPixelAcross, c_secondaryBatchRaw);
+    copyToBatch(chunk.secondary, param->secondaryStartPixelDown, param->secondaryStartPixelAcross, c_secondaryBatchRaw.get());
 
 #ifdef CUAMPCOR_DEBUG
     // dump the raw reference image(s)
-    c_secondaryBatchRaw->outputToFile("c_secondaryBatchRaw", stream);
+    c_secondaryBatchRaw->outputToFile("c_secondaryBatchRaw.get()", stream);
 #endif
 
     // deramp secondary image(s)
-    cuDeramp(param->derampMethod, c_secondaryBatchRaw, param->derampAxis, stream);
+    cuDeramp(param->derampMethod, c_secondaryBatchRaw.get(), param->derampAxis, stream);
 
 #ifdef CUAMPCOR_DEBUG
     // dump the raw reference image(s)
@@ -72,31 +72,31 @@ void cuAmpcorProcessorOnePass::run(int idxDown_, int idxAcross_, const cuAmpcorC
 #endif
 
     // oversampling the secondary image(s)
-    secondaryBatchOverSampler->execute(c_secondaryBatchRaw, c_secondaryBatchOverSampled);
+    secondaryBatchOverSampler->execute(c_secondaryBatchRaw.get(), c_secondaryBatchOverSampled.get());
     // take amplitudes
-    cuArraysAbs(c_secondaryBatchOverSampled, r_secondaryBatchOverSampled, stream);
+    cuArraysAbs(c_secondaryBatchOverSampled.get(), r_secondaryBatchOverSampled.get(), stream);
 
 #ifdef CUAMPCOR_DEBUG
     // dump the oversampled secondary image(s)
-    c_secondaryBatchOverSampled->outputToFile("c_secondaryBatchOverSampled", stream);
-    r_secondaryBatchOverSampled->outputToFile("r_secondaryBatchOverSampled", stream);
+    c_secondaryBatchOverSampled->outputToFile("c_secondaryBatchOverSampled.get()", stream);
+    r_secondaryBatchOverSampled->outputToFile("r_secondaryBatchOverSampled.get()", stream);
 #endif
 
     // correlate oversampled images
     if(param->algorithm == Algorithm::Frequency) {
-        cuCorrFreqDomain_OverSampled->execute(r_referenceBatchOverSampled, r_secondaryBatchOverSampled, r_corrBatch);
+        cuCorrFreqDomain_OverSampled->execute(r_referenceBatchOverSampled.get(), r_secondaryBatchOverSampled.get(), r_corrBatch.get());
     }
     else {
-        cuCorrTimeDomain(r_referenceBatchOverSampled, r_secondaryBatchOverSampled, r_corrBatch, stream);
+        cuCorrTimeDomain(r_referenceBatchOverSampled.get(), r_secondaryBatchOverSampled.get(), r_corrBatch.get(), stream);
     }
 
 #ifdef CUAMPCOR_DEBUG
     // dump the oversampled correlation surface (un-normalized)
-    r_corrBatch->outputToFile("r_corrBatch", stream);
+    r_corrBatch->outputToFile("r_corrBatch.get()", stream);
 #endif
 
     // normalize the correlation surface
-    corrNormalizerOverSampled->execute(r_corrBatch, r_referenceBatchOverSampled, r_secondaryBatchOverSampled, stream);
+    corrNormalizerOverSampled->execute(r_corrBatch.get(), r_referenceBatchOverSampled.get(), r_secondaryBatchOverSampled.get(), stream);
 
 #ifdef CUAMPCOR_DEBUG
     // dump the oversampled correlation surface (normalized)
@@ -107,7 +107,7 @@ void cuAmpcorProcessorOnePass::run(int idxDown_, int idxAcross_, const cuAmpcorC
     int extraPadSize = param->halfZoomWindowSizeRaw*param->rawDataOversamplingFactor;
     int2 start = make_int2(extraPadSize, extraPadSize);
     int2 range = make_int2(r_corrBatch->height-2*extraPadSize, r_corrBatch->width-2*extraPadSize);
-    cuArraysMaxloc2D(r_corrBatch, start, range, offsetInit, r_maxval, stream);
+    cuArraysMaxloc2D(r_corrBatch.get(), start, range, offsetInit.get(), r_maxval.get(), stream);
 
 #ifdef CUAMPCOR_DEBUG
     // dump the max location and value
@@ -117,50 +117,50 @@ void cuAmpcorProcessorOnePass::run(int idxDown_, int idxAcross_, const cuAmpcorC
 
     // extract a smaller chip around the peak {offsetInit} for oversampling
     // (within the extra pads, so all its pixels are valid)
-    cuArraysCopyExtractCorr(r_corrBatch, r_corrBatchZoomIn, offsetInit, stream);
+    cuArraysCopyExtractCorr(r_corrBatch.get(), r_corrBatchZoomIn.get(), offsetInit.get(), stream);
 
 #ifdef CUAMPCOR_DEBUG
     // dump the extracted correlation Surface
-    r_corrBatchZoomIn->outputToFile("r_corrBatchZoomIn", stream);
+    r_corrBatchZoomIn->outputToFile("r_corrBatchZoomIn.get()", stream);
 #endif
 
     // statistics of correlation surface
     // estimate variance on r_corrBatch
-    cuEstimateVariance(r_corrBatch, offsetInit, r_maxval, r_referenceBatchOverSampled->size, param->rawDataOversamplingFactor, r_covValue, stream);
+    cuEstimateVariance(r_corrBatch.get(), offsetInit.get(), r_maxval.get(), r_referenceBatchOverSampled->size, param->rawDataOversamplingFactor, r_covValue.get(), stream);
 
     // snr as in the two-pass workflow: the peak over the mean of the correlation surface around it
     // (corrStatWindowSize), at the raw pixel spacing and within the search range
-    cuArraysCopyExtractCorr(r_corrBatch, r_corrBatchRawZoomIn, i_corrBatchZoomInValid, offsetInit,
+    cuArraysCopyExtractCorr(r_corrBatch.get(), r_corrBatchRawZoomIn.get(), i_corrBatchZoomInValid.get(), offsetInit.get(),
         param->rawDataOversamplingFactor, start, range, stream);
-    cuArraysSumCorr(r_corrBatchRawZoomIn, i_corrBatchZoomInValid, r_corrBatchSum, i_corrBatchValidCount, stream);
-    cuEstimateSnr(r_corrBatchSum, i_corrBatchValidCount, r_maxval, r_snrValue, stream);
+    cuArraysSumCorr(r_corrBatchRawZoomIn.get(), i_corrBatchZoomInValid.get(), r_corrBatchSum.get(), i_corrBatchValidCount.get(), stream);
+    cuEstimateSnr(r_corrBatchSum.get(), i_corrBatchValidCount.get(), r_maxval.get(), r_snrValue.get(), stream);
 
 #ifdef CUAMPCOR_DEBUG
-    r_snrValue->outputToFile("r_snrValue", stream);
-    r_covValue->outputToFile("r_covValue", stream);
+    r_snrValue->outputToFile("r_snrValue.get()", stream);
+    r_covValue->outputToFile("r_covValue.get()", stream);
 #endif
 
     // oversample the correlation surface
     if(param->corrSurfaceOverSamplingMethod == OversamplingMethod::Sinc) {
         // sinc interpolator only computes (-i_sincwindow, i_sincwindow)*oversamplingfactor
         // we need the max loc as the center if shifted
-        corrSincOverSampler->execute(r_corrBatchZoomIn, r_corrBatchZoomInOverSampled,
+        corrSincOverSampler->execute(r_corrBatchZoomIn.get(), r_corrBatchZoomInOverSampled.get(),
              maxLocShift, param->corrSurfaceOverSamplingFactor*param->rawDataOversamplingFactor
             );
 
     }
     else {
-        corrOverSampler->execute(r_corrBatchZoomIn, r_corrBatchZoomInOverSampled);
+        corrOverSampler->execute(r_corrBatchZoomIn.get(), r_corrBatchZoomInOverSampled.get());
     }
 
 #ifdef CUAMPCOR_DEBUG
     // dump the oversampled correlation surface
-    r_corrBatchZoomInOverSampled->outputToFile("r_corrBatchZoomInOverSampled", stream);
+    r_corrBatchZoomInOverSampled->outputToFile("r_corrBatchZoomInOverSampled.get()", stream);
 #endif
 
     //find the max again, within the range of \pm 1 pixel * totalOS
-    cuArraysMaxloc2D(r_corrBatchZoomInOverSampled, param->corrZoomInOversampledSearchStart, param->corrZoomInOversampledSearchRange,
-        offsetZoomIn, corrMaxValue, stream);
+    cuArraysMaxloc2D(r_corrBatchZoomInOverSampled.get(), param->corrZoomInOversampledSearchStart, param->corrZoomInOversampledSearchRange,
+        offsetZoomIn.get(), corrMaxValue.get(), stream);
 
 #ifdef CUAMPCOR_DEBUG
     // dump the max location on oversampled correlation surface
@@ -169,7 +169,7 @@ void cuAmpcorProcessorOnePass::run(int idxDown_, int idxAcross_, const cuAmpcorC
 #endif
 
     // determine the final offset from initial (pixel/2) and oversampled (sub-pixel)
-    cuSubPixelOffset(offsetInit, offsetZoomIn, offsetFinal,
+    cuSubPixelOffset(offsetInit.get(), offsetZoomIn.get(), offsetFinal.get(),
         make_int2(param->corrWindowSize.x/2, param->corrWindowSize.y/2), // init offset origin
         param->rawDataOversamplingFactor, // init offset factor
         make_int2(param->corrZoomInSize.x/2*param->corrSurfaceOverSamplingFactor, param->corrZoomInSize.y/2*param->corrSurfaceOverSamplingFactor),
@@ -182,13 +182,13 @@ void cuAmpcorProcessorOnePass::run(int idxDown_, int idxAcross_, const cuAmpcorC
 #endif
 
     // Insert the chunk results to final images
-    cuArraysCopyInsert(offsetFinal, offsetImage, idxDown_*param->windowsDownInChunk, idxAcross_*param->windowsAcrossInChunk,stream);
+    cuArraysCopyInsert(offsetFinal.get(), offsetImage, idxDown_*param->windowsDownInChunk, idxAcross_*param->windowsAcrossInChunk,stream);
     // snr
-    cuArraysCopyInsert(r_snrValue, snrImage, idxDown_*param->windowsDownInChunk, idxAcross_*param->windowsAcrossInChunk,stream);
+    cuArraysCopyInsert(r_snrValue.get(), snrImage, idxDown_*param->windowsDownInChunk, idxAcross_*param->windowsAcrossInChunk,stream);
     // Variance.
-    cuArraysCopyInsert(r_covValue, covImage, idxDown_*param->windowsDownInChunk, idxAcross_*param->windowsAcrossInChunk,stream);
+    cuArraysCopyInsert(r_covValue.get(), covImage, idxDown_*param->windowsDownInChunk, idxAcross_*param->windowsAcrossInChunk,stream);
     // peak value.
-    cuArraysCopyInsert(corrMaxValue, peakValueImage, idxDown_*param->windowsDownInChunk, idxAcross_*param->windowsAcrossInChunk,stream);
+    cuArraysCopyInsert(corrMaxValue.get(), peakValueImage, idxDown_*param->windowsDownInChunk, idxAcross_*param->windowsAcrossInChunk,stream);
     // all done
 }
 
@@ -202,133 +202,133 @@ cuAmpcorProcessorOnePass::cuAmpcorProcessorOnePass(cuAmpcorParameter *param_,
 {
 
 
-    c_referenceBatchRaw = new cuArrays<complex_type> (
+    c_referenceBatchRaw = std::make_unique<cuArrays<complex_type>>(
         param->windowSizeHeightRawEnlarged, param->windowSizeWidthRawEnlarged,
         param->windowsDownInChunk, param->windowsAcrossInChunk);
     c_referenceBatchRaw->allocate();
 
-    c_secondaryBatchRaw = new cuArrays<complex_type> (
+    c_secondaryBatchRaw = std::make_unique<cuArrays<complex_type>>(
         param->searchWindowSizeHeightRaw, param->searchWindowSizeWidthRaw,
         param->windowsDownInChunk, param->windowsAcrossInChunk);
     c_secondaryBatchRaw->allocate();
 
-    c_referenceBatchOverSampled = new cuArrays<complex_type> (
+    c_referenceBatchOverSampled = std::make_unique<cuArrays<complex_type>>(
             param->windowSizeHeightEnlarged, param->windowSizeWidthEnlarged,
             param->windowsDownInChunk, param->windowsAcrossInChunk);
     c_referenceBatchOverSampled->allocate();
 
-    c_secondaryBatchOverSampled = new cuArrays<complex_type> (
+    c_secondaryBatchOverSampled = std::make_unique<cuArrays<complex_type>>(
             param->searchWindowSizeHeight, param->searchWindowSizeWidth,
             param->windowsDownInChunk, param->windowsAcrossInChunk);
     c_secondaryBatchOverSampled->allocate();
 
-    r_referenceBatchOverSampled = new cuArrays<real_type> (
+    r_referenceBatchOverSampled = std::make_unique<cuArrays<real_type>>(
          param->windowSizeHeight, param->windowSizeWidth,
          param->windowsDownInChunk, param->windowsAcrossInChunk);
     r_referenceBatchOverSampled->allocate();
 
-    r_secondaryBatchOverSampled = new cuArrays<real_type> (
+    r_secondaryBatchOverSampled = std::make_unique<cuArrays<real_type>>(
         param->searchWindowSizeHeight, param->searchWindowSizeWidth,
         param->windowsDownInChunk, param->windowsAcrossInChunk);
     r_secondaryBatchOverSampled->allocate();
 
-    referenceBatchOverSampler = new cuOverSamplerC2C(
+    referenceBatchOverSampler = std::make_unique<cuOverSamplerC2C>(
         c_referenceBatchRaw->height, c_referenceBatchRaw->width, //original size
         c_referenceBatchOverSampled->height, c_referenceBatchOverSampled->width, //oversampled size
         c_referenceBatchRaw->count, stream);
 
-    secondaryBatchOverSampler = new cuOverSamplerC2C(
+    secondaryBatchOverSampler = std::make_unique<cuOverSamplerC2C>(
         c_secondaryBatchRaw->height, c_secondaryBatchRaw->width,
         c_secondaryBatchOverSampled->height, c_secondaryBatchOverSampled->width,
         c_secondaryBatchRaw->count, stream);
 
-    r_corrBatch = new cuArrays<real_type> (
+    r_corrBatch = std::make_unique<cuArrays<real_type>>(
         param->corrWindowSize.x,
         param->corrWindowSize.y,
         param->windowsDownInChunk,
         param->windowsAcrossInChunk);
     r_corrBatch->allocate();
 
-    r_corrBatchZoomIn = new cuArrays<real_type> (
+    r_corrBatchZoomIn = std::make_unique<cuArrays<real_type>>(
             param->corrZoomInSize.x,
             param->corrZoomInSize.y,
             param->windowsDownInChunk,
             param->windowsAcrossInChunk);
     r_corrBatchZoomIn->allocate();
 
-    r_corrBatchZoomInOverSampled = new cuArrays<real_type> (
+    r_corrBatchZoomInOverSampled = std::make_unique<cuArrays<real_type>>(
         param->corrZoomInOversampledSize.x,
         param->corrZoomInOversampledSize.y,
         param->windowsDownInChunk,
         param->windowsAcrossInChunk);
     r_corrBatchZoomInOverSampled->allocate();
 
-    offsetInit = new cuArrays<int2> (param->windowsDownInChunk, param->windowsAcrossInChunk);
+    offsetInit = std::make_unique<cuArrays<int2>>(param->windowsDownInChunk, param->windowsAcrossInChunk);
     offsetInit->allocate();
 
-    offsetZoomIn = new cuArrays<int2> (param->windowsDownInChunk, param->windowsAcrossInChunk);
+    offsetZoomIn = std::make_unique<cuArrays<int2>>(param->windowsDownInChunk, param->windowsAcrossInChunk);
     offsetZoomIn->allocate();
 
-    offsetFinal = new cuArrays<real2_type> (param->windowsDownInChunk, param->windowsAcrossInChunk);
+    offsetFinal = std::make_unique<cuArrays<real2_type>>(param->windowsDownInChunk, param->windowsAcrossInChunk);
     offsetFinal->allocate();
 
     // the zoom-in correlation surface is extracted around the peak,
     // so the sinc interpolation center needs no extra shift
     maxLocShift = make_int2(0, 0);
 
-    corrMaxValue = new cuArrays<real_type> (param->windowsDownInChunk, param->windowsAcrossInChunk);
+    corrMaxValue = std::make_unique<cuArrays<real_type>>(param->windowsDownInChunk, param->windowsAcrossInChunk);
     corrMaxValue->allocate();
 
-    r_corrBatchRawZoomIn = new cuArrays<real_type> (
+    r_corrBatchRawZoomIn = std::make_unique<cuArrays<real_type>>(
             param->corrRawZoomInHeight,
             param->corrRawZoomInWidth,
             param->windowsDownInChunk,
             param->windowsAcrossInChunk);
     r_corrBatchRawZoomIn->allocate();
 
-    i_corrBatchZoomInValid = new cuArrays<int> (
+    i_corrBatchZoomInValid = std::make_unique<cuArrays<int>>(
             param->corrRawZoomInHeight,
             param->corrRawZoomInWidth,
             param->windowsDownInChunk,
             param->windowsAcrossInChunk);
     i_corrBatchZoomInValid->allocate();
 
-    r_corrBatchSum = new cuArrays<real_type> (
+    r_corrBatchSum = std::make_unique<cuArrays<real_type>>(
                     param->windowsDownInChunk,
                     param->windowsAcrossInChunk);
     r_corrBatchSum->allocate();
 
-    i_corrBatchValidCount = new cuArrays<int> (
+    i_corrBatchValidCount = std::make_unique<cuArrays<int>>(
                     param->windowsDownInChunk,
                     param->windowsAcrossInChunk);
     i_corrBatchValidCount->allocate();
 
-    i_maxloc = new cuArrays<int2> (param->windowsDownInChunk, param->windowsAcrossInChunk);
+    i_maxloc = std::make_unique<cuArrays<int2>>(param->windowsDownInChunk, param->windowsAcrossInChunk);
     i_maxloc->allocate();
 
-    r_maxval = new cuArrays<real_type> (param->windowsDownInChunk, param->windowsAcrossInChunk);
+    r_maxval = std::make_unique<cuArrays<real_type>>(param->windowsDownInChunk, param->windowsAcrossInChunk);
     r_maxval->allocate();
 
-    r_snrValue = new cuArrays<real_type> (param->windowsDownInChunk, param->windowsAcrossInChunk);
+    r_snrValue = std::make_unique<cuArrays<real_type>>(param->windowsDownInChunk, param->windowsAcrossInChunk);
     r_snrValue->allocate();
 
-    r_covValue = new cuArrays<real3_type> (param->windowsDownInChunk, param->windowsAcrossInChunk);
+    r_covValue = std::make_unique<cuArrays<real3_type>>(param->windowsDownInChunk, param->windowsAcrossInChunk);
     r_covValue->allocate();
 
     // end of new arrays
 
     if(param->corrSurfaceOverSamplingMethod == OversamplingMethod::Sinc) {
-        corrSincOverSampler = new cuSincOverSamplerR2R(param->corrSurfaceOverSamplingFactor, stream);
+        corrSincOverSampler = std::make_unique<cuSincOverSamplerR2R>(param->corrSurfaceOverSamplingFactor, stream);
     }
     else {
-        corrOverSampler= new cuOverSamplerR2R(
+        corrOverSampler = std::make_unique<cuOverSamplerR2R>(
             r_corrBatchZoomIn->height, r_corrBatchZoomIn->width,
             r_corrBatchZoomInOverSampled->height, r_corrBatchZoomInOverSampled->width,
             param->windowsDownInChunk*param->windowsAcrossInChunk,
             stream);
     }
     if(param->algorithm == Algorithm::Frequency) {
-        cuCorrFreqDomain_OverSampled = new cuFreqCorrelator(
+        cuCorrFreqDomain_OverSampled = std::make_unique<cuFreqCorrelator>(
             param->searchWindowSizeHeight, param->searchWindowSizeWidth,
             param->windowsDownInChunk * param->windowsAcrossInChunk,
             stream);
@@ -349,49 +349,7 @@ cuAmpcorProcessorOnePass::cuAmpcorProcessorOnePass(cuAmpcorParameter *param_,
 }
 
 // destructor
-cuAmpcorProcessorOnePass::~cuAmpcorProcessorOnePass()
-{
-    corrNormalizerOverSampled.reset();
-
-    if(param->corrSurfaceOverSamplingMethod == OversamplingMethod::Sinc) {
-        delete corrSincOverSampler;
-    }
-    else {
-        delete corrOverSampler;
-    }
-    if(param->algorithm == Algorithm::Frequency) {
-        delete cuCorrFreqDomain_OverSampled;
-    }
-
-    delete c_referenceBatchRaw;
-    delete c_secondaryBatchRaw;
-    delete c_referenceBatchOverSampled;
-    delete c_secondaryBatchOverSampled;
-    delete r_referenceBatchOverSampled;
-    delete r_secondaryBatchOverSampled;
-    delete referenceBatchOverSampler;
-    delete secondaryBatchOverSampler;
-
-    delete r_corrBatch;
-    delete r_corrBatchZoomIn;
-    delete r_corrBatchZoomInOverSampled;
-    delete offsetInit;
-    delete offsetZoomIn;
-    delete offsetFinal;
-    delete corrMaxValue;
-
-    delete r_corrBatchRawZoomIn;
-    delete i_corrBatchZoomInValid;
-    delete r_corrBatchSum;
-    delete i_corrBatchValidCount;
-    delete i_maxloc;
-    delete r_maxval;
-    delete r_snrValue;
-    delete r_covValue;
-
-    // end of deletions
-
-}
+cuAmpcorProcessorOnePass::~cuAmpcorProcessorOnePass() = default;
 
 // end of file
 
