@@ -18,70 +18,6 @@ namespace pycuampcor::PYCUAMPCOR_BACKEND {
 #define IDIVUP(i,j) ((i+j-1)/j)
 #endif
 
-///
-/// Constructor for cuAmpcorParameter class
-/// also sets the default/initial values of various parameters
-///
-
-cuAmpcorParameter::cuAmpcorParameter()
-{
-    // default settings
-    // will be changed if they are set by python scripts
-    algorithm = Algorithm::Frequency;
-    deviceID = 0;
-    nStreams = 1;
-    nThreads = 0;
-    derampMethod = DerampMethod::Magnitude;
-    derampAxis = DerampAxis::Both;
-    workflow = Workflow::TwoPass;
-
-    windowSizeWidthRaw = 64;
-    windowSizeHeightRaw = 64;
-    halfSearchRangeDownRaw = 20;
-    halfSearchRangeAcrossRaw = 20;
-
-    skipSampleAcrossRaw = 64;
-    skipSampleDownRaw = 64;
-    rawDataOversamplingFactor = 2; //antialiasing
-    zoomWindowSize = 16;  // correlation surface oversampling zoom
-    corrSurfaceOverSamplingFactor = 16; // correlation surface oversampling
-    corrSurfaceOverSamplingMethod = OversamplingMethod::FFT;
-
-    referenceImageName = "reference.slc";
-    referenceImageReader = "auto"; // by the name: HDF5:<file>:<dataset> or a raw file
-    referenceImageWidth = 1000;
-    referenceImageHeight = 1000;
-    referenceImageDataType = DataType::Complex64;
-    secondaryImageName = "secondary.slc";
-    secondaryImageReader = "auto";
-    secondaryImageWidth = 1000;
-    secondaryImageHeight = 1000;
-    secondaryImageDataType = DataType::Complex64;
-    offsetImageName = "DenseOffset.bip";
-    grossOffsetImageName = "GrossOffset.bip";
-    snrImageName = "snr.bip";
-    covImageName = "cov.bip";
-    peakValueImageName = "peakValue.bip";
-    numberWindowDown =  1;
-    numberWindowAcross = 1;
-    numberWindowDownInChunk = 0; // automatic, see setupParameters()
-    numberWindowAcrossInChunk = 0;
-    windowsDownInChunk = 0; // set by setupParameters()
-    windowsAcrossInChunk = 0;
-    corrZoomWindowSize = 0;
-
-    referenceStartPixelDown0 = 0;
-    referenceStartPixelAcross0 = 0;
-
-    corrStatWindowSize = 21; // 10*2+1 as in RIOPAC
-
-    useMmap = 1; // use mmap
-    mmapSizeInGB = 1;
-
-    mergeGrossOffset = 0; // default to separate gross offset
-
-}
-
 /**
  * To determine other process parameters after reading essential parameters from python
  */
@@ -432,7 +368,7 @@ void cuAmpcorParameter::setChunkStartPixels()
 
 /// check whether reference and secondary windows are within the image range
 // now issue warning rather than errors
-void cuAmpcorParameter::checkPixelInImageRange()
+void cuAmpcorParameter::checkPixelInImageRange() const
 {
 // check range is no longer required, but offered as an option in DEBUG
 #ifdef CUAMPCOR_DEBUG

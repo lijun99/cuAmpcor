@@ -1,9 +1,8 @@
 /**
  * @file  cuAmpcorParameter.h
- * @brief A class holds cuAmpcor process parameters
+ * @brief Parameters of ampcor
  *
  * Author: Lijun Zhu @ Seismo Lab, Caltech
- * March 2017; last modified October 2020
  */
 
 #ifndef __CUAMPCORPARAMETER_H
@@ -16,7 +15,7 @@
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND {
 
-/// Class container for all parameters
+/// Parameters of ampcor
 ///
 /// @note
 /// The dimension/direction names used are:
@@ -24,122 +23,127 @@ namespace pycuampcor::PYCUAMPCOR_BACKEND {
 /// The outer-most dimension: y, column, width, across, range, along the sight.
 /// C/C++/Python use row-major indexing: a[i][j] -> a[i*WIDTH+j]
 /// FORTRAN/BLAS/CUBLAS use column-major indexing: a[i][j]->a[i+j*LENGTH]
-
+///
 /// @note
-/// Common procedures to use cuAmpcorParameter
-/// 1. Create an instance of cuAmpcorParameter: param = new cuAmpcorParameter()
-/// 2. Provide/set constant parameters, including numberWindows such as : param->numberWindowDown = 100
-/// 3. Call setupParameters() to determine related parameters and allocate starting pixels for each window: param->setupParameters()
-/// 4. Provide/set Reference window starting pixel(s), and gross offset(s): param->setStartPixels(referenceStartDown, referenceStartAcross, grossOffsetDown, grossOffsetAcross)
-/// 4a. Optionally, check the range of windows is within the SLC image range: param->checkPixelInImageRange()
-/// Steps 1, 3, 4 are mandatory. If step 2 is missing, default values will be used
+/// Usage:
+/// 1. create an instance (with the default inputs) and set the inputs, e.g., numberWindowDown = 100;
+/// 2. setupParameters(): compute the sizes of the windows, correlation surfaces and chunks;
+/// 3. setStartPixels(...): set the starting pixels and the gross offsets of the windows, and the
+///    areas of the chunks to load;
+/// 4. optionally, checkPixelInImageRange(): warn about windows outside the images (debug builds).
+/// setupParameters() does not change the inputs: it may be called again after changing them,
+/// followed by setStartPixels().
 
-class cuAmpcorParameter{
+class cuAmpcorParameter {
 public:
-    Algorithm algorithm;          ///< cross-correlation domain: frequency (default) or time
-    int deviceID;       ///< Targeted GPU device ID: use -1 to auto select
-    int nStreams;       ///< Number of streams to asynchonize data transfers and compute kernels
-    int nThreads;       ///< Number of CPU threads (CPU backend only; 0 for the OpenMP default)
-    DerampMethod derampMethod;    ///< phase ramp removal: magnitude (take the amplitudes, default), complex (linear ramp) or none
-    DerampAxis derampAxis;        ///< axis of the phase ramp: down, across or both (default)
-    Workflow workflow;            ///< workflow: two passes (default; the first pass without antialiasing oversampling) or one pass
+    // ==== inputs (not changed by setupParameters) ====
 
-    // chip or window size for raw data
-    int windowSizeHeightRaw;        ///< Template window height (original size)
-    int windowSizeWidthRaw;         ///< Template window width (original size)
+    // processing
+    Algorithm algorithm = Algorithm::Frequency;            ///< cross-correlation domain
+    int deviceID = 0;           ///< CUDA device (GPU backend)
+    int nStreams = 1;           ///< number of CUDA streams, each processing a chunk (GPU backend)
+    int nThreads = 0;           ///< number of threads, each processing a chunk (CPU backend; 0 for the OpenMP default)
+    DerampMethod derampMethod = DerampMethod::Magnitude;  ///< phase ramp removal before the antialiasing oversampling
+    DerampAxis derampAxis = DerampAxis::Both;              ///< axis of the phase ramp
+    Workflow workflow = Workflow::TwoPass;                 ///< cross-correlation workflow
 
-    int windowSizeHeightRawEnlarged; ///< Template window height Enlarged to search window size for oversampling
-    int windowSizeWidthRawEnlarged; ///< Template window width Enlarged to search window size for oversampling
+    // reference image
+    std::string referenceImageName = "reference.slc";  ///< raw binary file, or HDF5:<file>:<dataset>
+    std::string referenceImageReader = "auto";         ///< reader: auto (by the name), raw or hdf5
+    DataType referenceImageDataType = DataType::Complex64;  ///< pixel type
+    int referenceImageHeight = 1000;                   ///< height (lines)
+    int referenceImageWidth = 1000;                    ///< width (columns)
 
-    int searchWindowSizeHeightRaw;  ///< Search window height (original size)
-    int searchWindowSizeWidthRaw;   ///< Search window width (original size)
+    // secondary image
+    std::string secondaryImageName = "secondary.slc";  ///< raw binary file, or HDF5:<file>:<dataset>
+    std::string secondaryImageReader = "auto";         ///< reader: auto (by the name), raw or hdf5
+    DataType secondaryImageDataType = DataType::Complex64;  ///< pixel type
+    int secondaryImageHeight = 1000;                   ///< height (lines)
+    int secondaryImageWidth = 1000;                    ///< width (columns)
 
-    int halfSearchRangeDownRaw;   ///< (searchWindowSizeHeightRaw-windowSizeHeightRaw)/2
-    int halfSearchRangeAcrossRaw;    ///< (searchWindowSizeWidthRaw-windowSizeWidthRaw)/2
-    // search range is (-halfSearchRangeRaw, halfSearchRangeRaw)
-    // note the search range now includes extra margin for the correlation surface extraction
+    // windows (in pixels of the images)
+    int numberWindowDown = 1;           ///< number of windows (down)
+    int numberWindowAcross = 1;         ///< number of windows (across)
+    int windowSizeHeightRaw = 64;       ///< reference (template) window height
+    int windowSizeWidthRaw = 64;        ///< reference (template) window width
+    int halfSearchRangeDownRaw = 20;    ///< half of the search range (down)
+    int halfSearchRangeAcrossRaw = 20;  ///< half of the search range (across)
+    int skipSampleDownRaw = 64;         ///< distance between neighboring windows (down)
+    int skipSampleAcrossRaw = 64;       ///< distance between neighboring windows (across)
+    int referenceStartPixelDown0 = 0;   ///< first line of the first reference window
+    int referenceStartPixelAcross0 = 0; ///< first column of the first reference window
+    int numberWindowDownInChunk = 0;    ///< number of windows in a chunk (down); 0 = automatic
+    int numberWindowAcrossInChunk = 0;  ///< number of windows in a chunk (across); 0 = automatic
 
-    // chip or window size after oversampling
-    int rawDataOversamplingFactor;  ///< Raw data oversampling factor (from original size to oversampled size)
-    int windowSizeHeight;           ///< Template window length (oversampled size)
-    int windowSizeWidth;            ///< Template window width (original size)
-    int windowSizeHeightEnlarged;           ///< Template window length enlarged (oversampled size)
-    int windowSizeWidthEnlarged;            ///< Template window width enlarged (original size)
+    // oversampling and correlation surface
+    int rawDataOversamplingFactor = 2;  ///< antialiasing oversampling factor of the windows
+    int zoomWindowSize = 16;            ///< size of the correlation surface (antialiasing-oversampled) around the peak to oversample
+    int corrSurfaceOverSamplingFactor = 16;  ///< oversampling factor of the correlation surface
+    OversamplingMethod corrSurfaceOverSamplingMethod = OversamplingMethod::FFT;  ///< oversampling method of the correlation surface
+    int corrStatWindowSize = 21;        ///< size of the correlation surface around the peak for the SNR and covariance (21 as in ROI_PAC)
 
-    int searchWindowSizeHeight;     ///< Search window height (oversampled size)
-    int searchWindowSizeWidth;      ///< Search window width (oversampled size)
+    // outputs
+    std::string offsetImageName = "DenseOffset.bip";       ///< dense offsets
+    std::string grossOffsetImageName = "GrossOffset.bip";  ///< gross offsets
+    std::string snrImageName = "snr.bip";                  ///< signal-to-noise ratio
+    std::string covImageName = "cov.bip";                  ///< covariance of the offsets
+    std::string peakValueImageName = "peakValue.bip";      ///< normalized correlation peak value
+    bool mergeGrossOffset = false;      ///< whether to add the gross offsets to the dense offsets
 
-    // strides between chips/windows
-    int skipSampleDownRaw;   ///< Skip size between neighboring windows in Down direction (original size)
-    int skipSampleAcrossRaw; ///< Skip size between neighboring windows in across direction (original size)
+    // image i/o
+    bool useMmap = true;                ///< unused (raw images are always read with a memory map)
+    int mmapSizeInGB = 1;               ///< size of the memory map (raw images) or of the cache of decoded chunks (HDF5 images)
 
-    // Zoom in region near location of max correlation
-    int zoomWindowSize;      ///< Zoom-in window size in correlation surface (same for down and across directions)
-    int corrZoomWindowSize;  ///< zoomWindowSize used (limited by the search range in the two-pass workflow)
-    int halfZoomWindowSizeRaw; ///<  half of corrZoomWindowSize/rawDataOversamplingFactor
+    // ==== computed by setupParameters ====
 
-    int corrSurfaceOverSamplingFactor;  ///< Oversampling factor for interpolating correlation surface
-    OversamplingMethod corrSurfaceOverSamplingMethod;  ///< correlation surface oversampling method: FFT (default) or sinc
+    int numberWindows = 0;              ///< numberWindowDown*numberWindowAcross
+    int windowsDownInChunk = 0;         ///< number of windows in a chunk used (down)
+    int windowsAcrossInChunk = 0;       ///< number of windows in a chunk used (across)
+    int numberChunkDown = 0;            ///< number of chunks (down)
+    int numberChunkAcross = 0;          ///< number of chunks (across)
+    int numberChunks = 0;               ///< total number of chunks
+
+    // window sizes in pixels of the images
+    int windowSizeHeightRawEnlarged = 0;  ///< reference window height loaded (enlarged to the search window in the one-pass workflow)
+    int windowSizeWidthRawEnlarged = 0;   ///< reference window width loaded (enlarged to the search window in the one-pass workflow)
+    int searchWindowSizeHeightRaw = 0;    ///< search window height (including the zoom-in margin in the one-pass workflow)
+    int searchWindowSizeWidthRaw = 0;     ///< search window width (including the zoom-in margin in the one-pass workflow)
+
+    // window sizes after the antialiasing oversampling
+    int windowSizeHeight = 0;           ///< reference window height
+    int windowSizeWidth = 0;            ///< reference window width
+    int windowSizeHeightEnlarged = 0;   ///< reference window height enlarged (one-pass workflow)
+    int windowSizeWidthEnlarged = 0;    ///< reference window width enlarged (one-pass workflow)
+    int searchWindowSizeHeight = 0;     ///< search window height
+    int searchWindowSizeWidth = 0;      ///< search window width
 
     // correlation surface
-    int2 corrWindowSize; // 2*halfSearchRange + 1
-    int2 corrZoomInSize; // zoomWindowSize+1
-    int2 corrZoomInOversampledSize; // corrZoomInSize * oversamplingFactor
-    int2 corrZoomInOversampledSearchStart; // search start position in the oversampled correlation surface
-    int2 corrZoomInOversampledSearchRange; // search range in the oversampled correlation surface
+    int corrZoomWindowSize = 0;         ///< zoomWindowSize used (limited by the search range in the two-pass workflow)
+    int halfZoomWindowSizeRaw = 0;      ///< corrZoomWindowSize/(2*rawDataOversamplingFactor)
+    int2 corrWindowSize{};              ///< correlation surface size (one-pass workflow)
+    int2 corrZoomInSize{};              ///< zoom-in correlation surface size: corrZoomWindowSize+1 (one-pass workflow)
+    int2 corrZoomInOversampledSize{};   ///< corrZoomInSize*corrSurfaceOverSamplingFactor (one-pass workflow)
+    int2 corrZoomInOversampledSearchStart{};  ///< peak search start in the oversampled correlation surface (one-pass workflow)
+    int2 corrZoomInOversampledSearchRange{};  ///< peak search range in the oversampled correlation surface (one-pass workflow)
+    int corrRawZoomInHeight = 0;        ///< correlation surface height (at the raw spacing) for the SNR
+    int corrRawZoomInWidth = 0;         ///< correlation surface width (at the raw spacing) for the SNR
 
-    int corrStatWindowSize;     ///< correlation surface size used to estimate snr
+    // first pass of the two-pass workflow
+    int searchWindowSizeHeightRawZoomIn = 0;  ///< search window height of the second pass
+    int searchWindowSizeWidthRawZoomIn = 0;   ///< search window width of the second pass
 
-    // parameters used in the first pass in two-pass workflow
-    // @TODO move them to workflow specific files
-    int searchWindowSizeHeightRawZoomIn;
-    int searchWindowSizeWidthRawZoomIn;
-    int corrRawZoomInHeight;    ///< correlation surface height used for oversampling
-    int corrRawZoomInWidth;     ///< correlation surface width used for oversampling
+    // loading offsets, depending on the workflow
+    int referenceLoadingOffsetDown = 0, referenceLoadingOffsetAcross = 0;  ///< reference (e.g., matching the secondary)
+    int secondaryLoadingOffsetDown = 0, secondaryLoadingOffsetAcross = 0;  ///< secondary (e.g., the search range)
 
+    // ==== computed by setStartPixels ====
 
-    //reference image
-    std::string referenceImageName;    ///< reference SLC image name
-    std::string referenceImageReader;  ///< reference image reader: auto (default), raw or hdf5
-    DataType referenceImageDataType;   ///< reference image pixel type: complex64 (default) or float32
-    int referenceImageHeight;          ///< reference image height
-    int referenceImageWidth;           ///< reference image width
-
-    //secondary image
-    std::string secondaryImageName;     ///< secondary SLC image name
-    std::string secondaryImageReader;   ///< secondary image reader: auto (default), raw or hdf5
-    DataType secondaryImageDataType;    ///< secondary image pixel type: complex64 (default) or float32
-    int secondaryImageHeight;           ///< secondary image height
-    int secondaryImageWidth;            ///< secondary image width
-
-    // total number of chips/windows
-    int numberWindowDown;           ///< number of total windows (down)
-    int numberWindowAcross;         ///< number of total windows (across)
-    int numberWindows; 				///< numberWindowDown*numberWindowAcross
-
-    // number of chips/windows in a batch/chunk
-    int numberWindowDownInChunk;    ///< number of windows processed in a chunk (down); 0 = automatic
-    int numberWindowAcrossInChunk;  ///< number of windows processed in a chunk (across); 0 = automatic
-    int windowsDownInChunk;         ///< number of windows in a chunk used (down), set by setupParameters
-    int windowsAcrossInChunk;       ///< number of windows in a chunk used (across), set by setupParameters
-    int numberChunkDown;            ///< number of chunks (down)
-    int numberChunkAcross;          ///< number of chunks (across)
-    int numberChunks;               ///< total number of chunks
-
-    int useMmap;                    ///< whether to use mmap 0=not 1=yes (default = 0)
-    int mmapSizeInGB;               ///< size for mmap buffer(useMmap=1) or a cpu memory buffer (useMmap=0)
-
-    int referenceStartPixelDown0;    ///< first starting pixel in reference image (down)
-    int referenceStartPixelAcross0;  ///< first starting pixel in reference image (across)
     std::vector<int> referenceStartPixelDown;    ///< reference starting pixels for each window (down)
     std::vector<int> referenceStartPixelAcross;  ///< reference starting pixels for each window (across)
     std::vector<int> secondaryStartPixelDown;    ///< secondary starting pixels for each window (down)
     std::vector<int> secondaryStartPixelAcross;  ///< secondary starting pixels for each window (across)
-    int grossOffsetDown0;       ///< gross offset static component (down)
-    int grossOffsetAcross0;     ///< gross offset static component (across)
-    std::vector<int> grossOffsetDown;		///< Gross offsets between reference and secondary windows (down)
-    std::vector<int> grossOffsetAcross;     ///< Gross offsets between reference and secondary windows (across)
-    int mergeGrossOffset;       ///< whether to merge gross offsets into the final offsets
+    std::vector<int> grossOffsetDown;            ///< gross offsets between reference and secondary windows (down)
+    std::vector<int> grossOffsetAcross;          ///< gross offsets between reference and secondary windows (across)
 
     std::vector<int> referenceChunkStartPixelDown;    ///< reference starting pixels for each chunk (down)
     std::vector<int> referenceChunkStartPixelAcross;  ///< reference starting pixels for each chunk (across)
@@ -149,44 +153,37 @@ public:
     std::vector<int> referenceChunkWidth;    ///< reference chunk width
     std::vector<int> secondaryChunkHeight;   ///< secondary chunk height
     std::vector<int> secondaryChunkWidth;    ///< secondary chunk width
-    bool chunkStartPixelsSet = false; ///< whether the window/chunk starting pixels are set
-    int maxReferenceChunkHeight, maxReferenceChunkWidth; ///< max reference chunk size
-    int maxSecondaryChunkHeight, maxSecondaryChunkWidth; ///< max secondary chunk size
+    int maxReferenceChunkHeight = 0, maxReferenceChunkWidth = 0;  ///< max reference chunk size
+    int maxSecondaryChunkHeight = 0, maxSecondaryChunkWidth = 0;  ///< max secondary chunk size
+    bool chunkStartPixelsSet = false;        ///< whether the window/chunk starting pixels are set
 
-    int referenceLoadingOffsetDown, referenceLoadingOffsetAcross; ///< reference loading offset, depending on workflow (e.g, matching secondary)
-    int secondaryLoadingOffsetDown, secondaryLoadingOffsetAcross; ///< secondary loading offset, depending on workflow (e.g., with extra pads)
+    // ==== methods ====
 
-    std::string grossOffsetImageName;  ///< gross offset output filename
-    std::string offsetImageName;       ///< Offset fields output filename
-    std::string snrImageName;          ///< Output SNR filename
-    std::string covImageName;          ///< Output variance filename
-    std::string peakValueImageName;      ///< Output normalized correlation surface peak value filename
+    /// compute the sizes of the windows, correlation surfaces and chunks from the inputs
+    void setupParameters();
 
-    // Class constructor and default parameters setter
-    cuAmpcorParameter();
-
-    // Allocate various arrays after the number of Windows is given
-    void allocateArrays();
-
-
-    // Three methods to set reference/secondary starting pixels and gross offsets from input reference start pixel(s) and gross offset(s)
-    // 1 (int *, int *, int *, int *): varying reference start pixels and gross offsets
-    // 2 (int, int, int *, int *): fixed reference start pixel (first window) and varying gross offsets
-    // 3 (int, int, int, int): fixed reference start pixel(first window) and fixed gross offsets
+    /// set the starting pixels of the windows and their gross offsets (after setupParameters):
+    /// (int *, int *, int *, int *): varying reference start pixels and gross offsets
+    /// (int, int, int *, int *): first reference start pixel and varying gross offsets
+    /// (int, int, int, int): first reference start pixel and constant gross offsets
     void setStartPixels(const int*, const int*, const int*, const int*);
     void setStartPixels(int, int, const int*, const int*);
     void setStartPixels(int, int, int, int);
-    // set starting pixels for each chunk
-    void setChunkStartPixels();
-    // check whether all chunks/windows are within the image range
-    void checkPixelInImageRange();
+
+    /// warn about windows outside the images (debug builds only)
+    void checkPixelInImageRange() const;
+    /// throw if setupParameters is not called
     void checkArraysAllocated() const;
+    /// throw if setupParameters or setStartPixels is not called
     void checkReadyToRun() const;
-    // Process other parameters after Python Input
-    void setupParameters();
+
+private:
     void _setupParameters_TwoPass();
     void _setupParameters_OnePass();
-
+    // (re)size the arrays of the windows and chunks
+    void allocateArrays();
+    // set the starting pixels and sizes of the chunks
+    void setChunkStartPixels();
 };
 
 } // namespace

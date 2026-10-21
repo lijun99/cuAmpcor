@@ -120,15 +120,13 @@ void defOption(pybind11::class_<cls> &c, Setters &setters, const char *name,
         });
 }
 
-// a boolean flag (an int parameter, 0 or 1), set by a bool or an integer
+// a boolean flag, set by a bool or an integer
 void defFlag(pybind11::class_<cls> &c, Setters &setters, const char *name,
-             int cuAmpcorParameter::*member, const char *doc)
+             bool cuAmpcorParameter::*member, const char *doc)
 {
     defParam(c, setters, name, member, doc,
-        [](int value) { return value != 0; },
-        [](pybind11::handle value) {
-            return static_cast<int>(options().attr("_to_flag")(value).cast<bool>());
-        });
+        [](bool value) { return value; },
+        [](pybind11::handle value) { return options().attr("_to_flag")(value).cast<bool>(); });
 }
 
 void setConstantGrossOffset(cls& self, const int goDown, const int goAcross)
