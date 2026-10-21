@@ -14,6 +14,10 @@ DATA_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "data"
 # output files (name, number of bands)
 OUTPUTS = {"dense_offsets": 2, "gross_offsets": 2, "snr": 1,
            "covariance": 3, "correlation_peak": 1}
+# output file name -> ampcor parameter
+OUTPUT_PARAMS = {"dense_offsets": "offsetImageName", "gross_offsets": "grossOffsetImageName",
+                 "snr": "snrImageName", "covariance": "covImageName",
+                 "correlation_peak": "peakValueImageName"}
 
 
 def gpu_available():
@@ -67,29 +71,20 @@ def make_images(path, shape, shift, noise=0.3, seed=12345, dtype=np.complex64, b
     return ref_file, sec_file
 
 
-def configure_ampcor(impl, images, shape, outdir, n_windows=None, start=None,
-                     gross_offset=(0, 0), **params):
+def ampcor_params(images, shape, outdir, n_windows=None, start=None, **params):
     """
-    Configure ampcor (ready to run) with the default test parameters, updated with `params`
+    The default test parameters (python names), updated with `params`
 
     Parameters
     ----------
-    impl : 'cpu' or 'gpu'
     images : (reference, secondary) file names
     shape : (height, width) of the images
-    outdir : directory for the outputs
+    outdir : directory for the outputs (created)
     n_windows : (down, across) number of windows; default: fill the image
     start : (down, across) starting pixel of the first reference window;
         default: the half search range
-    gross_offset : (down, across) constant gross offset, or a pair of arrays
-        with varying gross offsets for each window
     params : other ampcor parameters (python names)
-
-    Returns
-    -------
-    the ampcor object, and the number of windows (down, across)
     """
-    ampcor = new_ampcor(impl)
     p = dict(windowSizeHeight=32, windowSizeWidth=64,
              halfSearchRangeDown=8, halfSearchRangeAcross=10,
              skipSampleDown=32, skipSampleAcross=32,
@@ -98,36 +93,63 @@ def configure_ampcor(impl, images, shape, outdir, n_windows=None, start=None,
              corrStatWindowSize=21, corrSurfaceZoomInWindow=8,
              corrSurfaceOverSamplingMethod=0, corrSurfaceOverSamplingFactor=64)
     p.update(params)
-    for key, value in p.items():
-        setattr(ampcor, key, value)
 
     height, width = shape
-    ampcor.referenceImageName, ampcor.secondaryImageName = images
-    ampcor.referenceImageHeight = ampcor.secondaryImageHeight = height
-    ampcor.referenceImageWidth = ampcor.secondaryImageWidth = width
+    p["referenceImageName"], p["secondaryImageName"] = images
+    p["referenceImageHeight"] = p["secondaryImageHeight"] = height
+    p["referenceImageWidth"] = p["secondaryImageWidth"] = width
 
-    hs = (ampcor.halfSearchRangeDown, ampcor.halfSearchRangeAcross)
+    hs = (p["halfSearchRangeDown"], p["halfSearchRangeAcross"])
     if start is None:
         start = hs
-    ampcor.referenceStartPixelDownStatic, ampcor.referenceStartPixelAcrossStatic = start
+    p["referenceStartPixelDownStatic"], p["referenceStartPixelAcrossStatic"] = start
     if n_windows is None:
-        n_windows = ((height - 2 * hs[0] - ampcor.windowSizeHeight) // ampcor.skipSampleDown,
-                     (width - 2 * hs[1] - ampcor.windowSizeWidth) // ampcor.skipSampleAcross)
-    ampcor.numberWindowDown, ampcor.numberWindowAcross = n_windows
+        n_windows = ((height - 2 * hs[0] - p["windowSizeHeight"]) // p["skipSampleDown"],
+                     (width - 2 * hs[1] - p["windowSizeWidth"]) // p["skipSampleAcross"])
+    p["numberWindowDown"], p["numberWindowAcross"] = n_windows
 
     os.makedirs(outdir, exist_ok=True)
-    ampcor.offsetImageName = os.path.join(str(outdir), "dense_offsets")
-    ampcor.grossOffsetImageName = os.path.join(str(outdir), "gross_offsets")
-    ampcor.snrImageName = os.path.join(str(outdir), "snr")
-    ampcor.covImageName = os.path.join(str(outdir), "covariance")
-    ampcor.peakValueImageName = os.path.join(str(outdir), "correlation_peak")
+    for name in OUTPUTS:
+        p[OUTPUT_PARAMS[name]] = os.path.join(str(outdir), name)
+    return p
 
+
+def configure_ampcor(impl, images, shape, outdir, n_windows=None, start=None,
+                     gross_offset=(0, 0), constructor=False, **params):
+    """
+    Configure ampcor (ready to run) with the default test parameters, updated with `params`
+
+    Parameters
+    ----------
+    impl : 'cpu' or 'gpu'
+    images, shape, outdir, n_windows, start, params : see ampcor_params
+    gross_offset : (down, across) constant gross offset, or a pair of arrays
+        with varying gross offsets for each window
+    constructor : whether to pass the parameters to the constructor, instead of
+        setting them, calling setupParams and setting the gross offsets
+
+    Returns
+    -------
+    the ampcor object, and the number of windows (down, across)
+    """
+    p = ampcor_params(images, shape, outdir, n_windows, start, **params)
+    n_windows = (p["numberWindowDown"], p["numberWindowAcross"])
+
+    if constructor:
+        cls = pycuampcor.PyCuAmpcor if impl == "gpu" else pycuampcor.PyCPUAmpcor
+        ampcor = cls(**p, grossOffsetDown=gross_offset[0], grossOffsetAcross=gross_offset[1])
+        return ampcor, n_windows
+
+    ampcor = new_ampcor(impl)
+    for key, value in p.items():
+        setattr(ampcor, key, value)
     ampcor.setupParams()
-    if np.isscalar(gross_offset[0]):
+    if np.isscalar(gross_offset[0]) and np.isscalar(gross_offset[1]):
         ampcor.setConstantGrossOffset(*gross_offset)
     else:
-        ampcor.setVaryingGrossOffset([int(v) for v in gross_offset[0]],
-                                     [int(v) for v in gross_offset[1]])
+        n = n_windows[0] * n_windows[1]
+        ampcor.setVaryingGrossOffset(*[[int(v) for v in np.broadcast_to(go, n)]
+                                       for go in gross_offset])
     return ampcor, n_windows
 
 

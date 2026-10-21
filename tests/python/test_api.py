@@ -6,7 +6,8 @@ import numpy as np
 import pytest
 
 import pycuampcor
-from conftest import configure_ampcor, make_images, needs_gpu, new_ampcor, run_ampcor
+from conftest import (configure_ampcor, make_images, needs_gpu, new_ampcor, read_outputs,
+                      run_ampcor)
 
 N = 384
 SHAPE = (N, N)
@@ -98,6 +99,69 @@ def test_varying_gross_offset(impl, tmp_path_factory, tmp_path):
     np.testing.assert_array_equal(out["gross_offsets"][..., 1], ga)
     err = out["dense_offsets"] - np.array(shift)
     assert np.all(np.abs(err) < 0.1)
+
+
+@pytest.mark.parametrize("workflow", [0, 1])
+def test_constructor(impl, images, tmp_path, workflow):
+    """Parameters given to the constructor give the same results as set one by one"""
+    n_windows = (8, 8)
+    gd = np.arange(64) % 3 - 1
+    for gross in [(1, -2), (gd, -gd), (gd, 1)]:
+        out = {constructor: run_ampcor(impl, images, SHAPE, tmp_path / str(constructor),
+                                       n_windows=n_windows, start=(20, 20), gross_offset=gross,
+                                       workflow=workflow, constructor=constructor)
+               for constructor in (False, True)}
+        for name in out[False]:
+            np.testing.assert_array_equal(out[True][name], out[False][name], err_msg=name)
+        np.testing.assert_array_equal(out[True]["gross_offsets"][..., 0],
+                                      np.broadcast_to(gross[0], 64).reshape(n_windows))
+        np.testing.assert_array_equal(out[True]["gross_offsets"][..., 1],
+                                      np.broadcast_to(gross[1], 64).reshape(n_windows))
+
+
+def test_constructor_parameters(impl, images, tmp_path):
+    cls = pycuampcor.PyCuAmpcor if impl == "gpu" else pycuampcor.PyCPUAmpcor
+    ampcor = cls(referenceImageName=tmp_path / "ref.slc", corrImageName="peak",
+                 windowSizeHeight=np.int32(48), numberWindowDown=3, numberWindowAcross=2)
+    assert ampcor.referenceImageName == str(tmp_path / "ref.slc")
+    assert ampcor.peakValueImageName == "peak"
+    assert ampcor.windowSizeHeight == 48
+    # the other parameters keep their default values
+    assert ampcor.windowSizeWidth == INT_PARAMS["windowSizeWidth"][1]
+    # set up: ready to run
+    with pytest.raises(RuntimeError, match="smaller than the image size|No such file|open"):
+        ampcor.runAmpcor()
+
+    with pytest.raises(TypeError, match="windowSize"):
+        cls(windowSize=32)
+    with pytest.raises(TypeError, match="windowSizeHeight"):
+        cls(windowSizeHeight="32")
+    with pytest.raises(TypeError, match="referenceImageName"):
+        cls(referenceImageName=1)
+    with pytest.raises(TypeError, match="windowSizeWidth"):
+        ampcor.windowSizeWidth = 1.5
+    with pytest.raises(ValueError, match="number of windows"):
+        cls(numberWindowDown=2, grossOffsetDown=[0, 0, 0])
+    with pytest.raises(TypeError, match="gross offsets"):
+        cls(grossOffsetDown=1.5)
+    with pytest.raises(TypeError, match="gross offsets"):
+        cls(grossOffsetAcross=[0.5])
+
+
+def test_setup_repeated(impl, images, tmp_path):
+    """setupParams can be called again (e.g., after the constructor) without changes"""
+    for workflow in (0, 1):
+        once = run_ampcor(impl, images, SHAPE, tmp_path / "once", workflow=workflow)
+        ampcor, n_windows = configure_ampcor(impl, images, SHAPE, tmp_path / "again",
+                                             workflow=workflow, constructor=True)
+        ampcor.setupParams()
+        ampcor.setupParams()
+        assert (ampcor.halfSearchRangeDown, ampcor.halfSearchRangeAcross) == (8, 10)
+        ampcor.setConstantGrossOffset(0, 0)
+        ampcor.runAmpcor()
+        again = read_outputs(tmp_path / "again", n_windows, ampcor.isDoublePrecision())
+        for name in once:
+            np.testing.assert_array_equal(again[name], once[name], err_msg=name)
 
 
 def test_real_images(impl, tmp_path_factory, tmp_path):
