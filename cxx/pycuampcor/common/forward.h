@@ -29,6 +29,12 @@ namespace pycuampcor {
     class Hdf5SlcImage;
     // the chunks of the layers processed together (cuAmpcorLayers.h)
     struct cuAmpcorChunkFootprint;
+    // the interfaces of the workers, for the arrays arrayT: the normalizer of the correlation
+    // surfaces (cuNormalizer.h), the oversampler of the surfaces around the peaks (cuSurfaceOverSampler.h)
+    template <template <typename> class arrayT>
+    class cuNormalizer;
+    template <template <typename> class arrayT>
+    class cuSurfaceOverSampler;
     // the processors of a chunk, for each workflow, on the arrays arrayT (cuAmpcorProcessor*.h)
     template <template <typename> class arrayT>
     class cuAmpcorProcessor;

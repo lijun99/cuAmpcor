@@ -1,54 +1,47 @@
-/*
- * @file cuNormalizer.h
- * @brief normalize the correlation surface
+/**
+ * @file  cuCorrNormalizer.h
+ * @brief The normalizers of correlation surfaces (CUDA package; see cuNormalizer.h)
  *
- * cuNormalizeProcessor is an abstract class for processors to normalize the correlation surface.
- * It has different implementations wrt different image sizes.
- * cuNormalizeFixed<64/128/.../1024> use a shared memory accelerated algorithm, which are limited by the number of cuda threads in a block.
- * cuNormalizeSAT uses the sum area table based algorithm, which applies to any size (used for >1024).
- * cuNormalizer is a wrapper class which determines which processor to use.
+ * cuNormalizeFixed<64/128/.../1024> sums in shared memory, with as many threads in a block as the
+ * size; cuNormalizeSAT uses sum area tables, for any size (used beyond 1024).
  */
 
 #pragma once
 
 #include "forward.h"
+#include "arrayTraits.h"
+#include "cuNormalizer.h"
 
 namespace pycuampcor::cuda {
 
-/**
- * Abstract class interface for correlation surface normalization processor
- * with different implementations
- */
-class cuNormalizeProcessor {
+/// the normalizer of the correlation surfaces of count windows, with secondary windows of
+/// secondaryNX x secondaryNY: cuNormalizeFixed for the smallest size that fits, or cuNormalizeSAT
+std::unique_ptr<cuNormalizer<cuArrays>> newCuNormalizer(int secondaryNX, int secondaryNY, int count);
+
+/// the normalizer summing in shared memory, for windows of up to Size pixels along a side
+template <int Size>
+class cuNormalizeFixed : public cuNormalizer<cuArrays> {
 public:
-    // default constructor and destructor
-    cuNormalizeProcessor() = default;
-    virtual ~cuNormalizeProcessor() = default;
-    // execute interface
-    virtual void execute(cuArrays<real_type> * correlation, cuArrays<real_type> *reference, cuArrays<real_type> *secondary, cudaStream_t stream) = 0;
+    /// normalize the correlation surfaces (see cuNormalizer::execute)
+    void execute(cuArrays<real_type> *correlation, cuArrays<real_type> *reference,
+        cuArrays<real_type> *secondary, cudaStream_t stream) override;
 };
 
-// factory with the secondary dimension
-std::unique_ptr<cuNormalizeProcessor> newCuNormalizer(int NX, int NY, int count);
-
-template<int Size>
-class cuNormalizeFixed : public cuNormalizeProcessor
-{
+/// the normalizer with sum area tables of the secondary windows
+class cuNormalizeSAT : public cuNormalizer<cuArrays> {
 public:
-    void execute(cuArrays<real_type> * correlation, cuArrays<real_type> *reference, cuArrays<real_type> *search, cudaStream_t stream) override;
-};
-
-class cuNormalizeSAT : public cuNormalizeProcessor
-{
-private:
-    std::unique_ptr<cuArrays<real_type>> referenceSum2;
-    std::unique_ptr<cuArrays<real_type>> secondarySAT;
-    std::unique_ptr<cuArrays<real_type>> secondarySAT2;
-
-public:
+    /// a normalizer with the sum area tables for count secondary windows of secondaryNX x secondaryNY
     cuNormalizeSAT(int secondaryNX, int secondaryNY, int count);
-    ~cuNormalizeSAT();
-    void execute(cuArrays<real_type> * correlation, cuArrays<real_type> *reference, cuArrays<real_type> *search, cudaStream_t stream) override;
+    ~cuNormalizeSAT() override;
+
+    /// normalize the correlation surfaces (see cuNormalizer::execute)
+    void execute(cuArrays<real_type> *correlation, cuArrays<real_type> *reference,
+        cuArrays<real_type> *secondary, cudaStream_t stream) override;
+
+private:
+    std::unique_ptr<cuArrays<real_type>> referenceSum2;   ///< the sums of the squares of the reference windows
+    std::unique_ptr<cuArrays<real_type>> secondarySAT;    ///< the sum area tables of the secondary windows
+    std::unique_ptr<cuArrays<real_type>> secondarySAT2;   ///< the same, of their squares
 };
 
 } // namespace

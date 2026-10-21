@@ -31,5 +31,10 @@
 #endif
 // layers processed together
 #include "cuAmpcorLayers.h"
+// the processors on the arrays of a package: what goes with the arrays, the interfaces of the
+// workers, and the workflows (templates, instantiated by the packages)
+#include "cuAmpcorArrayTraits.h"
+#include "cuNormalizer.h"
+#include "cuSurfaceOverSampler.h"
 
 //end of file

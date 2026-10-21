@@ -10,6 +10,7 @@
 #include "cuAmpcorProcessorTwoPass.h"
 #include "cuAmpcorOptions.h"
 #include "cuAmpcorParameter.h"
+#include "cuNormalizer.h"
 #include "logging.h"
 
 namespace pycuampcor {

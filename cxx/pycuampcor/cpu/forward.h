@@ -22,7 +22,6 @@ namespace pycuampcor::cpu {
     // cross-correlation in the frequency domain (cuCorrFrequency.h)
     class cuFreqCorrelator;
     // normalizers of the correlation surfaces (cuCorrNormalizer.h)
-    class cuNormalizeProcessor;
     class cuNormalizeSAT;
     // the chunks of the images loaded for processing (cuAmpcorChunkLoader.h)
     struct cuAmpcorLoadedChunk;

@@ -11,7 +11,7 @@
 
 namespace pycuampcor::cpu {
 
-std::unique_ptr<cuNormalizeProcessor>
+std::unique_ptr<cuNormalizer<cuArrays>>
 newCuNormalizer(int secondaryNX, int secondaryNY, int count)
 {
     // the sum area table algorithm applies to all sizes

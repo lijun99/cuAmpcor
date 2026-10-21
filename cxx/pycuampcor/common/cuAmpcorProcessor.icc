@@ -13,6 +13,8 @@
 #include "cuAmpcorProcessorOnePass.h"
 #include "cuAmpcorOptions.h"
 #include "cuAmpcorParameter.h"
+#include "cuNormalizer.h"
+#include "cuSurfaceOverSampler.h"
 
 namespace pycuampcor {
 
@@ -188,31 +190,19 @@ void cuAmpcorProcessor<arrayT>::correlate(array_type<real_type> *reference,
 template <template <typename> class arrayT>
 void cuAmpcorProcessor<arrayT>::createSurfaceOversampler(int height, int width)
 {
-    const int factor = param->corrSurfaceOverSamplingFactor;
-    if (param->corrSurfaceOverSamplingMethod == OversamplingMethod::Sinc)
-        corrSincOverSampler = std::make_unique<sinc_oversampler_type>(factor, stream);
-    else
-        corrOverSampler = std::make_unique<oversampler_r2r_type>(height, width,
-            height*factor, width*factor, param->windowsDownInChunk*param->windowsAcrossInChunk, stream);
+    surfaceOverSampler = traits::newSurfaceOverSampler(param->corrSurfaceOverSamplingMethod,
+        height, width, param->corrSurfaceOverSamplingFactor, param->rawDataOversamplingFactor,
+        param->windowsDownInChunk*param->windowsAcrossInChunk, stream);
 }
 
 /**
  * Oversample the correlation surfaces around the peak
  */
 template <template <typename> class arrayT>
-template <typename shiftT>
 void cuAmpcorProcessor<arrayT>::oversampleSurface(array_type<real_type> *surface,
-    array_type<real_type> *oversampled, const shiftT &shift)
+    array_type<real_type> *oversampled, array_type<int2_type> *shift)
 {
-    if (param->corrSurfaceOverSamplingMethod == OversamplingMethod::Sinc) {
-        // the sinc interpolation only computes (-i_sincwindow, i_sincwindow)*oversampling factor
-        // around the center: the peak, if shifted from the center of the surface
-        corrSincOverSampler->execute(surface, oversampled, shift,
-            param->corrSurfaceOverSamplingFactor*param->rawDataOversamplingFactor);
-    }
-    else {
-        corrOverSampler->execute(surface, oversampled);
-    }
+    surfaceOverSampler->execute(surface, oversampled, shift);
     dump(oversampled, "r_corrBatchZoomInOverSampled");
 }
 

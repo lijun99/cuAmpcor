@@ -83,9 +83,6 @@ private:
     std::unique_ptr<array_type<real_type>> r_corrBatchZoomInOverSampled;    ///< the oversampled surfaces
     std::unique_ptr<freq_correlator_type> cuCorrFreqDomain_OverSampled;     ///< the correlator (frequency domain)
     std::unique_ptr<normalizer_type> corrNormalizerOverSampled;             ///< the normalizer
-    /// the shift of the peak from the center of the surfaces around the peak: none, as they are
-    /// extracted around the peak
-    int2_type maxLocShift;
 };
 
 } // namespace

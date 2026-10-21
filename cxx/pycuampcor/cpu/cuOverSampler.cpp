@@ -10,6 +10,10 @@
 #include "cuArraysPadding.h"
 #include "indexing.h"
 #include "cuArrays.h"
+#include "cuSincOverSampler.h"
+#include "cuSurfaceOverSampler.h"
+#include "arrayTraits.h"
+#include "cuAmpcorOptions.h"
 // dependencies
 
 namespace pycuampcor::cpu {
@@ -176,6 +180,61 @@ void cuOverSamplerR2R::execute(cuArrays<real_type> *imagesIn, cuArrays<real_type
 
 /// destructor
 cuOverSamplerR2R::~cuOverSamplerR2R() = default;
+
+namespace {
+
+/// the FFT oversampler of correlation surfaces (the whole surfaces)
+class FFTSurfaceOverSampler : public cuSurfaceOverSampler<cuArrays> {
+public:
+    /// an oversampler of count surfaces of height x width, by factor
+    FFTSurfaceOverSampler(int height, int width, int factor, int count, stream_t stream)
+        : oversampler(height, width, height*factor, width*factor, count, stream) {}
+
+    /// oversample the surfaces (the peaks need no shift: the whole surfaces are oversampled)
+    void execute(cuArrays<real_type> *surfaces, cuArrays<real_type> *oversampled,
+        cuArrays<int2_type> *) override
+    {
+        oversampler.execute(surfaces, oversampled);
+    }
+
+private:
+    cuOverSamplerR2R oversampler;   ///< the FFT oversampler
+};
+
+/// the sinc oversampler of correlation surfaces (around their peaks only)
+class SincSurfaceOverSampler : public cuSurfaceOverSampler<cuArrays> {
+public:
+    /// an oversampler by factor; the peaks are shifted by factor*rawFactor
+    SincSurfaceOverSampler(int factor, int rawFactor, stream_t stream)
+        : oversampler(factor, stream), shiftFactor(factor*rawFactor) {}
+
+    /// oversample the surfaces around their peaks, shifted from the centers by shift (or not, if nullptr)
+    void execute(cuArrays<real_type> *surfaces, cuArrays<real_type> *oversampled,
+        cuArrays<int2_type> *shift) override
+    {
+        if (shift)
+            oversampler.execute(surfaces, oversampled, shift, shiftFactor);
+        else
+            oversampler.execute(surfaces, oversampled, make_int2(0, 0), shiftFactor);
+    }
+
+private:
+    cuSincOverSamplerR2R oversampler;   ///< the sinc oversampler
+    int shiftFactor;                    ///< the oversampling of the shifts of the peaks
+};
+
+} // namespace
+
+/**
+ * An oversampler of correlation surfaces around their peaks: FFT or sinc, by method
+ */
+std::unique_ptr<cuSurfaceOverSampler<cuArrays>> newSurfaceOverSampler(OversamplingMethod method,
+    int height, int width, int factor, int rawFactor, int count, stream_t stream)
+{
+    if (method == OversamplingMethod::Sinc)
+        return std::make_unique<SincSurfaceOverSampler>(factor, rawFactor, stream);
+    return std::make_unique<FFTSurfaceOverSampler>(height, width, factor, count, stream);
+}
 
 } // namespace
 // end of file

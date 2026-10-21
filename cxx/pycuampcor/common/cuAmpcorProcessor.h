@@ -43,9 +43,8 @@ public:
     /// the workers
     using freq_correlator_type = typename traits::freq_correlator_type;
     using oversampler_c2c_type = typename traits::oversampler_c2c_type;
-    using oversampler_r2r_type = typename traits::oversampler_r2r_type;
-    using sinc_oversampler_type = typename traits::sinc_oversampler_type;
     using normalizer_type = typename traits::normalizer_type;
+    using surface_oversampler_type = typename traits::surface_oversampler_type;
 
     /// a processor writing to the output images
     /// @param param the parameters (set up)
@@ -102,9 +101,8 @@ protected:
     std::unique_ptr<array_type<real_type>> r_corrBatchSum;          ///< their sum
     std::unique_ptr<array_type<int>> i_corrBatchValidCount;         ///< their count
 
-    // the oversampler of the correlation surface around the peak (FFT or sinc)
-    std::unique_ptr<oversampler_r2r_type> corrOverSampler;          ///< FFT
-    std::unique_ptr<sinc_oversampler_type> corrSincOverSampler;     ///< sinc
+    /// the oversampler of the correlation surfaces around the peaks (FFT or sinc)
+    std::unique_ptr<surface_oversampler_type> surfaceOverSampler;
 
     /// set the index of the current chunk, and its number of windows
     void setIndex(int idxDown, int idxAcross);
@@ -140,14 +138,13 @@ protected:
     /// by corrSurfaceOverSamplingFactor (FFT or sinc, by corrSurfaceOverSamplingMethod)
     void createSurfaceOversampler(int height, int width);
 
-    /// oversample the correlation surfaces around the peak
-    /// @param surface the correlation surfaces around the peak
+    /// oversample the correlation surfaces around the peaks
+    /// @param surface the correlation surfaces around the peaks
     /// @param[out] oversampled the oversampled correlation surfaces
-    /// @param shift the shift of the peak from the center of the surface, for the sinc
-    ///     oversampling: an int2 for all windows, or an array of int2 for each window
-    template <typename shiftT>
+    /// @param shift the shift of each peak from the center of its surface (the sinc oversampler
+    ///     computes only around the peak), or nullptr if the peaks are at the centers
     void oversampleSurface(array_type<real_type> *surface, array_type<real_type> *oversampled,
-        const shiftT &shift);
+        array_type<int2_type> *shift);
 
     /// write the results of the current chunk (offsets, SNR, covariance, peak) to the output images
     void writeResults();

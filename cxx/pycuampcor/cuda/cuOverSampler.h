@@ -55,6 +55,12 @@ public:
     ~cuOverSamplerR2R();
 };
 
+/// an oversampler of count correlation surfaces of height x width around their peaks, by factor:
+/// FFT (cuOverSamplerR2R) or sinc (cuSincOverSamplerR2R), by method; with rawFactor, the
+/// oversampling of the windows (the sinc oversampler shifts the peaks by factor*rawFactor)
+std::unique_ptr<cuSurfaceOverSampler<cuArrays>> newSurfaceOverSampler(OversamplingMethod method,
+    int height, int width, int factor, int rawFactor, int count, cudaStream_t stream);
+
 } // namespace
 // end of file
 

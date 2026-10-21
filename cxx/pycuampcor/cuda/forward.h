@@ -22,7 +22,6 @@ namespace pycuampcor::cuda {
     // cross-correlation in the frequency domain (cuCorrFrequency.h)
     class cuFreqCorrelator;
     // normalizers of the correlation surfaces (cuCorrNormalizer.h)
-    class cuNormalizeProcessor;
     template <int Size>
     class cuNormalizeFixed;
     class cuNormalizeSAT;

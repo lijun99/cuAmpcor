@@ -12,7 +12,7 @@
 
 namespace pycuampcor::cuda {
 
-std::unique_ptr<cuNormalizeProcessor>
+std::unique_ptr<cuNormalizer<cuArrays>>
 newCuNormalizer(int secondaryNX, int secondaryNY, int count)
 {
     // depending on NY, choose different processor

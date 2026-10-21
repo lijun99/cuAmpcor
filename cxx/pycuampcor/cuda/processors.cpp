@@ -26,6 +26,20 @@
 #include "cuAmpcorChunkLoader.h"
 #include "float2.h"
 
+// the factories of the workers, for the processors
+std::unique_ptr<pycuampcor::array_traits<pycuampcor::cuda::cuArrays>::normalizer_type>
+pycuampcor::array_traits<pycuampcor::cuda::cuArrays>::newNormalizer(int height, int width, int count)
+{
+    return cuda::newCuNormalizer(height, width, count);
+}
+
+std::unique_ptr<pycuampcor::array_traits<pycuampcor::cuda::cuArrays>::surface_oversampler_type>
+pycuampcor::array_traits<pycuampcor::cuda::cuArrays>::newSurfaceOverSampler(OversamplingMethod method,
+    int height, int width, int factor, int rawFactor, int count, stream_type stream)
+{
+    return cuda::newSurfaceOverSampler(method, height, width, factor, rawFactor, count, stream);
+}
+
 // the processors
 #include "cuAmpcorProcessor.icc"
 #include "cuAmpcorProcessorTwoPass.icc"

@@ -10,6 +10,7 @@
 #include "cuAmpcorProcessorOnePass.h"
 #include "cuAmpcorOptions.h"
 #include "cuAmpcorParameter.h"
+#include "cuNormalizer.h"
 #include "logging.h"
 
 namespace pycuampcor {
@@ -83,7 +84,8 @@ void cuAmpcorProcessorOnePass<arrayT>::run(int idxDown, int idxAcross, const chu
     dump(r_covValue.get(), "r_covValue");
 
     // the oversampled surfaces around the peaks, and their peaks within +/- 1 pixel of the center
-    oversampleSurface(r_corrBatchZoomIn.get(), r_corrBatchZoomInOverSampled.get(), maxLocShift);
+    // (the surfaces are extracted around their peaks: no shift)
+    oversampleSurface(r_corrBatchZoomIn.get(), r_corrBatchZoomInOverSampled.get(), nullptr);
     const auto searchStart = traits::make_int2(param->corrZoomInOversampledSearchStart.x,
         param->corrZoomInOversampledSearchStart.y);
     const auto searchRange = traits::make_int2(param->corrZoomInOversampledSearchRange.x,
@@ -113,8 +115,7 @@ template <template <typename> class arrayT>
 cuAmpcorProcessorOnePass<arrayT>::cuAmpcorProcessorOnePass(const cuAmpcorParameter *param_,
     array_type<real2_type> *offsetImage, array_type<real_type> *snrImage,
     array_type<real3_type> *covImage, array_type<real_type> *peakValueImage, stream_type stream_)
-    : base_type(param_, offsetImage, snrImage, covImage, peakValueImage, stream_),
-      maxLocShift(base_type::traits::make_int2(0, 0))
+    : base_type(param_, offsetImage, snrImage, covImage, peakValueImage, stream_)
 {
     using traits = typename base_type::traits;
     const int down = param->windowsDownInChunk;
