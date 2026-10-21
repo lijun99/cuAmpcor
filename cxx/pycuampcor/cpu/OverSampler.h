@@ -10,6 +10,7 @@
 #pragma once
 
 #include "forward.h"
+#include "ArraysView.h"
 #include "fftwUtil.h"
 
 namespace pycuampcor::cpu {
@@ -31,7 +32,7 @@ public:
      // set stream
      void setStream(stream_t stream_);
      // execute oversampling
-     void execute(array_type<complex_type> *imagesIn, array_type<complex_type> *imagesOut);
+     void execute(ArraysView<const complex_type> imagesIn, ArraysView<complex_type> imagesOut);
      // destructor
      ~cuOverSamplerC2C();
 };
@@ -55,7 +56,7 @@ public:
     cuOverSamplerR2R() = delete;
     cuOverSamplerR2R(int inNX, int inNY, int outNX, int outNY, int nImages, stream_t stream_);
     void setStream(stream_t stream_);
-    void execute(array_type<real_type> *imagesIn, array_type<real_type> *imagesOut);
+    void execute(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut);
     ~cuOverSamplerR2R();
 };
 

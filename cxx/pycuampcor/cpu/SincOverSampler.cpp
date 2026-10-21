@@ -7,7 +7,8 @@
 // my declaration
 #include "SincOverSampler.h"
 #include "float2.h"
-#include "Arrays.h"
+
+#include <cstring>
 
 // dependencies
 
@@ -133,13 +134,13 @@ static void sincInterpolation(const real_type *imageIn, const int inNX, const in
  * @param[in] rawOversamplingFactor the multiplier of the centerShift
  * @note rawOversamplingFactor is for the centerShift, not the signal oversampling factor
  */
-void cuSincOverSamplerR2R::execute(array_type<real_type> *imagesIn, array_type<real_type> *imagesOut,
-    array_type<int2> *centerShift, int rawOversamplingFactor)
+void cuSincOverSamplerR2R::execute(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut,
+    ArraysView<const int2> centerShift, int rawOversamplingFactor)
 {
-    const int inNX = imagesIn->height;
-    const int inNY = imagesIn->width;
-    const int outNX = imagesOut->height;
-    const int outNY = imagesOut->width;
+    const int inNX = imagesIn.height();
+    const int inNY = imagesIn.width();
+    const int outNX = imagesOut.height();
+    const int outNY = imagesOut.width();
 
     // only compute the overampled signals within a window
     const int i_int_range = i_sincwindow * i_covs;
@@ -148,22 +149,22 @@ void cuSincOverSamplerR2R::execute(array_type<real_type> *imagesIn, array_type<r
     const int i_int_startY = outNY/2 - i_int_range;
     const int i_int_size = 2*i_int_range + 1;
     // preset all pixels in out image to 0
-    imagesOut->setZero(stream);
+    std::memset((void *)imagesOut.data_handle(), 0, imagesOut.size()*sizeof(real_type));
 
-    for(int idxImage = 0; idxImage < imagesIn->count; idxImage++)
-        sincInterpolation(imagesIn->devData + static_cast<size_t>(idxImage)*imagesIn->size, inNX, inNY,
-            imagesOut->devData + static_cast<size_t>(idxImage)*imagesOut->size, outNX, outNY,
-            centerShift->devData[idxImage], rawOversamplingFactor,
+    for(int idxImage = 0; idxImage < imagesIn.count(); idxImage++)
+        sincInterpolation(imagesIn.array(idxImage).data_handle(), inNX, inNY,
+            imagesOut.array(idxImage).data_handle(), outNX, outNY,
+            centerShift[idxImage], rawOversamplingFactor,
             r_filter.data(), i_covs, i_decfactor, i_intplength, i_int_startX, i_int_startY, i_int_size);
 }
 
-void cuSincOverSamplerR2R::execute(array_type<real_type> *imagesIn, array_type<real_type> *imagesOut,
+void cuSincOverSamplerR2R::execute(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut,
     int2 centerShift, int rawOversamplingFactor)
 {
-    const int inNX = imagesIn->height;
-    const int inNY = imagesIn->width;
-    const int outNX = imagesOut->height;
-    const int outNY = imagesOut->width;
+    const int inNX = imagesIn.height();
+    const int inNY = imagesIn.width();
+    const int outNX = imagesOut.height();
+    const int outNY = imagesOut.width();
 
     // only compute the overampled signals within a window
     const int i_int_range = i_sincwindow * i_covs;
@@ -172,11 +173,11 @@ void cuSincOverSamplerR2R::execute(array_type<real_type> *imagesIn, array_type<r
     const int i_int_startY = outNY/2 - i_int_range;
     const int i_int_size = 2*i_int_range + 1;
     // preset all pixels in out image to 0
-    imagesOut->setZero(stream);
+    std::memset((void *)imagesOut.data_handle(), 0, imagesOut.size()*sizeof(real_type));
 
-    for(int idxImage = 0; idxImage < imagesIn->count; idxImage++)
-        sincInterpolation(imagesIn->devData + static_cast<size_t>(idxImage)*imagesIn->size, inNX, inNY,
-            imagesOut->devData + static_cast<size_t>(idxImage)*imagesOut->size, outNX, outNY,
+    for(int idxImage = 0; idxImage < imagesIn.count(); idxImage++)
+        sincInterpolation(imagesIn.array(idxImage).data_handle(), inNX, inNY,
+            imagesOut.array(idxImage).data_handle(), outNX, outNY,
             centerShift, rawOversamplingFactor,
             r_filter.data(), i_covs, i_decfactor, i_intplength, i_int_startX, i_int_startY, i_int_size);
 }

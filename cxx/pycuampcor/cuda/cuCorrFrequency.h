@@ -6,6 +6,7 @@
 #pragma once
 
 #include "forward.h"
+#include "ArraysView.h"
 #include "cufftPlan.h"
 
 // dependencies
@@ -31,7 +32,8 @@ public:
     // destructor
     ~cuFreqCorrelator();
     // executor
-    void execute(cuArrays<real_type> *templates, cuArrays<real_type> *images, cuArrays<real_type> *results);
+    void execute(ArraysView<const real_type> templates, ArraysView<const real_type> images,
+        ArraysView<real_type> results);
 };
 
 } // namespace

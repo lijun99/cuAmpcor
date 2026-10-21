@@ -34,7 +34,7 @@ void cuAmpcorProcessorOnePass<arrayT>::run(int idxDown, int idxAcross, const chu
     dump(c_referenceBatchRaw.get(), "c_referenceBatchRaw");
     cuDeramp(param.derampMethod, *c_referenceBatchRaw, param.derampAxis, stream);
     dump(c_referenceBatchRaw.get(), "c_referenceBatchRawDeramped");
-    referenceBatchOverSampler.execute(c_referenceBatchRaw.get(), c_referenceBatchOverSampled.get());
+    referenceBatchOverSampler.execute(*c_referenceBatchRaw, *c_referenceBatchOverSampled);
     const auto center = traits::make_int2(
         (c_referenceBatchOverSampled->height - r_referenceBatchOverSampled->height)/2,
         (c_referenceBatchOverSampled->width - r_referenceBatchOverSampled->width)/2);
@@ -50,7 +50,7 @@ void cuAmpcorProcessorOnePass<arrayT>::run(int idxDown, int idxAcross, const chu
     dump(c_secondaryBatchRaw.get(), "c_secondaryBatchRaw");
     cuDeramp(param.derampMethod, *c_secondaryBatchRaw, param.derampAxis, stream);
     dump(c_secondaryBatchRaw.get(), "c_secondaryBatchRawDeramped");
-    secondaryBatchOverSampler.execute(c_secondaryBatchRaw.get(), c_secondaryBatchOverSampled.get());
+    secondaryBatchOverSampler.execute(*c_secondaryBatchRaw, *c_secondaryBatchOverSampled);
     cuArraysAbs(*c_secondaryBatchOverSampled, *r_secondaryBatchOverSampled, stream);
     dump(c_secondaryBatchOverSampled.get(), "c_secondaryBatchOverSampled");
     dump(r_secondaryBatchOverSampled.get(), "r_secondaryBatchOverSampled");

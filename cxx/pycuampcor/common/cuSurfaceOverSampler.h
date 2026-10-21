@@ -12,6 +12,7 @@
 
 #include "forward.h"
 #include "cuAmpcorArrayTraits.h"
+#include "ArraysView.h"
 
 namespace pycuampcor {
 
@@ -28,9 +29,9 @@ public:
     /// @param surfaces the correlation surfaces around their peaks
     /// @param[out] oversampled the oversampled surfaces
     /// @param shift the shift of each peak from the center of its surface (the sinc oversampler
-    ///     computes only around the peak), or nullptr if the peaks are at the centers
-    virtual void execute(arrayT<real_type> *surfaces, arrayT<real_type> *oversampled,
-        arrayT<int2_type> *shift) = 0;
+    ///     computes only around the peak), or empty if the peaks are at the centers
+    virtual void execute(ArraysView<const real_type> surfaces, ArraysView<real_type> oversampled,
+        ArraysView<const int2_type> shift) = 0;
 };
 
 } // namespace

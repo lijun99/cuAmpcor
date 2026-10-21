@@ -11,6 +11,7 @@
 #pragma once
 
 #include "forward.h"
+#include "ArraysView.h"
 #include "cufftPlan.h"
 
 namespace pycuampcor::cuda {
@@ -32,7 +33,7 @@ public:
      // set cuda stream
      void setStream(cudaStream_t stream_);
      // execute oversampling
-     void execute(cuArrays<complex_type> *imagesIn, cuArrays<complex_type> *imagesOut);
+     void execute(ArraysView<const complex_type> imagesIn, ArraysView<complex_type> imagesOut);
      // destructor
      ~cuOverSamplerC2C();
 };
@@ -51,7 +52,7 @@ public:
     cuOverSamplerR2R() = delete;
     cuOverSamplerR2R(int inNX, int inNY, int outNX, int outNY, int nImages, cudaStream_t stream_);
     void setStream(cudaStream_t stream_);
-    void execute(cuArrays<real_type> *imagesIn, cuArrays<real_type> *imagesOut);
+    void execute(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut);
     ~cuOverSamplerR2R();
 };
 

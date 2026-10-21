@@ -14,8 +14,8 @@
 namespace pycuampcor::cuda {
 
 // coef*conj(image1)*image2, element-wise, in image1 (defined below)
-static void cuArraysElementMultiplyConjugate(cuArrays<complex_type> *image1,
-    cuArrays<complex_type> *image2, real_type coef, cudaStream_t stream);
+static void cuArraysElementMultiplyConjugate(ArraysView<complex_type> image1,
+    ArraysView<const complex_type> image2, real_type coef, cudaStream_t stream);
 
 /*
  * cuFreqCorrelator Constructor
@@ -74,23 +74,26 @@ cuFreqCorrelator::~cuFreqCorrelator() = default;
  * @param[out] results the correlation surfaces
  */
 
-void cuFreqCorrelator::execute(cuArrays<real_type> *templates, cuArrays<real_type> *images, cuArrays<real_type> *results)
+void cuFreqCorrelator::execute(ArraysView<const real_type> templates, ArraysView<const real_type> images,
+    ArraysView<real_type> results)
 {
     // pad the reference windows to the the size of search windows
-    cuArraysCopyPadded(*templates, *workT, stream);
+    cuArraysCopyPadded(templates, *workT, stream);
+    // the input of the (out-of-place) forward FFT is not written (cufft takes it as non-const)
+    real_type *imagesData = const_cast<real_type *>(images.data_handle());
     // forward fft to frequency domain
 #ifdef CUAMPCOR_DOUBLE
     checkCudaErrors(cufftExecD2Z(forwardPlan, workT->devData, workFM->devData));
-    checkCudaErrors(cufftExecD2Z(forwardPlan, images->devData, workFS->devData));
+    checkCudaErrors(cufftExecD2Z(forwardPlan, imagesData, workFS->devData));
 #else
     checkCudaErrors(cufftExecR2C(forwardPlan, workT->devData, workFM->devData));
-    checkCudaErrors(cufftExecR2C(forwardPlan, images->devData, workFS->devData));
+    checkCudaErrors(cufftExecR2C(forwardPlan, imagesData, workFS->devData));
 #endif
 
     // cufft doesn't normalize, so manually get the image size for normalization
-    real_type coef = 1.0/(images->size);
+    real_type coef = 1.0/(images.arraySize());
     // multiply reference with secondary windows in frequency domain
-    cuArraysElementMultiplyConjugate(workFM.get(), workFS.get(), coef, stream);
+    cuArraysElementMultiplyConjugate(*workFM, *workFS, coef, stream);
     // backward fft to get correlation surface in time domain
 #ifdef CUAMPCOR_DOUBLE
     checkCudaErrors(cufftExecZ2D(backwardPlan, workFM->devData, workT->devData));
@@ -98,7 +101,7 @@ void cuFreqCorrelator::execute(cuArrays<real_type> *templates, cuArrays<real_typ
     checkCudaErrors(cufftExecC2R(backwardPlan, workFM->devData, workT->devData));
 #endif
     // extract to get proper size of correlation surface
-    cuArraysCopyExtract(*workT, *results, make_int2(0, 0), stream);
+    cuArraysCopyExtract(*workT, results, make_int2(0, 0), stream);
     // all done
 }
 
@@ -109,7 +112,8 @@ inline __device__ complex_type cuMulConj(complex_type a, complex_type b, real_ty
 }
 
 // cuda kernel for cuArraysElementMultiplyConjugate
-__global__ void cudaKernel_elementMulConjugate(complex_type *ainout, complex_type *bin, int size, real_type coef)
+__global__ void cudaKernel_elementMulConjugate(ArraysView<complex_type> ainout,
+    ArraysView<const complex_type> bin, int size, real_type coef)
 {
     int idx = threadIdx.x + blockIdx.x*blockDim.x;
     if(idx < size) {
@@ -123,12 +127,13 @@ __global__ void cudaKernel_elementMulConjugate(complex_type *ainout, complex_typ
  * @param[in] image2, the secondary image
  * @param[in] coef, usually the normalization factor
  */
-static void cuArraysElementMultiplyConjugate(cuArrays<complex_type> *image1, cuArrays<complex_type> *image2, real_type coef, cudaStream_t stream)
+static void cuArraysElementMultiplyConjugate(ArraysView<complex_type> image1,
+    ArraysView<const complex_type> image2, real_type coef, cudaStream_t stream)
 {
-    int size = image1->getSize();
+    int size = image1.size();
     int threadsperblock = NTHREADS;
     int blockspergrid = divUp(size, threadsperblock);
-    cudaKernel_elementMulConjugate<<<blockspergrid, threadsperblock, 0, stream>>>(image1->devData, image2->devData, size, coef );
+    cudaKernel_elementMulConjugate<<<blockspergrid, threadsperblock, 0, stream>>>(image1, image2, size, coef );
     checkCudaAsyncErrors();
 }
 //end of file

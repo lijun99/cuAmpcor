@@ -19,6 +19,7 @@
 #pragma once
 
 #include "forward.h"
+#include "ArraysView.h"
 
 // dependencites
 
@@ -52,8 +53,10 @@ class cuSincOverSamplerR2R
     // set up sinc interpolation coefficients
     void cuSetupSincKernel();
     // execute interface
-    void execute(array_type<real_type> *imagesIn, array_type<real_type> *imagesOut, array_type<int2> *center, int oversamplingFactor);
-    void execute(array_type<real_type> *imagesIn, array_type<real_type> *imagesOut, int2 center, int oversamplingFactor);
+    void execute(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut,
+        ArraysView<const int2> center, int oversamplingFactor);
+    void execute(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut, int2 center,
+        int oversamplingFactor);
 
     // destructor
     ~cuSincOverSamplerR2R();

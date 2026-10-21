@@ -6,7 +6,6 @@
 
 // my declaration
 #include "cuSincOverSampler.h"
-#include "cuArrays.h"
 #include "device.h"
 #include "cudaError.h"
 #include "float2.h"
@@ -159,31 +158,29 @@ __device__ void cuSincInterpolation_kernel_common(const int nImages,
 }
 
 //constant shift
-__global__ void cuSincInterpolation_kernel(const int nImages,
-    const real_type * imagesIn, const int inNX, const int inNY,
-    real_type * imagesOut, const int outNX, const int outNY,
-    int2 centerShift, int factor,
+__global__ void cuSincInterpolation_kernel(ArraysView<const real_type> imagesIn,
+    ArraysView<real_type> imagesOut, int2 centerShift, int factor,
     const real_type * r_filter_, const int i_covs_, const int i_decfactor_, const int i_intplength_,
     const int i_startX, const int i_startY, const int i_int_size)
  {
     // pass through
-    cuSincInterpolation_kernel_common(nImages, imagesIn, inNX, inNY,
-        imagesOut, outNX, outNY, centerShift, factor,
+    cuSincInterpolation_kernel_common(imagesIn.count(),
+        imagesIn.data_handle(), imagesIn.height(), imagesIn.width(),
+        imagesOut.data_handle(), imagesOut.height(), imagesOut.width(), centerShift, factor,
         r_filter_, i_covs_, i_decfactor_, i_intplength_,
         i_startX, i_startY, i_int_size);
  }
 
-__global__ void cuSincInterpolation_kernel(const int nImages,
-    const real_type * imagesIn, const int inNX, const int inNY,
-    real_type * imagesOut, const int outNX, const int outNY,
-    int2 *centerShift, int factor,
+__global__ void cuSincInterpolation_kernel(ArraysView<const real_type> imagesIn,
+    ArraysView<real_type> imagesOut, ArraysView<const int2> centerShift, int factor,
     const real_type * r_filter_, const int i_covs_, const int i_decfactor_, const int i_intplength_,
     const int i_startX, const int i_startY, const int i_int_size)
  {
     // get image index
     int idxImage = blockIdx.z;
-    cuSincInterpolation_kernel_common(nImages, imagesIn, inNX, inNY,
-        imagesOut, outNX, outNY, centerShift[idxImage], factor,
+    cuSincInterpolation_kernel_common(imagesIn.count(),
+        imagesIn.data_handle(), imagesIn.height(), imagesIn.width(),
+        imagesOut.data_handle(), imagesOut.height(), imagesOut.width(), centerShift[idxImage], factor,
         r_filter_, i_covs_, i_decfactor_, i_intplength_,
         i_startX, i_startY, i_int_size);
  }
@@ -197,14 +194,12 @@ __global__ void cuSincInterpolation_kernel(const int nImages,
  * @note rawOversamplingFactor is for the centerShift, not the signal oversampling factor
  */
 
-void cuSincOverSamplerR2R::execute(cuArrays<real_type> *imagesIn, cuArrays<real_type> *imagesOut,
-    cuArrays<int2> *centerShift, int rawOversamplingFactor)
+void cuSincOverSamplerR2R::execute(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut,
+    ArraysView<const int2> centerShift, int rawOversamplingFactor)
 {
-    const int nImages = imagesIn->count;
-    const int inNX = imagesIn->height;
-    const int inNY = imagesIn->width;
-    const int outNX = imagesOut->height;
-    const int outNY = imagesOut->width;
+    const int nImages = imagesIn.count();
+    const int outNX = imagesOut.height();
+    const int outNY = imagesOut.width();
 
     // only compute the overampled signals within a window
     const int i_int_range = i_sincwindow * i_covs;
@@ -213,27 +208,23 @@ void cuSincOverSamplerR2R::execute(cuArrays<real_type> *imagesIn, cuArrays<real_
     const int i_int_startY = outNY/2 - i_int_range;
     const int i_int_size = 2*i_int_range + 1;
     // preset all pixels in out image to 0
-    imagesOut->setZero(stream);
+    checkCudaErrors(cudaMemsetAsync(imagesOut.data_handle(), 0, imagesOut.size()*sizeof(real_type), stream));
 
     static const int nthreads = 16;
     dim3 threadsperblock(nthreads, nthreads, 1);
     dim3 blockspergrid (divUp(i_int_size, nthreads), divUp(i_int_size, nthreads), nImages);
-    cuSincInterpolation_kernel<<<blockspergrid, threadsperblock, 0, stream>>>(nImages,
-        imagesIn->devData, inNX, inNY,
-        imagesOut->devData, outNX, outNY,
-        centerShift->devData, rawOversamplingFactor,
+    cuSincInterpolation_kernel<<<blockspergrid, threadsperblock, 0, stream>>>(imagesIn, imagesOut,
+        centerShift, rawOversamplingFactor,
         r_filter, i_covs, i_decfactor, i_intplength, i_int_startX, i_int_startY, i_int_size);
     checkCudaAsyncErrors();
 }
 
-void cuSincOverSamplerR2R::execute(cuArrays<real_type> *imagesIn, cuArrays<real_type> *imagesOut,
+void cuSincOverSamplerR2R::execute(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut,
     int2 centerShift, int rawOversamplingFactor)
 {
-    const int nImages = imagesIn->count;
-    const int inNX = imagesIn->height;
-    const int inNY = imagesIn->width;
-    const int outNX = imagesOut->height;
-    const int outNY = imagesOut->width;
+    const int nImages = imagesIn.count();
+    const int outNX = imagesOut.height();
+    const int outNY = imagesOut.width();
 
     // only compute the overampled signals within a window
     const int i_int_range = i_sincwindow * i_covs;
@@ -242,14 +233,12 @@ void cuSincOverSamplerR2R::execute(cuArrays<real_type> *imagesIn, cuArrays<real_
     const int i_int_startY = outNY/2 - i_int_range;
     const int i_int_size = 2*i_int_range + 1;
     // preset all pixels in out image to 0
-    imagesOut->setZero(stream);
+    checkCudaErrors(cudaMemsetAsync(imagesOut.data_handle(), 0, imagesOut.size()*sizeof(real_type), stream));
 
     static const int nthreads = 16;
     dim3 threadsperblock(nthreads, nthreads, 1);
     dim3 blockspergrid (divUp(i_int_size, nthreads), divUp(i_int_size, nthreads), nImages);
-    cuSincInterpolation_kernel<<<blockspergrid, threadsperblock, 0, stream>>>(nImages,
-        imagesIn->devData, inNX, inNY,
-        imagesOut->devData, outNX, outNY,
+    cuSincInterpolation_kernel<<<blockspergrid, threadsperblock, 0, stream>>>(imagesIn, imagesOut,
         centerShift, rawOversamplingFactor,
         r_filter, i_covs, i_decfactor, i_intplength, i_int_startX, i_int_startY, i_int_size);
     checkCudaAsyncErrors();

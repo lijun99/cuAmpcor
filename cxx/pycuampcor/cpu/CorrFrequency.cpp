@@ -11,8 +11,8 @@
 namespace pycuampcor::cpu {
 
 // coef*conj(image1)*image2, element-wise, in image1 (defined below)
-static void cuArraysElementMultiplyConjugate(array_type<complex_type> *image1,
-    array_type<complex_type> *image2, real_type coef, stream_t stream);
+static void cuArraysElementMultiplyConjugate(ArraysView<complex_type> image1,
+    ArraysView<const complex_type> image2, real_type coef, stream_t stream);
 
 // the mutex to guard the fftw planner (shared by all fftw users in this backend)
 std::mutex & fftwPlannerMutex()
@@ -64,21 +64,24 @@ cuFreqCorrelator::~cuFreqCorrelator() = default;
  * @param[in] images the search windows
  * @param[out] results the correlation surfaces
  */
-void cuFreqCorrelator::execute(array_type<real_type> *templates, array_type<real_type> *images, array_type<real_type> *results)
+void cuFreqCorrelator::execute(ArraysView<const real_type> templates, ArraysView<const real_type> images,
+    ArraysView<real_type> results)
 {
     // pad the reference windows to the the size of search windows
-    cuArraysCopyPadded(*templates, *workT, stream);
-    // forward fft to frequency domain
+    cuArraysCopyPadded(templates, *workT, stream);
+    // forward fft to frequency domain (the input of the out-of-place r2c transform is not written,
+    // fftw takes it as non-const)
     PYCUAMPCOR_FFTW(execute_dft_r2c)(forwardPlan, workT->devData, fftwCast(workFM->devData));
-    PYCUAMPCOR_FFTW(execute_dft_r2c)(forwardPlan, images->devData, fftwCast(workFS->devData));
+    PYCUAMPCOR_FFTW(execute_dft_r2c)(forwardPlan, const_cast<real_type *>(images.data_handle()),
+        fftwCast(workFS->devData));
     // fftw doesn't normalize, so manually get the image size for normalization
-    real_type coef = 1.0/(images->size);
+    real_type coef = 1.0/(images.arraySize());
     // multiply reference with secondary windows in frequency domain
-    cuArraysElementMultiplyConjugate(workFM.get(), workFS.get(), coef, stream);
+    cuArraysElementMultiplyConjugate(*workFM, *workFS, coef, stream);
     // backward fft to get correlation surface in time domain
     PYCUAMPCOR_FFTW(execute_dft_c2r)(backwardPlan, fftwCast(workFM->devData), workT->devData);
     // extract to get proper size of correlation surface
-    cuArraysCopyExtract(*workT, *results, make_int2(0, 0), stream);
+    cuArraysCopyExtract(*workT, results, make_int2(0, 0), stream);
     // all done
 }
 
@@ -88,13 +91,16 @@ void cuFreqCorrelator::execute(array_type<real_type> *templates, array_type<real
  * @param[in] image2, the secondary image
  * @param[in] coef, usually the normalization factor
  */
-static void cuArraysElementMultiplyConjugate(array_type<complex_type> *image1, array_type<complex_type> *image2, real_type coef, stream_t)
+static void cuArraysElementMultiplyConjugate(ArraysView<complex_type> image1,
+    ArraysView<const complex_type> image2, real_type coef, stream_t)
 {
-    const size_t size = image1->getSize();
+    const size_t size = image1.size();
+    complex_type *data1 = image1.data_handle();
+    const complex_type *data2 = image2.data_handle();
     for(size_t idx = 0; idx < size; idx++) {
-        const complex_type a = image1->devData[idx];
-        const complex_type b = image2->devData[idx];
-        image1->devData[idx] = make_complex_type(coef*(a.x*b.x + a.y*b.y), coef*(-a.y*b.x + a.x*b.y));
+        const complex_type a = data1[idx];
+        const complex_type b = data2[idx];
+        data1[idx] = make_complex_type(coef*(a.x*b.x + a.y*b.y), coef*(-a.y*b.x + a.x*b.y));
     }
 }
 

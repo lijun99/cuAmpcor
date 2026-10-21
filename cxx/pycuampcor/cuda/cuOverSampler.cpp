@@ -76,14 +76,16 @@ void cuOverSamplerC2C::setStream(cudaStream_t stream_)
  * @param[in] method phase deramping method
  * @param[in] axis deramping axis
  */
-void cuOverSamplerC2C::execute(cuArrays<complex_type> *imagesIn, cuArrays<complex_type> *imagesOut)
+void cuOverSamplerC2C::execute(ArraysView<const complex_type> imagesIn, ArraysView<complex_type> imagesOut)
 {
+    // the input of the (out-of-place) forward FFT is not written (cufft takes it as non-const)
+    complex_type *input = const_cast<complex_type *>(imagesIn.data_handle());
     // FFT to frequency domain, with exp(+i) and back with exp(-i) as the isce3 (v1) pycuampcor:
     // the Nyquist frequency of even lengths is then positive (see cuArraysFFTPaddingMany)
  #ifdef CUAMPCOR_DOUBLE
-    checkCudaErrors(cufftExecZ2Z(forwardPlan, imagesIn->devData, workIn->devData, CUFFT_INVERSE));
+    checkCudaErrors(cufftExecZ2Z(forwardPlan, input, workIn->devData, CUFFT_INVERSE));
  #else
-    checkCudaErrors(cufftExecC2C(forwardPlan, imagesIn->devData, workIn->devData, CUFFT_INVERSE));
+    checkCudaErrors(cufftExecC2C(forwardPlan, input, workIn->devData, CUFFT_INVERSE));
  #endif
 
     // padding zeros in the middle
@@ -91,9 +93,9 @@ void cuOverSamplerC2C::execute(cuArrays<complex_type> *imagesIn, cuArrays<comple
 
     // iFFT back to time domain
 #ifdef CUAMPCOR_DOUBLE
-    checkCudaErrors(cufftExecZ2Z(backwardPlan, workOut->devData, imagesOut->devData, CUFFT_FORWARD));
+    checkCudaErrors(cufftExecZ2Z(backwardPlan, workOut->devData, imagesOut.data_handle(), CUFFT_FORWARD));
 #else
-    checkCudaErrors(cufftExecC2C(backwardPlan, workOut->devData, imagesOut->devData, CUFFT_FORWARD));
+    checkCudaErrors(cufftExecC2C(backwardPlan, workOut->devData, imagesOut.data_handle(), CUFFT_FORWARD));
 #endif
 }
 
@@ -148,10 +150,10 @@ void cuOverSamplerR2R::setStream(cudaStream_t stream_)
  * @param[in] imagesIn input batch of images
  * @param[out] imagesOut output batch of images
  */
-void cuOverSamplerR2R::execute(cuArrays<real_type> *imagesIn, cuArrays<real_type> *imagesOut)
+void cuOverSamplerR2R::execute(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut)
 {
 
-    cuArraysCopyPadded(*imagesIn, *workSizeIn, stream);
+    cuArraysCopyPadded(imagesIn, *workSizeIn, stream);
 
     // exp(+i) to the frequency domain and exp(-i) back, as cuOverSamplerC2C
 #ifdef CUAMPCOR_DOUBLE
@@ -168,7 +170,7 @@ void cuOverSamplerR2R::execute(cuArrays<real_type> *imagesIn, cuArrays<real_type
     checkCudaErrors(cufftExecC2C(backwardPlan, workSizeOut->devData, workSizeOut->devData, CUFFT_FORWARD));
 #endif
 
-    cuArraysCopyExtract(*workSizeOut, *imagesOut, make_int2(0,0), stream);
+    cuArraysCopyExtract(*workSizeOut, imagesOut, make_int2(0,0), stream);
 }
 
 /// destructor
@@ -186,8 +188,8 @@ public:
         : oversampler(height, width, height*factor, width*factor, count, stream) {}
 
     /// oversample the surfaces (the peaks need no shift: the whole surfaces are oversampled)
-    void execute(cuArrays<real_type> *surfaces, cuArrays<real_type> *oversampled,
-        cuArrays<int2_type> *) override
+    void execute(ArraysView<const real_type> surfaces, ArraysView<real_type> oversampled,
+        ArraysView<const int2_type>) override
     {
         oversampler.execute(surfaces, oversampled);
     }
@@ -203,11 +205,11 @@ public:
     SincSurfaceOverSampler(int factor, int rawFactor, cudaStream_t stream)
         : oversampler(factor, stream), shiftFactor(factor*rawFactor) {}
 
-    /// oversample the surfaces around their peaks, shifted from the centers by shift (or not, if nullptr)
-    void execute(cuArrays<real_type> *surfaces, cuArrays<real_type> *oversampled,
-        cuArrays<int2_type> *shift) override
+    /// oversample the surfaces around their peaks, shifted from the centers by shift (or not, if empty)
+    void execute(ArraysView<const real_type> surfaces, ArraysView<real_type> oversampled,
+        ArraysView<const int2_type> shift) override
     {
-        if (shift)
+        if (!shift.empty())
             oversampler.execute(surfaces, oversampled, shift, shiftFactor);
         else
             oversampler.execute(surfaces, oversampled, make_int2(0, 0), shiftFactor);

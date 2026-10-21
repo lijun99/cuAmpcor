@@ -40,7 +40,7 @@ TEST_F(FFTTest, OverSamplerC2C)
     auto in = makeFrom(v, nx, ny, 1, n);
     auto out = make<complex_type>(nx*ratio, ny*ratio, 1, n);
     cuOverSamplerC2C oversampler(nx, ny, nx*ratio, ny*ratio, n, stream);
-    oversampler.execute(in.get(), out.get());
+    oversampler.execute(*in, *out);
     auto r = download(*out);
     // the input is unchanged (out-of-place)
     auto v2 = download(*in);
@@ -64,7 +64,7 @@ TEST_F(FFTTest, OverSamplerNyquistPositive)
     auto in = makeFrom(v, nx, ny, 1, 1);
     auto out = make<complex_type>(nx*ratio, ny*ratio, 1, 1);
     cuOverSamplerC2C oversampler(nx, ny, nx*ratio, ny*ratio, 1, stream);
-    oversampler.execute(in.get(), out.get());
+    oversampler.execute(*in, *out);
     auto r = download(*out);
     auto ref = exponential(nx*ratio, ny*ratio, nx/2, 2);
     for (size_t i = 0; i < ref.size(); i++) {
@@ -84,7 +84,7 @@ TEST_F(FFTTest, OverSamplerR2R)
     auto in = makeFrom(v, nx, ny);
     auto out = make<real_type>(nx*ratio, ny*ratio);
     cuOverSamplerR2R oversampler(nx, ny, nx*ratio, ny*ratio, 1, stream);
-    oversampler.execute(in.get(), out.get());
+    oversampler.execute(*in, *out);
     auto r = download(*out);
     for (int x = 0; x < nx*ratio; x++)
         for (int y = 0; y < ny*ratio; y++)
@@ -121,7 +121,7 @@ TEST_F(FFTTest, Correlators)
     auto c = make<real_type>(ch, cw, 1, n);
 
     cuFreqCorrelator correlator(H, W, n, stream);
-    correlator.execute(t.get(), s.get(), c.get());
+    correlator.execute(*t, *s, *c);
     auto rf = download(*c);
     cuCorrTimeDomain(*t, *s, *c, stream);
     auto rt = download(*c);

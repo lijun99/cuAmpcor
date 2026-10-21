@@ -177,7 +177,7 @@ void cuAmpcorProcessor<arrayT>::correlate(array_type<real_type> *reference,
     freq_correlator_type *freqCorrelator, normalizer_type *normalizer, const std::string &name)
 {
     if (param.algorithm == Algorithm::Frequency)
-        freqCorrelator->execute(reference, secondary, surface);
+        freqCorrelator->execute(*reference, *secondary, *surface);
     else
         cuCorrTimeDomain(*reference, *secondary, *surface, stream);
     dump(surface, name + "UnNorm");
@@ -204,7 +204,8 @@ template <template <typename> class arrayT>
 void cuAmpcorProcessor<arrayT>::oversampleSurface(array_type<real_type> *surface,
     array_type<real_type> *oversampled, array_type<int2_type> *shift)
 {
-    surfaceOverSampler->execute(surface, oversampled, shift);
+    surfaceOverSampler->execute(*surface, *oversampled,
+        shift ? ArraysView<const int2_type>(*shift) : ArraysView<const int2_type>());
     dump(oversampled, "r_corrBatchZoomInOverSampled");
 }
 

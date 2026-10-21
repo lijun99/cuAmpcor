@@ -54,7 +54,7 @@ TEST_F(SincTest, ConstantCenter)
     cuSincOverSamplerR2R sinc(covs, stream);
     for (int2 shift : {make_int2(0, 0), make_int2(1, -2)}) {
         const int factor = covs;
-        sinc.execute(in.get(), out.get(), shift, factor);
+        sinc.execute(*in, *out, shift, factor);
         check(download(*out), 0, shift, factor);
     }
 }
@@ -68,7 +68,7 @@ TEST_F(SincTest, VaryingCenter)
     auto shifts = makeFrom(shiftV, 1, count);
     cuSincOverSamplerR2R sinc(covs, stream);
     const int factor = covs/2;
-    sinc.execute(in.get(), out.get(), shifts.get(), factor);
+    sinc.execute(*in, *out, *shifts, factor);
     auto r = download(*out);
     for (int k = 0; k < count; k++)
         check(r, k, shiftV[k], factor);
