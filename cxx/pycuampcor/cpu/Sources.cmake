@@ -2,6 +2,7 @@
 set(PYCUAMPCOR_CPU_SOURCES
     cuAmpcorChunkLoader.cpp
     cuAmpcorController.cpp
+    processors.cpp
     cuArrays.cpp
     cuArraysCopy.cpp
     cuArraysPadding.cpp

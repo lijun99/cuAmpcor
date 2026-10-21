@@ -6,6 +6,8 @@
 #include "cuAmpcorController.h"
 #include "cuAmpcorChunkLoader.h"
 #include "cuAmpcorLayers.h"
+#include "api.h"
+#include "arrayTraits.h"
 #include "cuAmpcorProcessor.h"
 #include "cuArrays.h"
 #include "cuArraysCopy.h"
@@ -87,7 +89,7 @@ struct LayerImages {
 struct Worker {
     cudaStream_t stream;                                          ///< the stream of the worker
     std::unique_ptr<cuAmpcorChunkLoader> loader;                  ///< loads the chunks
-    std::vector<std::unique_ptr<cuAmpcorProcessor>> processors;   ///< one per layer
+    std::vector<std::unique_ptr<processor_t>> processors;   ///< one per layer
 
     /// a worker with a new stream
     Worker() { checkCudaErrors(cudaStreamCreate(&stream)); }
@@ -197,7 +199,7 @@ void cuAmpcorController::runAmpcorLayers(const std::vector<cuAmpcorController *>
             worker->stream);
         for (int l = 0; l < nLayers; l++) {
             LayerImages &im = *images[l];
-            worker->processors.push_back(cuAmpcorProcessor::create(params[l]->workflow, params[l],
+            worker->processors.push_back(processor_t::create(params[l]->workflow, params[l],
                 im.offsetRun.get(), im.snrRun.get(), im.covRun.get(), im.peakValueRun.get(), worker->stream));
         }
     }

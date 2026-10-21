@@ -120,7 +120,6 @@ if(PYCUAMPCOR_WITH_HDF5)
     list(APPEND PYCUAMPCOR_COMMON_SOURCES Hdf5SlcImage.cpp)
 endif()
 list(TRANSFORM PYCUAMPCOR_COMMON_SOURCES PREPEND ${PYCUAMPCOR_CXX_DIR}/common/)
-list(TRANSFORM PYCUAMPCOR_PROCESSOR_SOURCES PREPEND ${PYCUAMPCOR_CXX_DIR}/common/)
 list(TRANSFORM PYCUAMPCOR_CPU_SOURCES PREPEND ${PYCUAMPCOR_CXX_DIR}/cpu/)
 list(TRANSFORM PYCUAMPCOR_CUDA_SOURCES PREPEND ${PYCUAMPCOR_CXX_DIR}/cuda/)
 
@@ -136,16 +135,12 @@ if(PYCUAMPCOR_WITH_HDF5)
     target_link_libraries(pycuampcor_common PUBLIC HDF5::HDF5 ZLIB::ZLIB)
 endif()
 
-# add a static library pycuampcor_<backend> with the sources of the package (cpu/ or cuda/) and
-# the processors (compiled for each package), and a python extension module
-# pycuampcor._<backend> exposing class <pyclass>
+# add a static library pycuampcor_<backend> with the sources of the package (cpu/ or cuda/),
+# and a python extension module pycuampcor._<backend> exposing class <pyclass>
 function(pycuampcor_add_backend backend pyclass)
     string(TOUPPER ${backend} BACKEND)
     set(lib pycuampcor_${backend})
-    add_library(${lib} STATIC
-        ${PYCUAMPCOR_PROCESSOR_SOURCES}
-        ${PYCUAMPCOR_${BACKEND}_SOURCES}
-        )
+    add_library(${lib} STATIC ${PYCUAMPCOR_${BACKEND}_SOURCES})
     set_target_properties(${lib} PROPERTIES
         POSITION_INDEPENDENT_CODE ON
         CXX_VISIBILITY_PRESET hidden
@@ -156,7 +151,9 @@ function(pycuampcor_add_backend backend pyclass)
         ${PYCUAMPCOR_CXX_DIR}/${backend}
         ${PYCUAMPCOR_CXX_DIR}/common
         )
-    target_compile_definitions(${lib} PUBLIC
+    # for the clients compiled for each package (the python bindings, the C++ tests):
+    # the package's namespace, pycuampcor::<backend>
+    target_compile_definitions(${lib} INTERFACE
         PYCUAMPCOR_BACKEND=${backend}
         PYCUAMPCOR_BACKEND_${BACKEND}
         )

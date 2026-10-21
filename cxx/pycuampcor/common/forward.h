@@ -29,6 +29,13 @@ namespace pycuampcor {
     class Hdf5SlcImage;
     // the chunks of the layers processed together (cuAmpcorLayers.h)
     struct cuAmpcorChunkFootprint;
+    // the processors of a chunk, for each workflow, on the arrays arrayT (cuAmpcorProcessor*.h)
+    template <template <typename> class arrayT>
+    class cuAmpcorProcessor;
+    template <template <typename> class arrayT>
+    class cuAmpcorProcessorTwoPass;
+    template <template <typename> class arrayT>
+    class cuAmpcorProcessorOnePass;
 }
 
 //end of file

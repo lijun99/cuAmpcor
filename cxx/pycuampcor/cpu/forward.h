@@ -28,10 +28,6 @@ namespace pycuampcor::cpu {
     struct cuAmpcorLoadedChunk;
     struct cuAmpcorChunk;
     class cuAmpcorChunkLoader;
-    // the processors of a chunk, for each workflow (cuAmpcorProcessor*.h)
-    class cuAmpcorProcessor;
-    class cuAmpcorProcessorTwoPass;
-    class cuAmpcorProcessorOnePass;
     // the controller, running the processors over the chunks (cuAmpcorController.h)
     class cuAmpcorController;
 }

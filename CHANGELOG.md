@@ -34,6 +34,11 @@
 
 ### Changes
 
+- The C++ code is organized as the shared code (namespace `pycuampcor`: parameters, options,
+  logging, image readers, layers), compiled once, and the CPU and CUDA packages
+  (`pycuampcor::cpu`, `pycuampcor::cuda`), each with its arrays, kernels, controller and chunk
+  loader; the processors of the workflows are written once, as templates on the array type, and
+  instantiated by each package. The results are unchanged.
 - Compiled as standard C++17 (`-std=c++17`, without GNU extensions); the code also builds as
   C++20.
 - `setupParams` keeps the parameters as set: `numberWindowDownInChunk` / `numberWindowAcrossInChunk`

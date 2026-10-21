@@ -1,0 +1,35 @@
+/**
+ * @file  cuAmpcorArrayTraits.h
+ * @brief What goes with an array type: the types and workers the processors use with it
+ *
+ * The processors (cuAmpcorProcessor*) are written once, as templates on the array type: a family
+ * of batches of 2D arrays, e.g., cpu::cuArrays or cuda::cuArrays. array_traits gives the element
+ * types, the stream and chunk types, and the workers (FFT correlator, oversamplers, normalizer)
+ * that go with an array type; each package (cpu, cuda) specializes it for its arrays
+ * (arrayTraits.h of the package).
+ *
+ * The kernels (e.g., cuArraysAbs) are found from the array type of their arguments (by argument
+ * dependent lookup), so the processors call them as is.
+ */
+
+#pragma once
+
+namespace pycuampcor {
+
+/// the types and workers that go with an array type arrayT (specialized by each package)
+///
+/// A specialization provides:
+/// - real_type, complex_type, real2_type, real3_type, int2_type: the element types
+/// - stream_type: the stream on which the kernels are queued
+/// - loaded_chunk_type, chunk_type: the chunks of the images loaded by the chunk loader
+/// - freq_correlator_type: the cross-correlation in the frequency domain
+/// - oversampler_c2c_type, oversampler_r2r_type, sinc_oversampler_type: the oversamplers
+/// - normalizer_type: the normalizer of the correlation surfaces (an abstract class)
+/// - make_int2(x, y): an int2_type
+/// - newNormalizer(height, width, count): a normalizer for the correlation of count windows
+///   of height x width
+template <template <typename> class arrayT>
+struct array_traits;
+
+} // namespace
+//end of file

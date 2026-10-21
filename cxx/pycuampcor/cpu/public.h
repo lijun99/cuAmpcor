@@ -44,6 +44,7 @@
 
 // the processing: chunks loaded from the images, processors of the chunks, and the controller
 #include "cuAmpcorChunkLoader.h"
+#include "arrayTraits.h"
 #include "cuAmpcorProcessor.h"
 #include "cuAmpcorProcessorTwoPass.h"
 #include "cuAmpcorProcessorOnePass.h"

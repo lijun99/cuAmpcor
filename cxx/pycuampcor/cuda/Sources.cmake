@@ -16,5 +16,6 @@ set(PYCUAMPCOR_CUDA_SOURCES
     cudaError.cpp
     cuAmpcorChunkLoader.cpp
     cuAmpcorController.cpp
+    processors.cpp
     device.cpp
     )
