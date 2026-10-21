@@ -1,12 +1,4 @@
-#include "cuAmpcorProcessorTwoPass.h"
-#include "logging.h"
-#include "cuArraysCopy.h"
-#include "cuDeramp.h"
-#include "cuCorrNormalization.h"
-#include "cuOffset.h"
-#include "cuCorrTimeDomain.h"
-#include "cuEstimateStats.h"
-#include "debug.h"
+#include "public.h"
 
 #include <iostream>
 
@@ -261,7 +253,6 @@ cuAmpcorProcessorTwoPass::cuAmpcorProcessorTwoPass(cuAmpcorParameter *param_,
 
     stream = stream_;
 
-
     c_referenceBatchRaw = std::make_unique<cuArrays<complex_type>>(
         param->windowSizeHeightRaw, param->windowSizeWidthRaw,
         param->windowsDownInChunk, param->windowsAcrossInChunk);
@@ -336,7 +327,6 @@ cuAmpcorProcessorTwoPass::cuAmpcorProcessorTwoPass(cuAmpcorParameter *param_,
             param->windowsAcrossInChunk);
     r_corrBatchZoomInAdjust->allocate();
 
-
     r_corrBatchZoomInOverSampled = std::make_unique<cuArrays<real_type>>(
         param->corrZoomWindowSize * param->corrSurfaceOverSamplingFactor,
         param->corrZoomWindowSize * param->corrSurfaceOverSamplingFactor,
@@ -359,7 +349,6 @@ cuAmpcorProcessorTwoPass::cuAmpcorProcessorTwoPass(cuAmpcorParameter *param_,
     corrMaxValue = std::make_unique<cuArrays<real_type>>(param->windowsDownInChunk, param->windowsAcrossInChunk);
     corrMaxValue->allocate();
 
-
     // new arrays due to snr estimation
     r_corrBatchRawZoomIn = std::make_unique<cuArrays<real_type>>(
             param->corrRawZoomInHeight,
@@ -374,7 +363,6 @@ cuAmpcorProcessorTwoPass::cuAmpcorProcessorTwoPass(cuAmpcorParameter *param_,
             param->windowsDownInChunk,
             param->windowsAcrossInChunk);
     i_corrBatchZoomInValid->allocate();
-
 
     r_corrBatchSum = std::make_unique<cuArrays<real_type>>(
                     param->windowsDownInChunk,
@@ -438,7 +426,6 @@ cuAmpcorProcessorTwoPass::cuAmpcorProcessorTwoPass(cuAmpcorParameter *param_,
         param->windowsDownInChunk * param->windowsAcrossInChunk
         );
 
-
     logDebug("all objects in chunk are created");
 }
 
@@ -446,6 +433,5 @@ cuAmpcorProcessorTwoPass::cuAmpcorProcessorTwoPass(cuAmpcorParameter *param_,
 cuAmpcorProcessorTwoPass::~cuAmpcorProcessorTwoPass() = default;
 
 // end of file
-
 
 } // namespace

@@ -13,10 +13,10 @@
 
 #pragma once
 
-// dependencies
+#include "forward.h"
 #include "cuAmpcorParameter.h"
-#include <memory>
-#include <vector>
+
+// dependencies
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND {
 

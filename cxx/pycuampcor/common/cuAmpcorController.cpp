@@ -4,17 +4,9 @@
  */
 
 // my declaration
-#include "cuAmpcorController.h"
-#include "logging.h"
+#include "public.h"
 
 // dependencies
-#include "SlcImage.h"
-#include "cuArrays.h"
-#include "cuAmpcorProcessor.h"
-#include "backend.h"
-#include "cuAmpcorChunkLoader.h"
-#include "cuArraysCopy.h"
-#include "float2.h"
 #include <algorithm>
 #include <atomic>
 #include <exception>
@@ -278,6 +270,5 @@ void cuAmpcorController::runAmpcorLayers(const std::vector<cuAmpcorController *>
         images[l]->write(params[l], stream);
 }
 // end of file
-
 
 } // namespace

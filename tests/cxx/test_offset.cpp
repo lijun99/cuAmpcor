@@ -4,7 +4,6 @@
  */
 
 #include "test_util.h"
-#include "cuOffset.h"
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND::test {
 

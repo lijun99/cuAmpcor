@@ -5,10 +5,8 @@
 
 #pragma once
 
+#include "externals.h"
 #include "indexing.h"
-#include <cstddef>
-#include <string>
-#include <vector>
 
 namespace pycuampcor::cuda {
 

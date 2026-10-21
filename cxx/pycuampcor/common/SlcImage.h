@@ -4,10 +4,7 @@
 
 #pragma once
 
-#include <memory>
-#include <string>
-#include <mutex>
-#include "backend.h"
+#include "forward.h"
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND {
 

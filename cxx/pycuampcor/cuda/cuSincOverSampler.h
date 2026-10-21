@@ -18,10 +18,9 @@
 
 #pragma once
 
+#include "forward.h"
+
 // dependencites
-#include "cuArrays.h"
-#include "cudaUtil.h"
-#include "data_types.h"
 
 namespace pycuampcor::cuda {
 

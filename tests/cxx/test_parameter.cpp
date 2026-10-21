@@ -4,8 +4,6 @@
  */
 
 #include "test_util.h"
-#include "cuAmpcorParameter.h"
-#include "backend.h"
 
 #include <algorithm>
 #include <stdexcept>

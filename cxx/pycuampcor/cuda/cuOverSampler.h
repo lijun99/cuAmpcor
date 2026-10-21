@@ -10,11 +10,8 @@
 
 #pragma once
 
-#include "cuArrays.h"
-#include "data_types.h"
+#include "forward.h"
 #include "cufftPlan.h"
-
-#include <memory>
 
 namespace pycuampcor::cuda {
 

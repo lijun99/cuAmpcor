@@ -9,10 +9,9 @@
 
 #pragma once
 
+#include "forward.h"
+
 // cuda dependencies
-#include <driver_types.h>
-#include <iostream>
-#include <string>
 
 namespace pycuampcor::cuda {
 

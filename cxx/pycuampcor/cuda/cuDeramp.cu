@@ -12,20 +12,13 @@
  *
  */
 
-#include "cuArrays.h"
-#include "float2.h"
-#include "data_types.h"
-#include "cudaError.h"
-#include "cudaUtil.h"
-#include "cuDeramp.h"
-#include "debug.h"
+#include "public.h"
 #include <iostream>
 #include <iomanip>
 #include <cmath>
 #include <limits>
 
 namespace pycuampcor::cuda {
-
 
 // cuda does not have a good support on vector structure, e.g. complex type (float2 or double2)
 // shared memory holds real_type values; real2_type values are stored as two halves, a block apart
@@ -36,10 +29,8 @@ inline static __device__ void copyToShared(real_type *s, const int i, const real
 inline static __device__ void copyFromShared(real2_type &x, real_type *s, const int i, const int block)
 { x.x = s[i]; x.y = s[i+block]; }
 
-
 inline static __device__ void addInShared(real_type *s, const int i, const int j, const int block)
 { s[i] += s[i+j]; s[i+block] += s[i+j+block];}
-
 
 // kernel to do sum reduction for real2_type within a block
 template <const int nthreads>
@@ -175,7 +166,6 @@ static void cuLinearDeramp(cuArrays<real2_type> *images, const int axis, cudaStr
     checkCudaAsyncErrors();
 
 }
-
 
 void cuDeramp(DerampMethod method, cuArrays<real2_type> *images, DerampAxis axis, cudaStream_t stream)
 {

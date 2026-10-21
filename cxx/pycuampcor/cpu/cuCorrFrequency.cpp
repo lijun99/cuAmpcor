@@ -3,9 +3,7 @@
  * @brief A class performs cross correlation in frequency domain (CPU backend)
  */
 
-#include "cuCorrFrequency.h"
-#include "float2.h"
-#include "cuArraysCopy.h"
+#include "public.h"
 
 namespace pycuampcor::cpu {
 

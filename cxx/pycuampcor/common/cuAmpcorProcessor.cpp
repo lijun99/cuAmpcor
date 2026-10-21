@@ -1,7 +1,4 @@
-#include "cuAmpcorProcessor.h"
-#include "cuAmpcorProcessorTwoPass.h"
-#include "cuAmpcorProcessorOnePass.h"
-#include "cuArraysCopy.h"
+#include "public.h"
 
 #include <stdexcept>
 
@@ -85,8 +82,6 @@ void cuAmpcorProcessor::getRelativeOffset(int *rStartPixel, const std::vector<in
         }
     }
 }
-
-
 
 /// copy the windows of the current chunk from a loaded chunk to a batch format (nImages, height, width)
 /// @param[in] chunk the loaded chunk (of the reference or secondary image)

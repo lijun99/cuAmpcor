@@ -1,5 +1,5 @@
 /*
- * @file  cuAmpcorChunk.h
+ * @file  cuAmpcorProcessor.h
  * @brief Ampcor processor for a batch of windows
  *
  *
@@ -7,18 +7,8 @@
 
 #pragma once
 
-#include "backend.h"
-#include "SlcImage.h"
-#include "data_types.h"
+#include "forward.h"
 #include "cuArrays.h"
-#include "cuAmpcorParameter.h"
-#include "cuOverSampler.h"
-#include "cuSincOverSampler.h"
-#include "cuCorrFrequency.h"
-#include "cuCorrNormalizer.h"
-#include "cuAmpcorChunkLoader.h"
-#include <memory>
-#include <vector>
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND {
 

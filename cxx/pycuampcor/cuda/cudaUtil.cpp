@@ -1,7 +1,4 @@
-#include "cudaUtil.h"
-#include "logging.h"
-#include "backend.h"
-#include "cuAmpcorParameter.h"
+#include "public.h"
 
 #include <cuda_runtime.h>
 #include <cstdio>
@@ -10,7 +7,6 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
-#include "cudaError.h"
 
 namespace pycuampcor::cuda {
 
@@ -137,6 +133,5 @@ void backendWaitEvent(event_t event)
 {
     checkCudaErrors(cudaEventSynchronize(event));
 }
-
 
 } // namespace

@@ -5,10 +5,7 @@
  */
 
 // dependencies
-#include "cuArrays.h"
-#include "logging.h"
-#include "float2.h"
-#include "data_types.h"
+#include "public.h"
 #include <algorithm>
 #include <cstdlib>
 #include <cstring>

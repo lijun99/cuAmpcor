@@ -7,9 +7,7 @@
 
 #pragma once
 
-#include <string>
-#include <vector>
-#include "data_types.h" // for int2
+#include "forward.h"
 #include "cuAmpcorOptions.h"
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND {

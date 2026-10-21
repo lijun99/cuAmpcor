@@ -5,13 +5,8 @@
  * 9/23/2017, Minyan Zhong
  */
 
-#include "cuArrays.h"
-#include "float2.h"
+#include "public.h"
 #include "float.h"
-#include "data_types.h"
-#include "cudaUtil.h"
-#include "cudaError.h"
-#include "cuEstimateStats.h"
 #include <iostream>
 #include <iomanip>
 #include <cmath>
@@ -130,6 +125,5 @@ void cuEstimateVariance(cuArrays<real_type> *corrBatchRaw, cuArrays<int2> *maxlo
     checkCudaAsyncErrors();
 }
 //end of file
-
 
 } // namespace

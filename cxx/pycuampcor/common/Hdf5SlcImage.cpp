@@ -1,5 +1,4 @@
-#include "Hdf5SlcImage.h"
-#include "logging.h"
+#include "public.h"
 
 #include <fcntl.h>
 #include <unistd.h>

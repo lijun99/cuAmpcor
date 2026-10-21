@@ -4,7 +4,6 @@
  */
 
 #include "test_util.h"
-#include "SlcImage.h"
 
 #include <cstdio>
 #include <cstdlib>

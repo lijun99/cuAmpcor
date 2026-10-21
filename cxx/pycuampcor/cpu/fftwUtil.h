@@ -9,10 +9,7 @@
 
 #pragma once
 
-#include "data_types.h"
-#include <fftw3.h>
-#include <mutex>
-#include <utility>
+#include "externals.h"
 
 namespace pycuampcor::cpu {
 

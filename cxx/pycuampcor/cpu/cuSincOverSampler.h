@@ -18,11 +18,9 @@
 
 #pragma once
 
+#include "forward.h"
+
 // dependencites
-#include "cuArrays.h"
-#include "cpuUtil.h"
-#include <vector>
-#include "data_types.h"
 
 namespace pycuampcor::cpu {
 

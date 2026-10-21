@@ -5,14 +5,11 @@
  * This code is adapted from the nxcor package.
  */
 
-#include "cuCorrTimeDomain.h"
-#include "float2.h"
-#include "cudaError.h"
+#include "public.h"
 #include <stdexcept>
 #include <string>
 
 namespace pycuampcor::cuda {
-
 
 // cuda kernel for cuCorrTimeDomain
 template<const int nthreads, const int NPT>
@@ -54,7 +51,6 @@ __global__ void cuArraysCorrTime_kernel(
         corrCoeff[k] = 0.0;
 
     int iaddr = yc*imageNY;
-
 
     real_type img[NPT];
     for (int k = 0; k < NPT-1; k++, iaddr += imageNY)
@@ -120,7 +116,6 @@ void cuCorrTimeDomain(cuArrays<real_type> *templates,
 #else
     const int NPT = 8;
 #endif
-
 
     const dim3 grid(nImages, (results->width-1)/NPT+1, 1);
     if      (imageNY <=   64) {
@@ -199,6 +194,5 @@ void cuCorrTimeDomain(cuArrays<real_type> *templates,
     }
 }
 // end of file
-
 
 } // namespace

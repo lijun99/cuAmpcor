@@ -4,7 +4,6 @@
  */
 
 #include "test_util.h"
-#include "cuDeramp.h"
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND::test {
 

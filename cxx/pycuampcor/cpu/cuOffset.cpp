@@ -5,9 +5,7 @@
  */
 
 // my module dependencies
-#include "cuOffset.h"
-#include "float2.h"
-#include "cpuUtil.h"
+#include "public.h"
 
 namespace pycuampcor::cpu {
 

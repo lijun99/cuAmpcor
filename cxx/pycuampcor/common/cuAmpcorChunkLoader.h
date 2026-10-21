@@ -10,13 +10,7 @@
 
 #pragma once
 
-#include "backend.h"
-#include "SlcImage.h"
-#include "data_types.h"
-#include "cuArrays.h"
-#include "cuAmpcorParameter.h"
-#include <memory>
-#include <vector>
+#include "forward.h"
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND {
 

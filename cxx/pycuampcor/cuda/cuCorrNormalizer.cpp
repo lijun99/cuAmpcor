@@ -4,10 +4,7 @@
  *
  */
 
-#include "cuCorrNormalizer.h"
-#include "float2.h"
-#include "cuCorrNormalization.h"
-#include "cuCorrNormalizationSAT.h"
+#include "public.h"
 
 namespace pycuampcor::cuda {
 
@@ -72,6 +69,5 @@ template class cuNormalizeFixed<512>;
 template class cuNormalizeFixed<1024>;
 
 // end of file
-
 
 } // namespace

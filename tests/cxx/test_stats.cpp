@@ -4,8 +4,6 @@
  */
 
 #include "test_util.h"
-#include "cuCorrNormalization.h"
-#include "cuEstimateStats.h"
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND::test {
 

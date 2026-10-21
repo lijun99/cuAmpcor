@@ -4,7 +4,6 @@
  */
 
 #include "test_util.h"
-#include "cuArraysCopy.h"
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND::test {
 

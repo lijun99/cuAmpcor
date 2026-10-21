@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <cstddef>
+#include "externals.h"
 
 namespace pycuampcor {
 

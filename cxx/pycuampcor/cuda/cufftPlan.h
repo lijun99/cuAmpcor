@@ -5,10 +5,9 @@
 
 #pragma once
 
+#include "externals.h"
 #include "cudaError.h"
 #include "logging.h"
-#include <cufft.h>
-#include <utility>
 
 namespace pycuampcor::cuda {
 

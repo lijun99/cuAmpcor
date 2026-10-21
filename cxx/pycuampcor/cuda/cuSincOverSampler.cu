@@ -5,13 +5,9 @@
  */
 
 // my declaration
-#include "cuSincOverSampler.h"
+#include "public.h"
 
 // dependencies
-#include "cuArrays.h"
-#include "cudaUtil.h"
-#include "cudaError.h"
-#include "float2.h"
 
 namespace pycuampcor::cuda {
 
@@ -80,7 +76,6 @@ void cuSincOverSamplerR2R::cuSetupSincKernel()
         r_soff_inverse, r_beta, r_decfactor_inverse);
     checkCudaAsyncErrors();
 }
-
 
 // cuda kernel for cuSincOverSamplerR2R::execute
 // define a device function to overload the cases with constant or varying center shifts

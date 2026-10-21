@@ -3,13 +3,9 @@
  * @brief Utilities for padding zeros to cuArrays for FFT (zero padding in the middle)
  */
 
-#include "cuArraysPadding.h"
-#include "float2.h"
-#include "cudaUtil.h"
-#include "cudaError.h"
+#include "public.h"
 
 namespace pycuampcor::cuda {
-
 
 // cuda kernel for zero padding for FFT oversampling,
 // for both even and odd sequences
@@ -73,14 +69,5 @@ void cuArraysFFTPaddingMany(cuArrays<complex_type> *image1, cuArrays<complex_typ
     checkCudaAsyncErrors();
 }
 //end of file
-
-
-
-
-
-
-
-
-
 
 } // namespace

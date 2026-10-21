@@ -4,16 +4,6 @@
 
 #pragma once
 
-#include <future>
-#include <list>
-#include <memory>
-#include <mutex>
-#include <string>
-#include <unordered_map>
-#include <vector>
-
-#include <hdf5.h>
-
 #include "SlcImage.h"
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND {

@@ -19,10 +19,7 @@
  *
  */
 
-#include "cuCorrNormalization.h"
-#include "float2.h"
-#include "cudaUtil.h"
-#include "cudaError.h"
+#include "public.h"
 #include <stdexcept>
 #include <string>
 #include <cstdio>
@@ -150,7 +147,6 @@ void cuArraysSubtractMean(cuArrays<real_type> *images, cudaStream_t stream)
     checkCudaAsyncErrors();
 }
 
-
 // cuda kernel to compute summation on extracted correlation surface (Minyan)
 template<const int Nthreads>
 __global__ void cuArraysSumCorr_kernel(real_type *images, int *imagesValid, real_type *imagesSum, int *imagesValidCount, int imageSize, int nImages)
@@ -202,7 +198,6 @@ void cuArraysSumCorr(cuArrays<real_type> *images, cuArrays<int> *imagesValid, cu
         imagesSum->devData, imagesValidCount->devData, imageSize, images->count);
     checkCudaAsyncErrors();
 }
-
 
 // intra-block inclusive prefix sum
 template<int Nthreads2>
@@ -430,6 +425,5 @@ template void cuCorrNormalizeFixed<1024>(cuArrays<real_type> *correlation,
         cudaStream_t stream);
 
 // end of file
-
 
 } // namespace

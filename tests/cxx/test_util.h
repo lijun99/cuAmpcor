@@ -7,9 +7,7 @@
 
 #include <gtest/gtest.h>
 
-#include "backend.h"
-#include "cuArrays.h"
-#include "data_types.h"
+#include "public.h"
 
 #include <cmath>
 #include <complex>

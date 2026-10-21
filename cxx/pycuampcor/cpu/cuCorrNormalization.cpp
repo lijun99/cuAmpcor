@@ -6,8 +6,7 @@
  * sum area tables, see cuCorrNormalizationSAT.cpp
  */
 
-#include "cuCorrNormalization.h"
-#include "float2.h"
+#include "public.h"
 
 namespace pycuampcor::cpu {
 

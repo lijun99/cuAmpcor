@@ -9,11 +9,8 @@
 
 #pragma once
 
-#include "cuArrays.h"
-#include "data_types.h"
+#include "forward.h"
 #include "fftwUtil.h"
-
-#include <memory>
 
 namespace pycuampcor::cpu {
 

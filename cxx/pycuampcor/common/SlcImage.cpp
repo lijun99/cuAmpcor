@@ -1,7 +1,4 @@
-#include "SlcImage.h"
-#ifdef PYCUAMPCOR_WITH_HDF5
-#include "Hdf5SlcImage.h"
-#endif
+#include "public.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -150,7 +147,6 @@ void MmapSlcImage::remapIfNeeded(size_t required_start, size_t required_end)
     // else - in range, do nothing
 }
 
-
 /// load a tile of data h_tile x w_tile from CPU (mmap) to the device (GPU) or work (CPU) memory
 /// @param dArray pointer for array in device memory
 /// @param h_offset Down/Height offset
@@ -187,6 +183,5 @@ MmapSlcImage::~MmapSlcImage()
 }
   	  
 // end of file
-
 
 } // namespace

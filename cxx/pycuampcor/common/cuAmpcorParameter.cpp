@@ -3,10 +3,7 @@
  * Input parameters for ampcor
  */
 
-#include "cuAmpcorParameter.h"
-#include "backend.h"
-#include "indexing.h"
-#include "logging.h"
+#include "public.h"
 #include <cstdio>
 #include <algorithm>
 #include <iostream>
@@ -14,8 +11,6 @@
 #include <string>
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND {
-
-
 
 /**
  * To determine other process parameters after reading essential parameters from python
@@ -173,7 +168,6 @@ void cuAmpcorParameter::_setupParameters_OnePass()
 
 }
 
-
 void cuAmpcorParameter::allocateArrays()
 {
     // (re)size arrays, discarding values from previous setups, if any
@@ -206,7 +200,6 @@ void cuAmpcorParameter::checkReadyToRun() const
         throw std::logic_error("Window starting pixels are not set; call setConstantGrossOffset() "
             "or setVaryingGrossOffset() after setupParams()");
 }
-
 
 // ****************
 // make reference window the same as secondary for oversampling
@@ -419,8 +412,6 @@ void cuAmpcorParameter::checkPixelInImageRange() const
 #endif // CUAMPCOR_DEBUG
 }
 
-
 // end of file
-
 
 } // namespace

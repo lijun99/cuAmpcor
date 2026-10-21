@@ -11,17 +11,12 @@
 #endif
 
 // my declarations
-#include "cuCorrNormalizationSAT.h"
-#include "float2.h"
-#include "cudaUtil.h"
-#include "cudaError.h"
+#include "public.h"
 
 namespace pycuampcor::cuda {
 
-
 // alias for cuda cooperative groups
 namespace cg = cooperative_groups;
-
 
 /**
  * cuda kernel for sum value^2 (std)
@@ -32,7 +27,6 @@ namespace cg = cooperative_groups;
  * @param[in] batch number of images
  * @note use one thread block for each image, blockIdx.x is image index
  **/
-
 
 #if __CUDACC_VER_MAJOR__ >= 11
 // use cg::reduce for NVCC 11 and above
@@ -139,7 +133,6 @@ __global__ void sum_square_kernel(real_type *sum2, const real_type *images, int 
 }
 #endif // __CUDACC_VER_MAJOR check
 
-
 /**
  * cuda kernel for 2d sum area table
  * Compute the (inclusive) sum area table of the value and value^2 of a batch of 2d images.
@@ -201,9 +194,6 @@ __global__ void sat2d_kernel(real_type *sat, real_type * sat2, const real_type *
     // all done
 }
 
-
-
-
 __global__ void cuCorrNormalizeSAT_kernel(real_type *correlation, const real_type *referenceSum2, const real_type *secondarySat,
     const real_type *secondarySat2, const int corNX, const int corNY, const int referenceNX, const int referenceNY,
     const int secondaryNX, const int secondaryNY)
@@ -244,7 +234,6 @@ __global__ void cuCorrNormalizeSAT_kernel(real_type *correlation, const real_typ
         correlation[(imageid*corNX+tx)*corNY+ty] *= rsqrt(norm2 + EPSILON);
     }
 }
-
 
 void cuCorrNormalizeSAT(cuArrays<real_type> *correlation, cuArrays<real_type> *reference, cuArrays<real_type> *secondary,
     cuArrays<real_type> * referenceSum2, cuArrays<real_type> *secondarySat, cuArrays<real_type> *secondarySat2, cudaStream_t stream)

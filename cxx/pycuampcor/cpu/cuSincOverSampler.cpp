@@ -5,10 +5,9 @@
  */
 
 // my declaration
-#include "cuSincOverSampler.h"
+#include "public.h"
 
 // dependencies
-#include "float2.h"
 #include <cmath>
 
 namespace pycuampcor::cpu {

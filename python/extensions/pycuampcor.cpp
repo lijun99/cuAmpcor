@@ -1,13 +1,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-#include "cuAmpcorController.h"
-#include "cuAmpcorParameter.h"
-#include "SlcImage.h"
-#include "logging.h"
-#ifdef PYCUAMPCOR_BACKEND_CUDA
-#include "cudaUtil.h"
-#endif
+#include "public.h"
 
 #include <functional>
 #include <map>

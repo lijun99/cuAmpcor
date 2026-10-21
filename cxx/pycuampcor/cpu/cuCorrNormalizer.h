@@ -8,10 +8,7 @@
 
 #pragma once
 
-#include "cuArrays.h"
-#include "data_types.h"
-
-#include <memory>
+#include "forward.h"
 
 namespace pycuampcor::cpu {
 

@@ -20,9 +20,7 @@
  */
 
 // dependencies
-#include "cuArraysCopy.h"
-#include "float2.h"
-#include "cpuUtil.h"
+#include "public.h"
 
 namespace pycuampcor::cpu {
 

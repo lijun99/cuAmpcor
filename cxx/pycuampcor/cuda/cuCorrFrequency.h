@@ -5,12 +5,10 @@
 
 #pragma once
 
-// dependencies
-#include "cuArrays.h"
-#include "data_types.h"
+#include "forward.h"
 #include "cufftPlan.h"
 
-#include <memory>
+// dependencies
 
 namespace pycuampcor::cuda {
 

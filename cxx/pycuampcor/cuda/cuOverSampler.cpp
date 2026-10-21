@@ -4,16 +4,9 @@
  */
 
 // my declarations
-#include "cuOverSampler.h"
+#include "public.h"
 
 // dependencies
-#include "cuArrays.h"
-#include "cuArrays.h"
-#include "cudaUtil.h"
-#include "cudaError.h"
-#include "float2.h"
-#include "cuArraysCopy.h"
-#include "cuArraysPadding.h"
 
 namespace pycuampcor::cuda {
 

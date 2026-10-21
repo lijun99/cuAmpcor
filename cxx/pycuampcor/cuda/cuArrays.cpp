@@ -5,11 +5,7 @@
  */
 
 // dependencies
-#include "cuArrays.h"
-#include "logging.h"
-#include "cudaError.h"
-#include "float2.h"
-#include "data_types.h"
+#include "public.h"
 #include <cuda_runtime.h>
 #include <cstdlib>
 #include <fstream>
@@ -71,7 +67,6 @@ void cuArrays<T>::setZero(cudaStream_t stream)
     checkCudaErrors(cudaMemsetAsync(devData, 0, getByteSize(), stream));
 }
 
-
 // Overloaded << operator for composite type
 std::ostream& operator<<(std::ostream& os, const float2& p) {
 
@@ -98,7 +93,6 @@ std::ostream& operator<<(std::ostream& os, const int2& p) {
         return os << "(" << p.x << ", " << p.y << ")";
 }
 
-
 // output (partial) data when debugging
 template <typename T>
 void cuArrays<T>::debuginfo(cudaStream_t stream) {
@@ -123,7 +117,6 @@ void cuArrays<T>::debuginfo(cudaStream_t stream) {
         std::cout << std::endl;
     }
 }
-
 
 // output to file by copying to host at first
 template<typename T>
@@ -157,6 +150,5 @@ template class cuArrays<int2>;
 template class cuArrays<int>;
 
 // end of file
-
 
 } // namespace

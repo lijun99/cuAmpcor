@@ -5,10 +5,7 @@
  */
 
 // my module dependencies
-#include "cuOffset.h"
-#include "float2.h"
-#include "cudaUtil.h"
-#include "cudaError.h"
+#include "public.h"
 
 namespace pycuampcor::cuda {
 
@@ -81,7 +78,6 @@ __device__ void max_reduction_2d(const real_type* const image,
     }
     __syncthreads();
 }
-
 
 // kernel for 2D array(image), find max location only
 template <const int BLOCKSIZE>
@@ -163,7 +159,6 @@ __global__ void cuSubPixelOffset_kernel(const int2 *offsetInit, const int2 *offs
     offsetFinal[idx].y = initRatio*(offsetInit[idx].y-initOrigin.y) + zoomInRatio*(offsetZoomIn[idx].y - zoomInOrigin.y);
 }
 
-
 /**
  * Determine the final offset value
  * @param[in] offsetInit max location (adjusted to the starting location for extraction) determined from
@@ -184,7 +179,6 @@ void cuSubPixelOffset(cuArrays<int2> *offsetInit,
     real_type initRatio = 1.0f/static_cast<real_type>(initFactor);
     real_type zoomInRatio = 1.0f/static_cast<real_type>(zoomInFactor);
 
-
     cuSubPixelOffset_kernel<<<divUp(size, NTHREADS), NTHREADS, 0, stream>>>
         (offsetInit->devData, offsetZoomIn->devData,
          offsetFinal->devData, size, initOrigin, initRatio, zoomInOrigin, zoomInRatio);
@@ -203,7 +197,6 @@ __global__ void cuSubPixelOffset2Pass_kernel(const int2 *offsetInit, const int2 
     offsetFinal[idx].x = OSratio*(offsetZoomIn[idx].x ) + offsetInit[idx].x  - xoffset;
     offsetFinal[idx].y = OSratio*(offsetZoomIn[idx].y ) + offsetInit[idx].y - yoffset;
 }
-
 
 /**
  * Determine the final offset value
@@ -244,7 +237,6 @@ void cuSubPixelOffset2Pass(cuArrays<int2> *offsetInit, cuArrays<int2> *offsetZoo
     checkCudaAsyncErrors();
 
 }
-
 
 // cuda device function to compute the shift of center
 static inline __device__ int2 dev_adjustOffset(
@@ -321,8 +313,5 @@ void cuDetermineSecondaryExtractOffset(cuArrays<int2> *maxLoc, cuArrays<int2> *m
 }
 
 // end of file
-
-
-
 
 } // namespace

@@ -8,8 +8,7 @@
 
 #pragma once
 
-#include <sstream>
-#include <string>
+#include "externals.h"
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND {
 

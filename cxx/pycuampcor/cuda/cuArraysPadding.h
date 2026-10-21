@@ -7,9 +7,7 @@
 
 #pragma once
 
-#include "backend.h"
-#include "cuArrays.h"
-#include "data_types.h"
+#include "forward.h"
 
 namespace pycuampcor::cuda {
 

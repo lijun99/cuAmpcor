@@ -4,10 +4,7 @@
  *
  **/
 
-#include "cpuUtil.h"
-#include "logging.h"
-#include "backend.h"
-#include "cuAmpcorParameter.h"
+#include "public.h"
 #include <cstring>
 #include <iostream>
 #ifdef _OPENMP

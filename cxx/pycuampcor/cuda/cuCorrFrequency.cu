@@ -3,11 +3,7 @@
  * @brief A class performs cross correlation in frequency domain
  */
 
-#include "cuCorrFrequency.h"
-#include "float2.h"
-#include "cuArraysCopy.h"
-#include "cudaUtil.h"
-#include "cudaError.h"
+#include "public.h"
 
 namespace pycuampcor::cuda {
 
@@ -64,7 +60,6 @@ cuFreqCorrelator::cuFreqCorrelator(int imageNX, int imageNY, int nImages, cudaSt
 
 /// destructor
 cuFreqCorrelator::~cuFreqCorrelator() = default;
-
 
 /**
  * Execute the cross correlation
@@ -131,6 +126,5 @@ static void cuArraysElementMultiplyConjugate(cuArrays<complex_type> *image1, cuA
     checkCudaAsyncErrors();
 }
 //end of file
-
 
 } // namespace

@@ -19,14 +19,8 @@
  * cuArraysR2C cuArraysC2R cuArraysAbs to convert between different data types
  */
 
-
 // dependencies
-#include "cuArrays.h"
-#include "cudaUtil.h"
-#include "cudaError.h"
-#include "float2.h"
-#include "data_types.h"
-#include "cuArraysCopy.h"
+#include "public.h"
 
 namespace pycuampcor::cuda {
 
@@ -433,10 +427,7 @@ void cuArraysCopyExtractCorr(cuArrays<real_type> *imagesIn, cuArrays<real_type> 
         make_int2(0, 0), make_int2(imagesIn->height, imagesIn->width), stream);
 }
 
-
 // end of correlation surface extraction (Minyan Zhong)
-
-
 
 template<typename T>
 __global__ void cuArraysCopyExtractFixedOffset(const T *imageIn, const int inNX, const int inNY,
@@ -492,7 +483,6 @@ template void cuArraysCopyExtract(cuArrays<complex_type> *in, cuArrays<real_type
 template void cuArraysCopyExtract(cuArrays<complex_type> *in, cuArrays<complex_type> *out, int2 offset, cudaStream_t);
 template void cuArraysCopyExtract(cuArrays<real3_type> *in, cuArrays<real3_type> *out, int2 offset, cudaStream_t);
 
-
 __global__ void cuArraysCopyExtractAbsFixedOffset(const complex_type *imageIn, const int inNX, const int inNY,
      real_type *imageOut, const int outNX, const int outNY, const int nImages,
      const int offsetX, const int offsetY)
@@ -522,8 +512,6 @@ void cuArraysCopyExtractAbs(cuArrays<complex_type> *imagesIn, cuArrays<real_type
         imagesOut->devData, imagesOut->height, imagesOut->width, imagesOut->count, offset.x, offset.y);
     checkCudaAsyncErrors();
 }
-
-
 
 template<typename T>
 __global__ void cuArraysCopyInsert_kernel(const T* imageIn, const int inNX, const int inNY,
@@ -623,7 +611,6 @@ void cuArraysSetConstant(cuArrays<real_type> *imageIn, real_type value, cudaStre
      checkCudaAsyncErrors();
 }
 
-
 // convert real_type to complex_type(complex)
 __global__ void cuArraysR2C_kernel(real_type *image1, complex_type *image2, int size)
 {
@@ -646,7 +633,6 @@ void cuArraysR2C(cuArrays<real_type> *image1, cuArrays<complex_type> *image2, cu
     cuArraysR2C_kernel<<<divUp(size, NTHREADS), NTHREADS, 0, stream>>>(image1->devData, image2->devData, size);
     checkCudaAsyncErrors();
 }
-
 
 // take real part of complex_type to real_type
 __global__ void cuArraysC2R_kernel(complex_type *image1, real_type *image2, int size)
@@ -693,6 +679,5 @@ void cuArraysAbs(cuArrays<complex_type> *image1, cuArrays<real_type> *image2, cu
 }
 
 // end of file
-
 
 } // namespace

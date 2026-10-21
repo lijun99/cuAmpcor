@@ -1,12 +1,4 @@
-#include "cuAmpcorProcessorOnePass.h"
-#include "logging.h"
-#include "cuArraysCopy.h"
-#include "cuDeramp.h"
-#include "cuCorrNormalization.h"
-#include "cuOffset.h"
-#include "cuCorrTimeDomain.h"
-#include "cuEstimateStats.h"
-#include "debug.h"
+#include "public.h"
 
 #include <iostream>
 
@@ -199,15 +191,12 @@ void cuAmpcorProcessorOnePass::run(int idxDown_, int idxAcross_, const cuAmpcorC
     // all done
 }
 
-
-
 /// constructor
 cuAmpcorProcessorOnePass::cuAmpcorProcessorOnePass(cuAmpcorParameter *param_,
     cuArrays<real2_type> *offsetImage_, cuArrays<real_type> *snrImage_, cuArrays<real3_type> *covImage_, cuArrays<real_type> *peakValueImage_,
     stream_t stream_)
     : cuAmpcorProcessor(param_, offsetImage_, snrImage_, covImage_, peakValueImage_, stream_)
 {
-
 
     c_referenceBatchRaw = std::make_unique<cuArrays<complex_type>>(
         param->windowSizeHeightRawEnlarged, param->windowSizeWidthRawEnlarged,
@@ -341,14 +330,12 @@ cuAmpcorProcessorOnePass::cuAmpcorProcessorOnePass(cuAmpcorParameter *param_,
             stream);
     }
 
-
     corrNormalizerOverSampled =
         newCuNormalizer(
         param->searchWindowSizeHeight,
         param->searchWindowSizeWidth,
         param->windowsDownInChunk * param->windowsAcrossInChunk
         );
-
 
     logDebug("all objects in chunk are created");
 }
@@ -357,6 +344,5 @@ cuAmpcorProcessorOnePass::cuAmpcorProcessorOnePass(cuAmpcorParameter *param_,
 cuAmpcorProcessorOnePass::~cuAmpcorProcessorOnePass() = default;
 
 // end of file
-
 
 } // namespace

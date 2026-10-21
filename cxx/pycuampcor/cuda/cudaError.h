@@ -10,10 +10,8 @@
 
 #pragma once
 
+#include "externals.h"
 #include "debug.h"
-
-#include <cuda_runtime.h>
-#include <cufft.h>
 
 namespace pycuampcor::cuda {
 
