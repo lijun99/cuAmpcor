@@ -6,8 +6,7 @@
  * The CPU backend uses the sum area table based algorithm (cuNormalizeSAT) for all sizes.
  */
 
-#ifndef __CUNORMALIZER_H
-#define __CUNORMALIZER_H
+#pragma once
 
 #include "cuArrays.h"
 #include "data_types.h"
@@ -45,6 +44,4 @@ public:
 };
 
 } // namespace
-
-#endif
 // end of file

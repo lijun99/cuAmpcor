@@ -5,8 +5,7 @@
  * Author: Lijun Zhu @ Seismo Lab, Caltech
  */
 
-#ifndef __CUAMPCORPARAMETER_H
-#define __CUAMPCORPARAMETER_H
+#pragma once
 
 #include <string>
 #include <vector>
@@ -187,6 +186,4 @@ private:
 };
 
 } // namespace
-
-#endif //__CUAMPCORPARAMETER_H
 //end of file

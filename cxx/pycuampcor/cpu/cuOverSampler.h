@@ -7,8 +7,7 @@
  * For complex images use cuOverSamplerC2C
  */
 
-#ifndef __CUOVERSAMPLER_H
-#define __CUOVERSAMPLER_H
+#pragma once
 
 #include "cuArrays.h"
 #include "data_types.h"
@@ -64,6 +63,4 @@ public:
 };
 
 } // namespace
-
-#endif //__CUOVERSAMPLER_H
 // end of file

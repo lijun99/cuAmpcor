@@ -8,10 +8,6 @@
  * Errors throw std::runtime_error (a python RuntimeError).
 **/
 
-// code guard
-#ifndef _CUDAERROR_CUH
-#define _CUDAERROR_CUH
-
 #pragma once
 
 #include "debug.h"
@@ -32,5 +28,3 @@ void checkCudaAsyncErrorsImpl(const char *file, int line);
     ::pycuampcor::cuda::checkCudaAsyncErrorsImpl(__FILE__, __LINE__)
 
 } // namespace
-
-#endif //__CUDAERROR_CUH

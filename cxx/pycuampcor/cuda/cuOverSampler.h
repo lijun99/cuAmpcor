@@ -8,8 +8,7 @@
  * @todo use template class to unify these two classes
  */
 
-#ifndef __CUOVERSAMPLER_H
-#define __CUOVERSAMPLER_H
+#pragma once
 
 #include "cuArrays.h"
 #include "data_types.h"
@@ -59,11 +58,6 @@ public:
     ~cuOverSamplerR2R();
 };
 
-
 } // namespace
-
-#endif //__CUOVERSAMPLER_H
 // end of file
-
-
 

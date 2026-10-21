@@ -4,8 +4,7 @@
  *
  **/
 
-#ifndef __CPUUTIL_H
-#define __CPUUTIL_H
+#pragma once
 
 #include "indexing.h"
 
@@ -20,6 +19,4 @@ inline int nextpower2(int value)
 }
 
 } // namespace
-
-#endif //__CPUUTIL_H
 //end of file

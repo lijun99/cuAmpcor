@@ -3,8 +3,7 @@
  * @brief Index helpers, for host and device code
  */
 
-#ifndef __PYCUAMPCOR_INDEXING_H
-#define __PYCUAMPCOR_INDEXING_H
+#pragma once
 
 #include "hostDevice.h"
 
@@ -23,6 +22,4 @@ PYCUAMPCOR_HOST_DEVICE constexpr int divUp(int i, int j)
 }
 
 } // namespace
-
-#endif //__PYCUAMPCOR_INDEXING_H
 //end of file

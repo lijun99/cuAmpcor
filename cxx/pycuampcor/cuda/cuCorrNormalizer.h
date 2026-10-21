@@ -9,8 +9,7 @@
  * cuNormalizer is a wrapper class which determines which processor to use.
  */
 
-#ifndef __CUNORMALIZER_H
-#define __CUNORMALIZER_H
+#pragma once
 
 #include "cuArrays.h"
 #include "data_types.h"
@@ -35,7 +34,6 @@ public:
 // factory with the secondary dimension
 std::unique_ptr<cuNormalizeProcessor> newCuNormalizer(int NX, int NY, int count);
 
-
 template<int Size>
 class cuNormalizeFixed : public cuNormalizeProcessor
 {
@@ -57,6 +55,4 @@ public:
 };
 
 } // namespace
-
-#endif
 // end of file

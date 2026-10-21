@@ -5,8 +5,7 @@
  * The values are those of the integer enums in pycuampcor.options (python).
  */
 
-#ifndef __CUAMPCOROPTIONS_H
-#define __CUAMPCOROPTIONS_H
+#pragma once
 
 #include <cstddef>
 
@@ -57,6 +56,4 @@ inline std::size_t pixelSize(DataType type)
 }
 
 } // namespace
-
-#endif //__CUAMPCOROPTIONS_H
 //end of file

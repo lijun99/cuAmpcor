@@ -3,8 +3,7 @@
  * @brief Various cuda related parameters and utilities
  **/
 
-#ifndef __CUDAUTIL_H
-#define __CUDAUTIL_H
+#pragma once
 
 #include "indexing.h"
 #include <cstddef>
@@ -48,6 +47,4 @@ std::vector<DeviceInfo> gpuDeviceList();
 int getSMCount(int devID=0);
 
 } // namespace
-
-#endif //__CUDAUTIL_H
 //end of file

@@ -8,8 +8,7 @@
  * copies its windows from the loaded chunk.
  */
 
-#ifndef __CUAMPCORCHUNKLOADER_H
-#define __CUAMPCORCHUNKLOADER_H
+#pragma once
 
 #include "backend.h"
 #include "SlcImage.h"
@@ -79,5 +78,3 @@ private:
 };
 
 } // namespace
-
-#endif //__CUAMPCORCHUNKLOADER_H

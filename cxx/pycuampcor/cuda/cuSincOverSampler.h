@@ -16,9 +16,7 @@
  *    the source code below if you need to adjust the parameters.
  */
 
-// code guard
-#ifndef __CUSINCOVERSAMPLER_H
-#define __CUSINCOVERSAMPLER_H
+#pragma once
 
 // dependencites
 #include "cuArrays.h"
@@ -63,6 +61,4 @@ class cuSincOverSamplerR2R
 };
 
 } // namespace
-
-#endif // _CUSINCOVERSAMPLER_H
 // end of file

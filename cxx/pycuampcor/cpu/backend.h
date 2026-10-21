@@ -10,8 +10,7 @@
  * at a time with its own chunk processor.
  */
 
-#ifndef __PYCUAMPCOR_BACKEND_H
-#define __PYCUAMPCOR_BACKEND_H
+#pragma once
 
 #include <cstddef>
 
@@ -53,6 +52,4 @@ inline void backendRecordEvent(event_t, stream_t) {}
 inline void backendWaitEvent(event_t) {}
 
 } // namespace
-
-#endif //__PYCUAMPCOR_BACKEND_H
 // end of file

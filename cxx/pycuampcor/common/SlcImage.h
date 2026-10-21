@@ -2,8 +2,7 @@
 // file slcimage.h
 // image sources (tile loaders) for slc images: a raw binary file (mmap) or an HDF5 dataset
 
-#ifndef __SLCIMAGE_H
-#define __SLCIMAGE_H
+#pragma once
 
 #include <memory>
 #include <string>
@@ -81,5 +80,3 @@ private:
 };
 
 } // namespace
-
-#endif //__SLCIMAGE_H

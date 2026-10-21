@@ -2,8 +2,7 @@
 // file Hdf5SlcImage.h
 // an image source for a 2D dataset in an HDF5 file
 
-#ifndef __HDF5SLCIMAGE_H
-#define __HDF5SLCIMAGE_H
+#pragma once
 
 #include <future>
 #include <list>
@@ -92,5 +91,3 @@ private:
 };
 
 } // namespace
-
-#endif //__HDF5SLCIMAGE_H

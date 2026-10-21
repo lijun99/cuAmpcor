@@ -4,9 +4,7 @@
  *
  */
 
-// code guard
-#ifndef __CUAMPCOR_DATA_TYPES_H
-#define __CUAMPCOR_DATA_TYPES_H
+#pragma once
 
 #include <float.h>
 #include <cuda_runtime.h> // for vector types int2, float2, ...
@@ -44,6 +42,4 @@ using image_complex_type = float2;
 using image_real_type = float;
 
 } // namespace
-
-#endif //__CUAMPCOR_DATA_TYPES_H
 //end of file

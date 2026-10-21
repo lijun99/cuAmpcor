@@ -5,9 +5,7 @@
  *
  */
 
-// code guard
-#ifndef __CUAMPCORUTIL_H
-#define __CUAMPCORUTIL_H
+#pragma once
 
 #include "data_types.h"
 #include "cuArrays.h"
@@ -17,7 +15,6 @@
 #include "float2.h"
 
 namespace pycuampcor::cpu {
-
 
 //in cuArraysCopy.cpp: various utilities for copy images file in memory
 void cuArraysCopyToBatch(cuArrays<image_complex_type> *image1, cuArrays<complex_type> *image2, int strideH, int strideW, stream_t stream);
@@ -63,7 +60,6 @@ void cuArraysSubtractMean(cuArrays<real_type> *images, stream_t stream);
 void cuCorrNormalizeSAT(cuArrays<real_type> *correlation, cuArrays<real_type> *reference, cuArrays<real_type> *secondary,
     cuArrays<double> *secondarySAT, cuArrays<double> *secondarySAT2, stream_t stream);
 
-
 //in cuOffset.cpp: utilities for determining the max location of cross correlations or the offset
 void cuArraysMaxloc2D(cuArrays<real_type> *images, cuArrays<int2> *maxloc, cuArrays<real_type> *maxval, stream_t stream);
 void cuArraysMaxloc2D(cuArrays<real_type> *images, const int2 start, const int2 range, cuArrays<int2> *maxloc, cuArrays<real_type> *maxval, stream_t stream);
@@ -77,7 +73,6 @@ void cuCorrTimeDomain(cuArrays<real_type> *templates, cuArrays<real_type> *image
 //in cuCorrFrequency.cpp: cross correlation in freq domain, also include fft correlatior class
 void cuArraysElementMultiplyConjugate(cuArrays<complex_type> *image1, cuArrays<complex_type> *image2, real_type coef, stream_t stream);
 
-
 // For SNR estimation on Correlation surface (Minyan Zhong)
 // implemented in cuArraysCopy.cpp
 void cuArraysCopyExtractCorr(cuArrays<real_type> *imagesIn, cuArrays<real_type> *imagesOut, cuArrays<int2> *maxloc, stream_t stream);
@@ -87,7 +82,6 @@ void cuArraysCopyExtractCorr(cuArrays<real_type> *imagesIn, cuArrays<real_type> 
 // implemented in cuCorrNormalization.cpp
 void cuArraysSumCorr(cuArrays<real_type> *images, cuArrays<int> *imagesValid, cuArrays<real_type> *imagesSum, cuArrays<int> *imagesValidCount, stream_t stream);
 
-
 // implemented in cuEstimateStats.cpp
 void cuEstimateSnr(cuArrays<real_type> *corrSum, cuArrays<int> *corrValidCount, cuArrays<real_type> *maxval, cuArrays<real_type> *snrValue, stream_t stream);
 
@@ -95,7 +89,4 @@ void cuEstimateSnr(cuArrays<real_type> *corrSum, cuArrays<int> *corrValidCount, 
 void cuEstimateVariance(cuArrays<real_type> *corrBatchRaw, cuArrays<int2> *maxloc, cuArrays<real_type> *maxval, const int templateSize, const int distance, cuArrays<real3_type> *covValue, stream_t stream);
 
 } // namespace
-
-#endif
-
 // end of file

@@ -4,8 +4,7 @@
  *
  */
 
-#ifndef __FLOAT2_H
-#define __FLOAT2_H
+#pragma once
 
 #include <cmath>
 
@@ -59,6 +58,4 @@ PYCUAMPCOR_DEFINE_COMPLEX_OPS(double2, double)
 #undef PYCUAMPCOR_DEFINE_COMPLEX_OPS
 
 } // namespace
-
-#endif //__FLOAT2_H
 // end of file

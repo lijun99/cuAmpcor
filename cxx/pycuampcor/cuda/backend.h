@@ -7,8 +7,7 @@
  * Each backend provides a backend.h with the same interface.
  */
 
-#ifndef __PYCUAMPCOR_BACKEND_H
-#define __PYCUAMPCOR_BACKEND_H
+#pragma once
 
 #include <cuda_runtime.h>
 #include <cstddef>
@@ -52,6 +51,4 @@ void backendRecordEvent(event_t event, stream_t stream);
 void backendWaitEvent(event_t event);
 
 } // namespace
-
-#endif //__PYCUAMPCOR_BACKEND_H
 // end of file

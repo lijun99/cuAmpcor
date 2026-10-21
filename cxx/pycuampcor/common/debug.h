@@ -8,15 +8,11 @@
  *
  */
 
-// code guard
-#ifndef __CUAMPCOR_DEBUG_H
-#define __CUAMPCOR_DEBUG_H
+#pragma once
 
 #ifndef NDEBUG
 #define CUAMPCOR_DEBUG
 #endif //NDEBUG
 
 #define CUDA_ERROR_CHECK
-
-#endif //__CUAMPCOR_DEBUG_H
 //end of file

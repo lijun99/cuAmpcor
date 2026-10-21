@@ -3,8 +3,7 @@
  * @brief Helpers for the backend-agnostic unit tests
  */
 
-#ifndef __PYCUAMPCOR_TEST_UTIL_H
-#define __PYCUAMPCOR_TEST_UTIL_H
+#pragma once
 
 #include <gtest/gtest.h>
 
@@ -129,5 +128,3 @@ constexpr double tol = 1e-5;
 #endif
 
 } // namespace
-
-#endif // __PYCUAMPCOR_TEST_UTIL_H

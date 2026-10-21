@@ -10,9 +10,7 @@
  * the interface is kept the same as the CUDA backend.
  **/
 
-// code guard
-#ifndef __CUARRAYS_H
-#define __CUARRAYS_H
+#pragma once
 
 #include "backend.h"
 #include "data_types.h"
@@ -111,6 +109,4 @@ std::ostream& operator<<(std::ostream& os, const double3& p);
 std::ostream& operator<<(std::ostream& os, const int2& p);
 
 } // namespace
-
-#endif //__CUARRAYS_H
 //end of file

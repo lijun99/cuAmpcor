@@ -3,9 +3,7 @@
  * @brief A class performs cross correlation in frequency domain (CPU backend)
  */
 
-// code guard
-#ifndef __CUCORRFREQUENCY_H
-#define __CUCORRFREQUENCY_H
+#pragma once
 
 // dependencies
 #include "cuArrays.h"
@@ -39,6 +37,4 @@ public:
 };
 
 } // namespace
-
-#endif //__CUCORRFREQUENCY_H
 // end of file

@@ -11,9 +11,7 @@
  *  the kernel execution with data copying.
  */
 
-// code guard
-#ifndef CU_AMPCOR_CONTROLLER_H
-#define CU_AMPCOR_CONTROLLER_H
+#pragma once
 
 // dependencies
 #include "cuAmpcorParameter.h"
@@ -33,7 +31,4 @@ public:
     bool isDoublePrecision();
 };
 } // namespace
-
-#endif
-
 // end of file

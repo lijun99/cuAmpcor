@@ -7,8 +7,7 @@
  *   which have the same alignment as those used for planning.
  */
 
-#ifndef __FFTWUTIL_H
-#define __FFTWUTIL_H
+#pragma once
 
 #include "data_types.h"
 #include <fftw3.h>
@@ -80,6 +79,4 @@ inline fftw_complex_type * fftwCast(complex_type *data)
 }
 
 } // namespace
-
-#endif //__FFTWUTIL_H
 // end of file

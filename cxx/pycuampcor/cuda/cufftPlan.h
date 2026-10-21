@@ -3,8 +3,7 @@
  * @brief A cuFFT plan, destroyed with its owner
  */
 
-#ifndef __CUFFTPLAN_H
-#define __CUFFTPLAN_H
+#pragma once
 
 #include "cudaError.h"
 #include <cufft.h>
@@ -59,6 +58,4 @@ private:
 };
 
 } // namespace
-
-#endif //__CUFFTPLAN_H
 //end of file

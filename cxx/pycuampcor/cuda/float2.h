@@ -4,8 +4,7 @@
  *
  */
 
-#ifndef __FLOAT2_H
-#define __FLOAT2_H
+#pragma once
 
 #include <cuda_runtime.h>
 #include <math.h>
@@ -127,7 +126,6 @@ inline __host__ __device__ float2 complexExp(float arg)
     return make_float2(cosf(arg), sinf(arg));
 }
 
-
 // double precision
 inline __host__ __device__ void zero(double2 &a) { a.x = 0.0; a.y = 0.0; }
 
@@ -244,8 +242,5 @@ inline __host__ __device__ double2 complexExp(double arg)
     return make_double2(cos(arg), sin(arg));
 }
 
-
 } // namespace
-
-#endif //__FLOAT2_H
 // end of file

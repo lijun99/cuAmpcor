@@ -5,8 +5,7 @@
  *
  */
 
-#ifndef __CUAMPCORPROCESSOR_H
-#define __CUAMPCORPROCESSOR_H
+#pragma once
 
 #include "backend.h"
 #include "SlcImage.h"
@@ -23,7 +22,6 @@
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND {
 
-
 /**
  * cuAmpcor batched processor (virtual class)
  */
@@ -37,7 +35,6 @@ protected:
     int nWindowsAcross;   ///< number of windows in one chunk, across
 
     int devId;            ///< GPU device ID to use
-
 
     cuAmpcorParameter *param;   ///< reference to the (global) parameters
     cuArrays<real2_type> *offsetImage; ///< output offsets image
@@ -82,5 +79,3 @@ protected:
 };
 
 } // namespace
-
-#endif //__CUAMPCORPROCESSOR_H

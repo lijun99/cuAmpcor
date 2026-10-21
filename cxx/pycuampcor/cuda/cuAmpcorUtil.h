@@ -5,9 +5,7 @@
  *
  */
 
-// code guard
-#ifndef __CUAMPCORUTIL_H
-#define __CUAMPCORUTIL_H
+#pragma once
 
 #include "data_types.h"
 #include "cuArrays.h"
@@ -18,7 +16,6 @@
 #include "float2.h"
 
 namespace pycuampcor::cuda {
-
 
 //in cuArraysCopy.cu: various utilities for copy images file in gpu memory
 void cuArraysCopyToBatch(cuArrays<image_complex_type> *image1, cuArrays<complex_type> *image2, int strideH, int strideW, cudaStream_t stream);
@@ -90,7 +87,6 @@ void cuCorrTimeDomain(cuArrays<real_type> *templates, cuArrays<real_type> *image
 void cuArraysElementMultiply(cuArrays<complex_type> *image1, cuArrays<complex_type> *image2, cudaStream_t stream);
 void cuArraysElementMultiplyConjugate(cuArrays<complex_type> *image1, cuArrays<complex_type> *image2, real_type coef, cudaStream_t stream);
 
-
 // For SNR estimation on Correlation surface (Minyan Zhong)
 // implemented in cuArraysCopy.cu
 void cuArraysCopyExtractCorr(cuArrays<real_type> *imagesIn, cuArrays<real_type> *imagesOut, cuArrays<int2> *maxloc, cudaStream_t stream);
@@ -100,7 +96,6 @@ void cuArraysCopyExtractCorr(cuArrays<real_type> *imagesIn, cuArrays<real_type> 
 // implemented in cuCorrNormalization.cu
 void cuArraysSumCorr(cuArrays<real_type> *images, cuArrays<int> *imagesValid, cuArrays<real_type> *imagesSum, cuArrays<int> *imagesValidCount, cudaStream_t stream);
 
-
 // implemented in cuEstimateStats.cu
 void cuEstimateSnr(cuArrays<real_type> *corrSum, cuArrays<int> *corrValidCount, cuArrays<real_type> *maxval, cuArrays<real_type> *snrValue, cudaStream_t stream);
 
@@ -108,7 +103,4 @@ void cuEstimateSnr(cuArrays<real_type> *corrSum, cuArrays<int> *corrValidCount, 
 void cuEstimateVariance(cuArrays<real_type> *corrBatchRaw, cuArrays<int2> *maxloc, cuArrays<real_type> *maxval, const int templateSize, const int distance, cuArrays<real3_type> *covValue, cudaStream_t stream);
 
 } // namespace
-
-#endif
-
 // end of file

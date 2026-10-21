@@ -5,13 +5,11 @@
  *
  */
 
-#ifndef __CUAMPCORPROCESSOROnePass_H
-#define __CUAMPCORPROCESSOROnePass_H
+#pragma once
 
 #include "cuAmpcorProcessor.h"
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND {
-
 
 /**
  * cuAmpcor processor for a chunk (a batch of windows)
@@ -86,5 +84,3 @@ public:
 };
 
 } // namespace
-
-#endif //__CUAMPCORPROCESSOROnePass_H

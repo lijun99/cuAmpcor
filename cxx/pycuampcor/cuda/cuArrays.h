@@ -7,9 +7,7 @@
  * The number of images (countH, countW) or (1, count).
  **/
 
-// code guard
-#ifndef __CUARRAYS_H
-#define __CUARRAYS_H
+#pragma once
 
 // cuda dependencies
 #include <driver_types.h>
@@ -104,6 +102,4 @@ std::ostream& operator<<(std::ostream& os, const float3& p);
 std::ostream& operator<<(std::ostream& os, const int2& p);
 
 } // namespace
-
-#endif //__CUARRAYS_H
 //end of file
