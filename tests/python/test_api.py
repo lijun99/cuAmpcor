@@ -247,9 +247,17 @@ def test_auto_chunk_size(impl, images, tmp_path):
 
 @needs_gpu
 def test_gpu_device_errors(images, tmp_path):
-    with pytest.raises(RuntimeError, match="not a valid GPU device"):
+    with pytest.raises(RuntimeError, match="Invalid CUDA device 99"):
         run_ampcor("gpu", images, SHAPE, tmp_path, deviceID=99, n_windows=(2, 2))
-    assert pycuampcor.PyCuAmpcor.get_sm_count(0) > 0
+    # invalid device when choosing the chunk size automatically
+    with pytest.raises(RuntimeError, match="cudaErrorInvalidDevice"):
+        run_ampcor("gpu", images, SHAPE, tmp_path, deviceID=99, n_windows=(2, 2),
+                   numberWindowDownInChunk=0)
+    assert pycuampcor.PyCuAmpcor.get_sm_count() == pycuampcor.PyCuAmpcor.get_sm_count(0) > 0
     # static, callable from the class or an instance
-    pycuampcor.PyCuAmpcor.device_list()
-    pycuampcor.PyCuAmpcor().device_list()
+    devices = pycuampcor.PyCuAmpcor.device_list()
+    assert devices == pycuampcor.PyCuAmpcor().device_list()
+    assert [d["id"] for d in devices] == list(range(len(devices)))
+    assert devices[0]["sm_count"] == pycuampcor.PyCuAmpcor.get_sm_count(0)
+    assert devices[0]["compute_capability"][0] > 0
+    assert devices[0]["total_memory"] > 0 and devices[0]["name"]

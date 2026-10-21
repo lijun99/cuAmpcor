@@ -246,18 +246,26 @@ PYBIND11_MODULE(PYCUAMPCOR_MODULE, m)
         .def("setVaryingGrossOffset", &setVaryingGrossOffset)
 
 #ifdef PYCUAMPCOR_BACKEND_CUDA
-        .def_static("device_init", [](int device = 0) {
-            return gpuDeviceInit(device);
-        },
-        "Init the given cuda device (default = 0)")
+        .def_static("device_init", &gpuDeviceInit,
+        "Init the given cuda device (default = 0)",
+        pybind11::arg("device") = 0)
 
-        .def_static("get_sm_count", [](int device = 0) {
-            return getSMCount(device);
-        },
-        "Returns the number of SMs (streaming multiprocessors) on the given device.")
+        .def_static("get_sm_count", &getSMCount,
+        "Returns the number of SMs (streaming multiprocessors) on the given device.",
+        pybind11::arg("device") = 0)
 
-        .def_static("device_list", &gpuDeviceList,
-        "List all available cuda devices")
+        .def_static("device_list", [] {
+            pybind11::list devices;
+            for (const auto &d : gpuDeviceList())
+                devices.append(pybind11::dict(
+                    pybind11::arg("id") = d.id, pybind11::arg("name") = d.name,
+                    pybind11::arg("sm_count") = d.smCount,
+                    pybind11::arg("compute_capability") = pybind11::make_tuple(d.major, d.minor),
+                    pybind11::arg("total_memory") = d.totalMemory));
+            return devices;
+        },
+        "List the available cuda devices, as dicts with id, name, sm_count,\n"
+        "compute_capability (major, minor) and total_memory (bytes)")
 
 #endif
     ;

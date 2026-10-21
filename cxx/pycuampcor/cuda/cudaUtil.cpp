@@ -15,57 +15,30 @@ namespace pycuampcor::cuda {
 
 int gpuDeviceInit(int devID)
 {
-    int device_count;
-    checkCudaErrors(cudaGetDeviceCount(&device_count));
-
-    if (device_count == 0) {
-        throw std::runtime_error("gpuDeviceInit() CUDA error: no devices supporting CUDA.");
-    }
-
-    if (devID < 0 || devID > device_count - 1) {
-        throw std::runtime_error("gpuDeviceInit() Device " + std::to_string(devID) + " is not a valid GPU device.");
-    }
+    int count = 0;
+    checkCudaErrors(cudaGetDeviceCount(&count));
+    if (devID < 0 || devID >= count)
+        throw std::runtime_error("Invalid CUDA device " + std::to_string(devID)
+            + " (" + std::to_string(count) + " devices available)");
 
     checkCudaErrors(cudaSetDevice(devID));
     printf("Using CUDA Device %d ...\n", devID);
-
     return devID;
 }
 
-void gpuDeviceList()
+std::vector<DeviceInfo> gpuDeviceList()
 {
-    int device_count = 0;
-    checkCudaErrors(cudaGetDeviceCount(&device_count));
+    int count = 0;
+    checkCudaErrors(cudaGetDeviceCount(&count));
 
-    fprintf(stderr, "Detecting all CUDA devices ...\n");
-    if (device_count == 0) {
-        throw std::runtime_error("CUDA error: no devices supporting CUDA.");
+    std::vector<DeviceInfo> devices;
+    for (int id = 0; id < count; id++) {
+        cudaDeviceProp prop;
+        checkCudaErrors(cudaGetDeviceProperties(&prop, id));
+        devices.push_back({id, prop.name, prop.multiProcessorCount,
+                           prop.major, prop.minor, prop.totalGlobalMem});
     }
-
-    for (int current_device = 0; current_device < device_count; ++current_device) {
-        cudaDeviceProp deviceProp;
-        checkCudaErrors(cudaGetDeviceProperties(&deviceProp, current_device));
-
-#if CUDART_VERSION < 13000   // computeMode field removed in CUDA 13
-        if (deviceProp.computeMode == cudaComputeModeProhibited) {
-            fprintf(stderr,
-                    "CUDA Device [%d]: \"%s\" is not available: "
-                    "device is running in <Compute Mode Prohibited>\n",
-                    current_device, deviceProp.name);
-            continue;
-        }
-#endif
-
-        if (deviceProp.major < 1) {
-            fprintf(stderr,
-                    "CUDA Device [%d]: \"%s\" is not available: "
-                    "device does not support CUDA\n",
-                    current_device, deviceProp.name);
-        } else {
-            fprintf(stderr, "CUDA Device [%d]: \"%s\" is available.\n",
-                    current_device, deviceProp.name);
-        }
-    }
+    return devices;
 }
 
 int getSMCount(int devID)
@@ -74,12 +47,9 @@ int getSMCount(int devID)
     if (devID < 0)
         checkCudaErrors(cudaGetDevice(&devID));
 
-    // Retrieve device properties
-    cudaDeviceProp prop;
-    checkCudaErrors(cudaGetDeviceProperties(&prop, devID));
-
-    // Return the SM (Streaming Multiprocessor) count
-    return prop.multiProcessorCount;
+    int count;
+    checkCudaErrors(cudaDeviceGetAttribute(&count, cudaDevAttrMultiProcessorCount, devID));
+    return count;
 }
 
 // backend hooks for the shared ampcor code

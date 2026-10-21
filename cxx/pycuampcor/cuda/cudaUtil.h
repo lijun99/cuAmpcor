@@ -1,14 +1,14 @@
 /**
  * @file cudaUtil.h
  * @brief Various cuda related parameters and utilities
- *
- * Some routines are adapted from Nvidia CUDA samples/common/inc/help_cuda.h
- * Copyright 1993-2013 NVIDIA Corporation.  All rights reserved.
- *
  **/
 
 #ifndef __CUDAUTIL_H
 #define __CUDAUTIL_H
+
+#include <cstddef>
+#include <string>
+#include <vector>
 
 namespace pycuampcor::cuda {
 
@@ -20,31 +20,9 @@ namespace pycuampcor::cuda {
 #define NTHREADS 512  //
 #define NTHREADS2D 16 //
 
-#define WARPSIZE 32
-#define MAXTHREADS 1024  //2048 for newer GPUs
-
-#ifdef __FERMI__ //2.0: M2090
-#define MAXBLOCKS 65535  //x
-#define MAXBLOCKS2 65535 //y,z
-#else //2.0 and above : K40, ...
-#define MAXBLOCKS 4294967295 //x
-#define MAXBLOCKS2 65535  //y,z
-#endif
-
 #define IDX2R(i,j,NJ) (((i)*(NJ))+(j))  //row-major order
-#define IDX2C(i,j,NI) (((j)*(NI))+(i))  //col-major order
 
 #define IDIVUP(i,j) ((i+j-1)/j)
-
-#define IMUL(a, b) __mul24(a, b)
-
-#ifndef MAX
-#define MAX(a,b) (a > b ? a : b)
-#endif
-
-#ifndef MIN
-#define MIN(a,b) (a > b ? b: a)
-#endif
 
 // compute the next integer in power of 2
 inline int nextpower2(int value)
@@ -54,13 +32,22 @@ inline int nextpower2(int value)
     return r;
 }
 
-// General GPU Device CUDA Initialization
+// a CUDA device
+struct DeviceInfo {
+    int id;
+    std::string name;
+    int smCount;               ///< number of streaming multiprocessors
+    int major, minor;          ///< compute capability
+    std::size_t totalMemory;   ///< global memory in bytes
+};
+
+// select the device (devID) for the calling thread, and return its id
 int gpuDeviceInit(int devID=0);
 
-// This function lists all available GPUs
-void gpuDeviceList();
+// list the available devices
+std::vector<DeviceInfo> gpuDeviceList();
 
-// Get the number of StreamMultiprocessor
+// Get the number of StreamMultiprocessor (of the current device if devID < 0)
 int getSMCount(int devID=0);
 
 } // namespace
