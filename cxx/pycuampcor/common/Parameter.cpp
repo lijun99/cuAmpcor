@@ -5,6 +5,7 @@
 
 #include "Parameter.h"
 #include "indexing.h"
+#include "debug.h"
 #include "logging.h"
 
 namespace pycuampcor {

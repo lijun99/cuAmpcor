@@ -18,6 +18,7 @@
 #include "Normalizer.h"
 #include "SurfaceOverSampler.h"
 #include "Correlator.h"
+#include "debug.h"
 
 namespace pycuampcor {
 

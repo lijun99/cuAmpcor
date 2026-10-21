@@ -72,6 +72,9 @@
 
 ### Fixes
 
+- Debug builds: the CPU package dumps the intermediate arrays (as the CUDA package), and
+  `checkPixelInImageRange` warns about the windows outside the images (both were compiled out:
+  the debug flag wasn't included there).
 - The time-domain correlation on the GPU (`algorithm=1`) computed only as many rows of the
   correlation surfaces as they have columns: with `halfSearchRangeDown` > `halfSearchRangeAcross`,
   the lower rows were missed (wrong offsets for peaks there); with a wider surface, the extra

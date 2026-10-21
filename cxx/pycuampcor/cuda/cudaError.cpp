@@ -4,6 +4,7 @@
  */
 
 #include "cudaError.h"
+#include "debug.h"
 #include "logging.h"
 
 namespace pycuampcor::cuda {
