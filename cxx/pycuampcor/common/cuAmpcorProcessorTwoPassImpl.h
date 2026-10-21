@@ -33,6 +33,8 @@ void cuAmpcorProcessorTwoPass<arrayT>::run(int idxDown, int idxAcross, const chu
     copyToBatch(chunk.reference, param.referenceStartPixelDown, param.referenceStartPixelAcross,
         c_referenceBatchRaw);
     cuArraysAbs(c_referenceBatchRaw, r_referenceBatchRaw, stream);
+    // dump: write the intermediate arrays to files, in debug builds only (CUAMPCOR_DEBUG, defined
+    // without NDEBUG); a no-op otherwise
     dump(c_referenceBatchRaw, "c_referenceBatchRaw");
     dump(r_referenceBatchRaw, "r_referenceBatchRaw");
     cuArraysSubtractMean(r_referenceBatchRaw, stream);

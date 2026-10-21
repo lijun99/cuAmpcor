@@ -176,6 +176,8 @@ void cuAmpcorProcessor<arrayT>::correlate(array_type<real_type> &reference,
         freqCorrelator->execute(reference, secondary, surface);
     else
         cuCorrTimeDomain(reference, secondary, surface, stream);
+    // dump: write the intermediate arrays to files, in debug builds only (CUAMPCOR_DEBUG, defined
+    // without NDEBUG); a no-op otherwise
     dump(surface, name + "UnNorm");
 
     normalizer->execute(surface, reference, secondary, stream);

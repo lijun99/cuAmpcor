@@ -34,6 +34,8 @@ void cuAmpcorProcessorOnePass<arrayT>::run(int idxDown, int idxAcross, const chu
     // size), with the mean subtracted
     copyToBatch(chunk.reference, param.referenceStartPixelDown, param.referenceStartPixelAcross,
         c_referenceBatchRaw);
+    // dump: write the intermediate arrays to files, in debug builds only (CUAMPCOR_DEBUG, defined
+    // without NDEBUG); a no-op otherwise
     dump(c_referenceBatchRaw, "c_referenceBatchRaw");
 
     // the phase ramp removed, so that the spectrum is centered for the oversampling
