@@ -8,11 +8,15 @@
 #pragma once
 
 #include "forward.h"
+#include "ArraysView.h"
 
 namespace pycuampcor::cuda {
 
-void cuCorrTimeDomain(cuArrays<real_type> *templates, cuArrays<real_type> *images,
-    cuArrays<real_type> *results, stream_t stream);
+/// cross-correlate the templates (reference windows) with the images (secondary windows) in the
+/// time domain: the k-th surface of results, of (image - template + 1) pixels each way, from the k-th
+/// template and image
+void cuCorrTimeDomain(ArraysView<const real_type> templates, ArraysView<const real_type> images,
+    ArraysView<real_type> results, stream_t stream);
 
 } // namespace
 //end of file

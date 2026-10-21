@@ -6,7 +6,6 @@
 
 #include "CorrTimeDomain.h"
 #include "float2.h"
-#include "Arrays.h"
 
 namespace pycuampcor::cpu {
 
@@ -16,19 +15,19 @@ namespace pycuampcor::cpu {
  * @param[in] images Secondary images
  * @param[out] results Output correlation surface
  */
-void cuCorrTimeDomain(array_type<real_type> *templates,
-               array_type<real_type> *images,
-               array_type<real_type> *results,
+void cuCorrTimeDomain(ArraysView<const real_type> templates,
+               ArraysView<const real_type> images,
+               ArraysView<real_type> results,
                stream_t)
 {
-    const int templateNX = templates->height, templateNY = templates->width;
-    const int imageNY = images->width;
-    const int resultNX = results->height, resultNY = results->width;
+    const int templateNX = templates.height(), templateNY = templates.width();
+    const int imageNY = images.width();
+    const int resultNX = results.height(), resultNY = results.width();
 
-    for(int imageIdx = 0; imageIdx < images->count; imageIdx++) {
-        const real_type *templateD = templates->devData + static_cast<size_t>(imageIdx)*templates->size;
-        const real_type *imageD = images->devData + static_cast<size_t>(imageIdx)*images->size;
-        real_type *resultD = results->devData + static_cast<size_t>(imageIdx)*results->size;
+    for(int imageIdx = 0; imageIdx < images.count(); imageIdx++) {
+        const real_type *templateD = templates.array(imageIdx).data_handle();
+        const real_type *imageD = images.array(imageIdx).data_handle();
+        real_type *resultD = results.array(imageIdx).data_handle();
         // accumulate a row of the correlation surface at once: the innermost loop over
         // the (independent) result pixels vectorizes, while the summation order of each
         // result pixel is kept (over the template pixels, row by row)

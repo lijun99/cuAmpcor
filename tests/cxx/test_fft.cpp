@@ -123,7 +123,7 @@ TEST_F(FFTTest, Correlators)
     cuFreqCorrelator correlator(H, W, n, stream);
     correlator.execute(t.get(), s.get(), c.get());
     auto rf = download(*c);
-    cuCorrTimeDomain(t.get(), s.get(), c.get(), stream);
+    cuCorrTimeDomain(*t, *s, *c, stream);
     auto rt = download(*c);
     for (size_t i = 0; i < ref.size(); i++) {
         EXPECT_NEAR(rf[i], ref[i], 1e3*tol) << i;

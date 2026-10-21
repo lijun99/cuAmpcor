@@ -8,31 +8,27 @@
 #include "cuCorrTimeDomain.h"
 #include "float2.h"
 #include "cudaError.h"
-#include "cuArrays.h"
 
 namespace pycuampcor::cuda {
 
 // cuda kernel for cuCorrTimeDomain
 template<const int nthreads, const int NPT>
-__global__ void cuArraysCorrTime_kernel(
-    const int nImages,
-    const real_type *templateIn, const int templateNX, const int templateNY, const int templateSize,
-    const real_type *imageIn, const int imageNX, const int imageNY, const int imageSize,
-    real_type *resultOut, const int resultNX, const int resultNY, const int resultSize)
+__global__ void cuArraysCorrTime_kernel(ArraysView<const real_type> templates,
+    ArraysView<const real_type> images, ArraysView<real_type> results)
 {
     __shared__ real_type shmem[nthreads*(1+NPT)];
     const int tid = threadIdx.x;
     const int bid =  blockIdx.x;
     const int  yc =  blockIdx.y*NPT;
 
-    const int       imageIdx = bid;
-    const int    imageOffset = imageIdx *    imageSize;
-    const int templateOffset = imageIdx * templateSize;
-    const int   resultOffset = imageIdx *   resultSize;
+    const int templateNY = templates.width(), templateSize = templates.arraySize();
+    const int imageNY = images.width();
+    const int resultNY = results.width(), resultSize = results.arraySize();
 
-    const real_type *   imageD =    imageIn  +    imageOffset + tid;
-    const real_type *templateD = templateIn  + templateOffset + tid;
-     real_type *  resultD =   resultOut +   resultOffset;
+    const int       imageIdx = bid;
+    const real_type *   imageD =    images.array(imageIdx).data_handle() + tid;
+    const real_type *templateD = templates.array(imageIdx).data_handle() + tid;
+     real_type *  resultD =   results.array(imageIdx).data_handle();
 
     const int q  = min(nthreads/resultNY, 4);
     const int nt = nthreads/q;
@@ -101,14 +97,14 @@ __global__ void cuArraysCorrTime_kernel(
  * @param[out] results Output correlation surface
  * @param[in] stream cudaStream
  */
-void cuCorrTimeDomain(cuArrays<real_type> *templates,
-               cuArrays<real_type> *images,
-               cuArrays<real_type> *results,
+void cuCorrTimeDomain(ArraysView<const real_type> templates,
+               ArraysView<const real_type> images,
+               ArraysView<real_type> results,
                cudaStream_t stream)
 {
     /* compute correlation matrix */
-    const int nImages = images->count;
-    const int imageNY = images->width;
+    const int nImages = images.count();
+    const int imageNY = images.width();
 
 #ifdef CUAMPCOR_DOUBLE
     // static shared memory is limited to 48K; the same NPT must be used in both host and device passes
@@ -118,75 +114,45 @@ void cuCorrTimeDomain(cuArrays<real_type> *templates,
     const int NPT = 8;
 #endif
 
-    const dim3 grid(nImages, (results->width-1)/NPT+1, 1);
+    const dim3 grid(nImages, (results.width()-1)/NPT+1, 1);
     if      (imageNY <=   64) {
-        cuArraysCorrTime_kernel<  64,NPT><<<grid,  64, 0, stream>>>(nImages,
-            templates->devData, templates->height, templates->width, templates->size,
-            images->devData, images->height, images->width, images->size,
-            results->devData, results->height, results->width, results->size);
+        cuArraysCorrTime_kernel<  64,NPT><<<grid,  64, 0, stream>>>(templates, images, results);
         checkCudaAsyncErrors();
     }
     else if (imageNY <=  128)  {
-        cuArraysCorrTime_kernel< 128,NPT><<<grid, 128, 0, stream>>>(nImages,
-            templates->devData, templates->height, templates->width, templates->size,
-            images->devData, images->height, images->width, images->size,
-            results->devData, results->height, results->width, results->size);
+        cuArraysCorrTime_kernel< 128,NPT><<<grid, 128, 0, stream>>>(templates, images, results);
         checkCudaAsyncErrors();
     }
     else if (imageNY <=  192) {
-        cuArraysCorrTime_kernel< 192,NPT><<<grid, 192, 0, stream>>>(nImages,
-            templates->devData, templates->height, templates->width, templates->size,
-            images->devData, images->height, images->width, images->size,
-            results->devData, results->height, results->width, results->size);
+        cuArraysCorrTime_kernel< 192,NPT><<<grid, 192, 0, stream>>>(templates, images, results);
         checkCudaAsyncErrors();
     }
     else if (imageNY <=  256) {
-        cuArraysCorrTime_kernel< 256,NPT><<<grid, 256, 0, stream>>>(nImages,
-            templates->devData, templates->height, templates->width, templates->size,
-            images->devData, images->height, images->width, images->size,
-            results->devData, results->height, results->width, results->size);
+        cuArraysCorrTime_kernel< 256,NPT><<<grid, 256, 0, stream>>>(templates, images, results);
         checkCudaAsyncErrors();
     }
     else if (imageNY <=  384) {
-        cuArraysCorrTime_kernel< 384,NPT><<<grid, 384, 0, stream>>>(nImages,
-            templates->devData, templates->height, templates->width, templates->size,
-            images->devData, images->height, images->width, images->size,
-            results->devData, results->height, results->width, results->size);
-            checkCudaAsyncErrors();
+        cuArraysCorrTime_kernel< 384,NPT><<<grid, 384, 0, stream>>>(templates, images, results);
+        checkCudaAsyncErrors();
     }
     else if (imageNY <=  512) {
-        cuArraysCorrTime_kernel< 512,NPT><<<grid, 512, 0, stream>>>(nImages,
-            templates->devData, templates->height, templates->width, templates->size,
-            images->devData, images->height, images->width, images->size,
-            results->devData, results->height, results->width, results->size);
+        cuArraysCorrTime_kernel< 512,NPT><<<grid, 512, 0, stream>>>(templates, images, results);
         checkCudaAsyncErrors();
     }
     else if (imageNY <=  640) {
-        cuArraysCorrTime_kernel< 640,NPT><<<grid, 640, 0, stream>>>(nImages,
-            templates->devData, templates->height, templates->width, templates->size,
-            images->devData, images->height, images->width, images->size,
-            results->devData, results->height, results->width, results->size);
+        cuArraysCorrTime_kernel< 640,NPT><<<grid, 640, 0, stream>>>(templates, images, results);
         checkCudaAsyncErrors();
     }
     else if (imageNY <=  768) {
-        cuArraysCorrTime_kernel< 768,NPT><<<grid, 768, 0, stream>>>(nImages,
-            templates->devData, templates->height, templates->width, templates->size,
-            images->devData, images->height, images->width, images->size,
-            results->devData, results->height, results->width, results->size);
+        cuArraysCorrTime_kernel< 768,NPT><<<grid, 768, 0, stream>>>(templates, images, results);
         checkCudaAsyncErrors();
     }
     else if (imageNY <=  896) {
-        cuArraysCorrTime_kernel< 896,NPT><<<grid, 896, 0, stream>>>(nImages,
-            templates->devData, templates->height, templates->width, templates->size,
-            images->devData, images->height, images->width, images->size,
-            results->devData, results->height, results->width, results->size);
+        cuArraysCorrTime_kernel< 896,NPT><<<grid, 896, 0, stream>>>(templates, images, results);
         checkCudaAsyncErrors();
     }
     else if (imageNY <= 1024) {
-        cuArraysCorrTime_kernel<1024,NPT><<<grid,1024, 0, stream>>>(nImages,
-            templates->devData, templates->height, templates->width, templates->size,
-            images->devData, images->height, images->width, images->size,
-            results->devData, results->height, results->width, results->size);
+        cuArraysCorrTime_kernel<1024,NPT><<<grid,1024, 0, stream>>>(templates, images, results);
         checkCudaAsyncErrors();
     }
     else {

@@ -179,7 +179,7 @@ void cuAmpcorProcessor<arrayT>::correlate(array_type<real_type> *reference,
     if (param.algorithm == Algorithm::Frequency)
         freqCorrelator->execute(reference, secondary, surface);
     else
-        cuCorrTimeDomain(reference, secondary, surface, stream);
+        cuCorrTimeDomain(*reference, *secondary, *surface, stream);
     dump(surface, name + "UnNorm");
 
     normalizer->execute(surface, reference, secondary, stream);
