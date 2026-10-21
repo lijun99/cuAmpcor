@@ -75,12 +75,19 @@ class Geometry:
         tr = osr.CoordinateTransformation(wgs, crs)
 
         def xy(row):
-            """The projected coordinates of the window centers of a row, and of their neighbors across"""
-            lon = lon_ds.GetRasterBand(1).ReadAsArray(0, int(row), self.width, 1)[0]
-            lat = lat_ds.GetRasterBand(1).ReadAsArray(0, int(row), self.width, 1)[0]
+            """
+            The projected coordinates of the window centers of a row, and of their neighbors across;
+            NaN where the geometry has no data (0, 0 longitude and latitude, e.g., outside the bursts)
+            """
+            lon = lon_ds.GetRasterBand(1).ReadAsArray(0, int(row), self.width, 1)[0].astype(float)
+            lat = lat_ds.GetRasterBand(1).ReadAsArray(0, int(row), self.width, 1)[0].astype(float)
             idx = np.concatenate([cols, cols + h])
-            pts = np.array(tr.TransformPoints(np.stack([lon[idx], lat[idx]], axis=1).astype(float)))
-            return pts[:len(cols), :2], pts[len(cols):, :2]
+            lon, lat = lon[idx], lat[idx]
+            nodata = ((lon == 0) & (lat == 0)) | ~np.isfinite(lon) | ~np.isfinite(lat)
+            lon[nodata], lat[nodata] = 0.0, 0.0
+            pts = np.array(tr.TransformPoints(np.stack([lon, lat], axis=1)))[:, :2]
+            pts[nodata] = np.nan
+            return pts[:len(cols)], pts[len(cols):]
 
         n = len(cols)
         self.x = np.empty((len(rows), n))
@@ -93,18 +100,32 @@ class Geometry:
             self.x[i], self.y[i] = center[:, 0], center[:, 1]
             self.jacobian[i, :, :, 0] = (down - center) / h
             self.jacobian[i, :, :, 1] = (across - center) / h
+        # the windows with a valid geometry (and an invertible mapping)
+        j = self.jacobian
+        self.det = j[..., 0, 0] * j[..., 1, 1] - j[..., 0, 1] * j[..., 1, 0]
+        self.valid = np.isfinite(self.det) & (self.det != 0)
+        # and with the usual pixel sizes: not across a seam of the geometry (e.g., between TOPS
+        # subswaths or bursts), where a neighbor of the differences is not the adjacent pixel
+        for k in (0, 1):
+            size = np.hypot(j[..., 0, k], j[..., 1, k])
+            median = np.median(size[self.valid])
+            self.valid &= (size > median / 2) & (size < median * 2)
+        print(f'geometry: {self.valid.mean():.0%} of the windows valid')
 
     def to_offsets(self, dx, dy):
-        """The pixel offsets (down, across) of the displacements (dx, dy)"""
-        d = np.stack([dx, dy], axis=-1)[..., None]
-        with np.errstate(invalid='ignore'):
-            off = np.linalg.solve(self.jacobian, d)[..., 0]
-        return off[..., 0], off[..., 1]
+        """The pixel offsets (down, across) of the displacements (dx, dy); NaN without a valid geometry"""
+        j = self.jacobian
+        with np.errstate(invalid='ignore', divide='ignore'):
+            down = (j[..., 1, 1] * dx - j[..., 0, 1] * dy) / self.det
+            across = (-j[..., 1, 0] * dx + j[..., 0, 0] * dy) / self.det
+        return np.where(self.valid, down, np.nan), np.where(self.valid, across, np.nan)
 
     def to_displacements(self, down, across):
-        """The displacements (dx, dy) of the pixel offsets (down, across)"""
-        d = self.jacobian @ np.stack([down, across], axis=-1)[..., None]
-        return d[..., 0, 0], d[..., 1, 0]
+        """The displacements (dx, dy) of the pixel offsets (down, across); NaN without a valid geometry"""
+        j = self.jacobian
+        dx = j[..., 0, 0] * down + j[..., 0, 1] * across
+        dy = j[..., 1, 0] * down + j[..., 1, 1] * across
+        return np.where(self.valid, dx, np.nan), np.where(self.valid, dy, np.nan)
 
 
 def model_crs(args):
