@@ -16,18 +16,27 @@
 
 namespace pycuampcor {
 
+/// the device the arrays (and the workers on them, e.g., OverSampler) are on
+enum class Device : int {
+    CPU,    ///< the host memory (cpu package)
+    CUDA,   ///< the memory of a CUDA device (cuda package)
+};
+
 /// the types and workers that go with an array type arrayT (specialized by each package)
 ///
 /// A specialization provides:
+/// - device: the Device of the arrays, which selects the workers templated on it (OverSampler)
 /// - real_type, complex_type, real2_type, real3_type, int2_type: the element types
 /// - stream_type: the stream on which the kernels are queued
 /// - loaded_chunk_type, chunk_type: the chunks of the images loaded by the chunk loader
 /// - freq_correlator_type: the cross-correlation in the frequency domain
-/// - oversampler_c2c_type, oversampler_r2r_type, sinc_oversampler_type: the oversamplers
 /// - normalizer_type: the normalizer of the correlation surfaces (an abstract class)
+/// - surface_oversampler_type: the oversampler of the correlation surfaces (an abstract class)
 /// - make_int2(x, y): an int2_type
 /// - newNormalizer(height, width, count): a normalizer for the correlation of count windows
 ///   of height x width
+/// - newSurfaceOverSampler(method, height, width, factor, rawFactor, count, stream): an
+///   oversampler of the correlation surfaces (FFT or sinc)
 template <template <typename> class arrayT>
 struct array_traits;
 

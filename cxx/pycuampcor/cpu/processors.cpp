@@ -20,7 +20,7 @@
 // the workers
 #include "CorrFrequency.h"
 #include "CorrNormalizer.h"
-#include "OverSampler.h"
+#include "FFTOverSampler.h"
 #include "SincOverSampler.h"
 // the chunks loaded from the images
 #include "ChunkLoader.h"

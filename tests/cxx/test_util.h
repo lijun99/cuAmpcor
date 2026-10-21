@@ -100,6 +100,13 @@ protected:
     }
 };
 
+/// the device of the arrays of the backend (for the workers templated on it, e.g., OverSampler)
+#ifdef PYCUAMPCOR_BACKEND_CUDA
+constexpr Device device = Device::CUDA;
+#else
+constexpr Device device = Device::CPU;
+#endif
+
 /// random values in [-1, 1)
 inline std::vector<real_type> randomReal(size_t n, unsigned seed = 1)
 {

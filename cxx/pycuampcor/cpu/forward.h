@@ -18,10 +18,6 @@ namespace pycuampcor::cpu {
     using array_type = Arrays<T>;
     // an fftw plan (fftwUtil.h)
     class FftwPlan;
-    // fft oversamplers (OverSampler.h) and sinc oversampler (SincOverSampler.h)
-    class cuOverSamplerC2C;
-    class cuOverSamplerR2R;
-    class cuSincOverSamplerR2R;
     // cross-correlation in the frequency domain (CorrFrequency.h)
     class cuFreqCorrelator;
     // normalizers of the correlation surfaces (CorrNormalizer.h)

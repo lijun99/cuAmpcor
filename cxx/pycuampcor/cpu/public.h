@@ -37,7 +37,7 @@
 #include "Offset.h"
 #include "EstimateStats.h"
 // workers with their own buffers and plans
-#include "OverSampler.h"
+#include "FFTOverSampler.h"
 #include "SincOverSampler.h"
 #include "CorrFrequency.h"
 #include "CorrNormalizer.h"

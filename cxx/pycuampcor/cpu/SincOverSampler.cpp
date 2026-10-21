@@ -12,14 +12,20 @@
 
 // dependencies
 
-namespace pycuampcor::cpu {
+namespace pycuampcor {
+
+// the definitions use the CPU package: its types and arrays
+using namespace cpu;
+
+/// the sinc oversampler of real arrays (correlation surfaces) on the CPU
+using SincOverSampler = OverSampler<OversamplingMethod::Sinc, cpu::real_type, Device::CPU>;
 
 /**
- * cuSincOverSamplerR2R constructor
+ * Constructor of the sinc oversampler
  * @param i_covs_ oversampling factor
  * @param stream_ the stream (not used)
  */
-cuSincOverSamplerR2R::cuSincOverSamplerR2R(const int i_covs_, stream_t stream_)
+SincOverSampler::OverSampler(const int i_covs_, stream_t stream_)
  : i_covs(i_covs_)
 {
     stream = stream_;
@@ -32,12 +38,12 @@ cuSincOverSamplerR2R::cuSincOverSamplerR2R(const int i_covs_, stream_t stream_)
 /**
  * Release the filter
  */
-cuSincOverSamplerR2R::~cuSincOverSamplerR2R() = default;
+SincOverSampler::~OverSampler() = default;
 
 /**
  * Set up the sinc interpolation kernel (coefficient)
  */
-void cuSincOverSamplerR2R::cuSetupSincKernel()
+void SincOverSampler::cuSetupSincKernel()
 {
     // compute some commonly used constants at first
     real_type r_wgthgt =  (1.0f - r_pedestal)/2.0f;
@@ -141,8 +147,8 @@ static void sincInterpolation(const real_type *imageIn, const int inNX, const in
  * @param[in] rawOversamplingFactor the multiplier of the centerShift
  * @note rawOversamplingFactor is for the centerShift, not the signal oversampling factor
  */
-void cuSincOverSamplerR2R::execute(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut,
-    ArraysView<const int2> centerShift, int rawOversamplingFactor)
+void SincOverSampler::execute(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut,
+    ArraysView<const int2_type> centerShift, int rawOversamplingFactor)
 {
     const int inNX = imagesIn.height();
     const int inNY = imagesIn.width();
@@ -168,8 +174,8 @@ void cuSincOverSamplerR2R::execute(ArraysView<const real_type> imagesIn, ArraysV
 /**
  * Execute sinc interpolation, with the same center shift for all images
  */
-void cuSincOverSamplerR2R::execute(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut,
-    int2 centerShift, int rawOversamplingFactor)
+void SincOverSampler::execute(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut,
+    int2_type centerShift, int rawOversamplingFactor)
 {
     const int inNX = imagesIn.height();
     const int inNY = imagesIn.width();

@@ -12,14 +12,20 @@
 
 // dependencies
 
-namespace pycuampcor::cuda {
+namespace pycuampcor {
+
+// the definitions use the CUDA package: its types, kernels and arrays
+using namespace cuda;
+
+/// the sinc oversampler of real arrays (correlation surfaces) on the CUDA device
+using SincOverSampler = OverSampler<OversamplingMethod::Sinc, cuda::real_type, Device::CUDA>;
 
 /**
- * cuSincOverSamplerR2R constructor
+ * Constructor of the sinc oversampler
  * @param i_covs_ oversampling factor
  * @param stream_ the CUDA stream of the kernels
  */
-cuSincOverSamplerR2R::cuSincOverSamplerR2R(const int i_covs_, cudaStream_t stream_)
+SincOverSampler::OverSampler(const int i_covs_, cudaStream_t stream_)
  : i_covs(i_covs_)
 {
     stream = stream_;
@@ -32,7 +38,7 @@ cuSincOverSamplerR2R::cuSincOverSamplerR2R(const int i_covs_, cudaStream_t strea
 /**
  * Destructor, freeing the sinc kernel
  */
-cuSincOverSamplerR2R::~cuSincOverSamplerR2R()
+SincOverSampler::~OverSampler()
 {
     checkCudaErrors(cudaFree(r_filter));
 }
@@ -67,7 +73,7 @@ __global__ void cuSetupSincKernel_kernel(real_type *r_filter_, const int i_filte
 /**
  * Set up the sinc interpolation kernel (coefficient)
  */
-void cuSincOverSamplerR2R::cuSetupSincKernel()
+void SincOverSampler::cuSetupSincKernel()
 {
     const int nthreads = 128;
     const int nblocks = divUp(i_filtercoef+1, nthreads);
@@ -85,7 +91,7 @@ void cuSincOverSamplerR2R::cuSetupSincKernel()
 }
 
 /**
- * Sinc interpolation for cuSincOverSamplerR2R::execute (one thread per oversampled pixel,
+ * Sinc interpolation for SincOverSampler::execute (one thread per oversampled pixel,
  * blockIdx.z the image index); a device function shared by the kernels with constant or varying
  * center shifts
  * @param centerShift,factor the window is shifted by centerShift*factor (oversampled pixels)
@@ -168,7 +174,7 @@ __device__ void cuSincInterpolation_kernel_common(const int nImages,
 }
 
 /**
- * Cuda kernel for cuSincOverSamplerR2R::execute, with a constant center shift for all images
+ * Cuda kernel for SincOverSampler::execute, with a constant center shift for all images
  */
 __global__ void cuSincInterpolation_kernel(ArraysView<const real_type> imagesIn,
     ArraysView<real_type> imagesOut, int2 centerShift, int factor,
@@ -184,7 +190,7 @@ __global__ void cuSincInterpolation_kernel(ArraysView<const real_type> imagesIn,
  }
 
 /**
- * Cuda kernel for cuSincOverSamplerR2R::execute, with a center shift for each image
+ * Cuda kernel for SincOverSampler::execute, with a center shift for each image
  */
 __global__ void cuSincInterpolation_kernel(ArraysView<const real_type> imagesIn,
     ArraysView<real_type> imagesOut, ArraysView<const int2> centerShift, int factor,
@@ -208,8 +214,8 @@ __global__ void cuSincInterpolation_kernel(ArraysView<const real_type> imagesIn,
  * @param[in] rawOversamplingFactor the multiplier of the centerShift
  * @note rawOversamplingFactor is for the centerShift, not the signal oversampling factor
  */
-void cuSincOverSamplerR2R::execute(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut,
-    ArraysView<const int2> centerShift, int rawOversamplingFactor)
+void SincOverSampler::execute(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut,
+    ArraysView<const int2_type> centerShift, int rawOversamplingFactor)
 {
     const int nImages = imagesIn.count();
     const int outNX = imagesOut.height();
@@ -236,8 +242,8 @@ void cuSincOverSamplerR2R::execute(ArraysView<const real_type> imagesIn, ArraysV
 /**
  * Execute sinc interpolation, with the same center shift for all images
  */
-void cuSincOverSamplerR2R::execute(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut,
-    int2 centerShift, int rawOversamplingFactor)
+void SincOverSampler::execute(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut,
+    int2_type centerShift, int rawOversamplingFactor)
 {
     const int nImages = imagesIn.count();
     const int outNX = imagesOut.height();

@@ -20,6 +20,7 @@
 
 #include "forward.h"
 #include "ArraysView.h"
+#include "OverSampler.h"
 
 // dependencites
 
@@ -27,11 +28,36 @@ namespace pycuampcor::cuda {
 
 constexpr float PI = 3.14159265359f;   ///< the constant pi
 
-/// the sinc oversampler of real images (correlation surfaces), only within a window around
-/// their centers (or shifted centers, e.g., at the peaks)
-class cuSincOverSamplerR2R
+} // namespace
+
+namespace pycuampcor {
+
+/// the sinc oversampler of real arrays (correlation surfaces) on the CUDA device, only within a
+/// window around their centers (or shifted centers, e.g., at the peaks)
+template <>
+class OverSampler<OversamplingMethod::Sinc, cuda::real_type, Device::CUDA>
 {
- private:
+public:
+    using real_type = cuda::real_type;   ///< the real type
+    using int2_type = ::int2;            ///< a pair of ints (the shifts of the centers)
+
+    /// constructor, with the oversampling factor i_covs_
+    OverSampler(const int i_covs_, cudaStream_t stream_);
+    /// set up the sinc interpolation coefficients (r_filter)
+    void cuSetupSincKernel();
+    /// oversample the images within the windows around their centers, shifted by
+    /// center*oversamplingFactor (oversampled pixels, one shift per image); the rest of
+    /// imagesOut is set to zero
+    void execute(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut,
+        ArraysView<const int2_type> center, int oversamplingFactor);
+    /// the same, with one shift (center) for all images
+    void execute(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut, int2_type center,
+        int oversamplingFactor);
+
+    /// destructor
+    ~OverSampler();
+
+private:
     static const int i_sincwindow = 2;   ///< the oversampling is only performed within \pm i_sincwindow*i_covs around the peak
     static const int i_weight = 1;       ///< weight for cos() pedestal
     const real_type r_pedestal = 0.0;       ///< height of pedestal
@@ -47,23 +73,6 @@ class cuSincOverSamplerR2R
     real_type * r_filter;   ///< the sinc kernel, of size i_filtercoef+1 (device memory)
 
     cudaStream_t stream;   ///< the cuda stream
-
- public:
-    /// constructor, with the oversampling factor i_covs_
-    cuSincOverSamplerR2R(const int i_covs_, cudaStream_t stream_);
-    /// set up the sinc interpolation coefficients (r_filter)
-    void cuSetupSincKernel();
-    /// oversample the images within the windows around their centers, shifted by
-    /// center*oversamplingFactor (oversampled pixels, one shift per image); the rest of
-    /// imagesOut is set to zero
-    void execute(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut,
-        ArraysView<const int2> center, int oversamplingFactor);
-    /// the same, with one shift (center) for all images
-    void execute(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut, int2 center,
-        int oversamplingFactor);
-
-    /// destructor
-    ~cuSincOverSamplerR2R();
 };
 
 } // namespace

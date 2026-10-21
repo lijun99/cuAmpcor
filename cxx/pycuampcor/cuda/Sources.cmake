@@ -11,7 +11,7 @@ set(PYCUAMPCOR_CUDA_SOURCES
     cuDeramp.cu
     cuEstimateStats.cu
     cuOffset.cu
-    cuOverSampler.cpp
+    cuFFTOverSampler.cpp
     cuSincOverSampler.cu
     cudaError.cpp
     cuChunkLoader.cpp

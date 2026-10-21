@@ -39,7 +39,7 @@
 #include "cuOffset.h"
 #include "cuEstimateStats.h"
 // workers with their own buffers and plans
-#include "cuOverSampler.h"
+#include "cuFFTOverSampler.h"
 #include "cuSincOverSampler.h"
 #include "cuCorrFrequency.h"
 #include "cuCorrNormalizer.h"

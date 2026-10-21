@@ -1,10 +1,11 @@
 /**
- * @file  OverSampler.cpp
- * @brief Implementations of cuOverSamplerR2R (C2C) class (CPU backend)
+ * @file  FFTOverSampler.cpp
+ * @brief The FFT oversamplers on the CPU (complex and real arrays), and the oversamplers of the
+ *     correlation surfaces
  */
 
 // my declarations
-#include "OverSampler.h"
+#include "FFTOverSampler.h"
 #include "float2.h"
 #include "ArraysCopy.h"
 #include "ArraysPadding.h"
@@ -15,9 +16,16 @@
 #include "Options.h"
 
 #include <utility>
-// dependencies
 
-namespace pycuampcor::cpu {
+namespace pycuampcor {
+
+// the definitions use the CPU package: its types, arrays and fftw plans
+using namespace cpu;
+
+/// the FFT oversampler of complex arrays (windows) on the CPU
+using FFTOverSamplerC2C = OverSampler<OversamplingMethod::FFT, cpu::complex_type, Device::CPU>;
+/// the FFT oversampler of real arrays (correlation surfaces) on the CPU
+using FFTOverSamplerR2R = OverSampler<OversamplingMethod::FFT, cpu::real_type, Device::CPU>;
 
 /**
  * Create a batched 2D complex fft plan
@@ -37,13 +45,13 @@ static fftw_plan_type planMany2D(int nx, int ny, int nImages, complex_type *in, 
 }
 
 /**
- * Constructor for cuOverSamplerC2C
+ * Constructor of the FFT oversampler of complex arrays
  * @param inNX,inNY the size of the input images
  * @param outNX,outNY the size of the output (oversampled) images
  * @param nImages the number of images
  * @param stream_ the stream (not used)
  */
-cuOverSamplerC2C::cuOverSamplerC2C(int inNX, int inNY, int outNX, int outNY, int nImages, stream_t stream_)
+FFTOverSamplerC2C::OverSampler(int inNX, int inNY, int outNX, int outNY, int nImages, stream_t stream_)
     : stream(stream_)
 {
     // set up work arrays
@@ -65,7 +73,7 @@ cuOverSamplerC2C::cuOverSamplerC2C(int inNX, int inNY, int outNX, int outNY, int
  * @param[in] imagesIn input batch of images
  * @param[out] imagesOut output batch of images
  */
-void cuOverSamplerC2C::execute(ArraysView<const complex_type> imagesIn, ArraysView<complex_type> imagesOut)
+void FFTOverSamplerC2C::execute(ArraysView<const complex_type> imagesIn, ArraysView<complex_type> imagesOut)
 {
     // FFT to frequency domain (the input of the out-of-place transform is not written,
     // fftw takes it as non-const)
@@ -80,18 +88,17 @@ void cuOverSamplerC2C::execute(ArraysView<const complex_type> imagesIn, ArraysVi
 /**
  * Release the fftw plans and the work arrays
  */
-cuOverSamplerC2C::~cuOverSamplerC2C() = default;
+FFTOverSamplerC2C::~OverSampler() = default;
 
-// end of cuOverSamplerC2C
 
 /**
- * Constructor for cuOverSamplerR2R
+ * Constructor of the FFT oversampler of real arrays
  * @param inNX,inNY the size of the input images
  * @param outNX,outNY the size of the output (oversampled) images
  * @param nImages the number of images
  * @param stream_ the stream (not used)
  */
-cuOverSamplerR2R::cuOverSamplerR2R(int inNX, int inNY, int outNX, int outNY, int nImages, stream_t stream_)
+FFTOverSamplerR2R::OverSampler(int inNX, int inNY, int outNX, int outNY, int nImages, stream_t stream_)
     : stream(stream_)
 {
     workSizeIn = array_type<complex_type>(inNX, inNY, nImages);
@@ -135,7 +142,7 @@ cuOverSamplerR2R::cuOverSamplerR2R(int inNX, int inNY, int outNX, int outNY, int
  * @param[in] imagesIn input batch of images
  * @param[out] imagesOut output batch of images
  */
-void cuOverSamplerR2R::execute(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut)
+void FFTOverSamplerR2R::execute(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut)
 {
     // forward fft of all images
     cuArraysCopyPadded(imagesIn, workSizeIn, stream);
@@ -173,7 +180,11 @@ void cuOverSamplerR2R::execute(ArraysView<const real_type> imagesIn, ArraysView<
 /**
  * Release the fftw plans and the work arrays
  */
-cuOverSamplerR2R::~cuOverSamplerR2R() = default;
+FFTOverSamplerR2R::~OverSampler() = default;
+
+} // namespace
+
+namespace pycuampcor::cpu {
 
 namespace {
 
@@ -192,7 +203,7 @@ public:
     }
 
 private:
-    cuOverSamplerR2R oversampler;   ///< the FFT oversampler
+    OverSampler<OversamplingMethod::FFT, real_type, Device::CPU> oversampler;   ///< the FFT oversampler
 };
 
 /// the sinc oversampler of correlation surfaces (around their peaks only)
@@ -213,7 +224,7 @@ public:
     }
 
 private:
-    cuSincOverSamplerR2R oversampler;   ///< the sinc oversampler
+    OverSampler<OversamplingMethod::Sinc, real_type, Device::CPU> oversampler;   ///< the sinc oversampler
     int shiftFactor;                    ///< the oversampling of the shifts of the peaks
 };
 

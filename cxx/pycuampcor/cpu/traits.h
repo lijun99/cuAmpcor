@@ -13,6 +13,8 @@ namespace pycuampcor {
 /// the types and workers that go with the arrays of the CPU package, for the processors
 template <>
 struct array_traits<cpu::Arrays> {
+    /// the device of the arrays: the CPU (host memory)
+    static constexpr Device device = Device::CPU;
     // the element types
     using real_type = cpu::real_type;         ///< the real type
     using complex_type = cpu::complex_type;   ///< the complex type
@@ -29,8 +31,6 @@ struct array_traits<cpu::Arrays> {
     // the workers
     /// the cross-correlation of the windows in the frequency domain
     using freq_correlator_type = cpu::cuFreqCorrelator;
-    /// the FFT oversampler of complex windows
-    using oversampler_c2c_type = cpu::cuOverSamplerC2C;
     // the interfaces of the normalizer and of the surface oversampler (common/), implemented by the package
     /// the normalizer of the correlation surfaces
     using normalizer_type = Normalizer<cpu::Arrays>;

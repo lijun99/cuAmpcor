@@ -1,10 +1,11 @@
 /**
- * @file  cuOverSampler.cpp
- * @brief Implementations of cuOverSamplerR2R (C2C) class
+ * @file  cuFFTOverSampler.cpp
+ * @brief The FFT oversamplers on the CUDA device (complex and real arrays), and the oversamplers of
+ *     the correlation surfaces
  */
 
 // my declarations
-#include "cuOverSampler.h"
+#include "cuFFTOverSampler.h"
 #include "cuArrays.h"
 #include "device.h"
 #include "cudaError.h"
@@ -17,18 +18,24 @@
 #include "traits.h"
 #include "Options.h"
 
-// dependencies
+namespace pycuampcor {
 
-namespace pycuampcor::cuda {
+// the definitions use the CUDA package: its types, kernels and plans
+using namespace cuda;
+
+/// the FFT oversampler of complex arrays (windows) on the CUDA device
+using FFTOverSamplerC2C = OverSampler<OversamplingMethod::FFT, cuda::complex_type, Device::CUDA>;
+/// the FFT oversampler of real arrays (correlation surfaces) on the CUDA device
+using FFTOverSamplerR2R = OverSampler<OversamplingMethod::FFT, cuda::real_type, Device::CUDA>;
 
 /**
- * Constructor for cuOverSamplerC2C
+ * Constructor of the FFT oversampler of complex arrays
  * @param inNX,inNY the size of the input images
  * @param outNX,outNY the size of the output (oversampled) images
  * @param nImages the number of images
  * @param stream_ the CUDA stream of the transforms
  */
-cuOverSamplerC2C::cuOverSamplerC2C(int inNX, int inNY, int outNX, int outNY, int nImages, cudaStream_t stream_)
+FFTOverSamplerC2C::OverSampler(int inNX, int inNY, int outNX, int outNY, int nImages, cudaStream_t stream_)
     : stream(stream_)
 {
 
@@ -64,7 +71,7 @@ cuOverSamplerC2C::cuOverSamplerC2C(int inNX, int inNY, int outNX, int outNY, int
  * @param[in] imagesIn input batch of images
  * @param[out] imagesOut output batch of images
  */
-void cuOverSamplerC2C::execute(ArraysView<const complex_type> imagesIn, ArraysView<complex_type> imagesOut)
+void FFTOverSamplerC2C::execute(ArraysView<const complex_type> imagesIn, ArraysView<complex_type> imagesOut)
 {
     // the input of the (out-of-place) forward FFT is not written (cufft takes it as non-const)
     complex_type *input = const_cast<complex_type *>(imagesIn.data_handle());
@@ -90,18 +97,17 @@ void cuOverSamplerC2C::execute(ArraysView<const complex_type> imagesIn, ArraysVi
 /**
  * Release the cufft plans and the work arrays
  */
-cuOverSamplerC2C::~cuOverSamplerC2C() = default;
+FFTOverSamplerC2C::~OverSampler() = default;
 
-// end of cuOverSamplerC2C
 
 /**
- * Constructor for cuOverSamplerR2R
+ * Constructor of the FFT oversampler of real arrays
  * @param inNX,inNY the size of the input images
  * @param outNX,outNY the size of the output (oversampled) images
  * @param nImages the number of images
  * @param stream_ the CUDA stream of the transforms
  */
-cuOverSamplerR2R::cuOverSamplerR2R(int inNX, int inNY, int outNX, int outNY, int nImages, cudaStream_t stream_)
+FFTOverSamplerR2R::OverSampler(int inNX, int inNY, int outNX, int outNY, int nImages, cudaStream_t stream_)
     : stream(stream_)
 {
 
@@ -134,12 +140,12 @@ cuOverSamplerR2R::cuOverSamplerR2R(int inNX, int inNY, int outNX, int outNY, int
  * @param[in] imagesIn input batch of images
  * @param[out] imagesOut output batch of images
  */
-void cuOverSamplerR2R::execute(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut)
+void FFTOverSamplerR2R::execute(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut)
 {
 
     cuArraysCopyPadded(imagesIn, workSizeIn, stream);
 
-    // exp(+i) to the frequency domain and exp(-i) back, as cuOverSamplerC2C
+    // exp(+i) to the frequency domain and exp(-i) back, as the oversampler of complex arrays
 #ifdef CUAMPCOR_DOUBLE
     checkCudaErrors(cufftExecZ2Z(forwardPlan, workSizeIn.data_handle(), workSizeIn.data_handle(), CUFFT_INVERSE));
 #else
@@ -160,9 +166,11 @@ void cuOverSamplerR2R::execute(ArraysView<const real_type> imagesIn, ArraysView<
 /**
  * Release the cufft plans and the work arrays
  */
-cuOverSamplerR2R::~cuOverSamplerR2R() = default;
+FFTOverSamplerR2R::~OverSampler() = default;
 
-// end of file
+} // namespace
+
+namespace pycuampcor::cuda {
 
 namespace {
 
@@ -181,7 +189,7 @@ public:
     }
 
 private:
-    cuOverSamplerR2R oversampler;   ///< the FFT oversampler
+    OverSampler<OversamplingMethod::FFT, real_type, Device::CUDA> oversampler;   ///< the FFT oversampler
 };
 
 /// the sinc oversampler of correlation surfaces (around their peaks only)
@@ -202,7 +210,7 @@ public:
     }
 
 private:
-    cuSincOverSamplerR2R oversampler;   ///< the sinc oversampler
+    OverSampler<OversamplingMethod::Sinc, real_type, Device::CUDA> oversampler;   ///< the sinc oversampler
     int shiftFactor;                    ///< the oversampling of the shifts of the peaks
 };
 

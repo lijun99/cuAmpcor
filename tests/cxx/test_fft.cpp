@@ -46,7 +46,7 @@ TEST_F(FFTTest, OverSamplerC2C)
     }
     auto in = makeFrom(v, nx, ny, n);
     auto out = make<complex_type>(nx*ratio, ny*ratio, n);
-    cuOverSamplerC2C oversampler(nx, ny, nx*ratio, ny*ratio, n, stream);
+    OverSampler<OversamplingMethod::FFT, complex_type, device> oversampler(nx, ny, nx*ratio, ny*ratio, n, stream);
     oversampler.execute(in, out);
     auto r = download(out);
     // the input is unchanged (out-of-place)
@@ -70,7 +70,7 @@ TEST_F(FFTTest, OverSamplerNyquistPositive)
     auto v = exponential(nx, ny, nx/2, 2);
     auto in = makeFrom(v, nx, ny);
     auto out = make<complex_type>(nx*ratio, ny*ratio);
-    cuOverSamplerC2C oversampler(nx, ny, nx*ratio, ny*ratio, 1, stream);
+    OverSampler<OversamplingMethod::FFT, complex_type, device> oversampler(nx, ny, nx*ratio, ny*ratio, 1, stream);
     oversampler.execute(in, out);
     auto r = download(out);
     auto ref = exponential(nx*ratio, ny*ratio, nx/2, 2);
@@ -90,7 +90,7 @@ TEST_F(FFTTest, OverSamplerR2R)
             v[x*ny + y] = f(double(x)/nx, double(y)/ny);
     auto in = makeFrom(v, nx, ny);
     auto out = make<real_type>(nx*ratio, ny*ratio);
-    cuOverSamplerR2R oversampler(nx, ny, nx*ratio, ny*ratio, 1, stream);
+    OverSampler<OversamplingMethod::FFT, real_type, device> oversampler(nx, ny, nx*ratio, ny*ratio, 1, stream);
     oversampler.execute(in, out);
     auto r = download(out);
     for (int x = 0; x < nx*ratio; x++)

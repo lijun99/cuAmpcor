@@ -14,6 +14,8 @@ namespace pycuampcor {
     // a view of a batch of 2D arrays (ArraysView.h)
     template <typename T>
     class ArraysView;
+    // the device of the arrays (ArrayTraits.h)
+    enum class Device : int;
     // the options of the parameters (Options.h)
     enum class Algorithm : int;
     enum class Workflow : int;
@@ -38,6 +40,10 @@ namespace pycuampcor {
     class Normalizer;
     template <template <typename> class arrayT>
     class SurfaceOverSampler;
+    // the oversamplers of batches of 2D arrays of T, by method, on device (OverSampler.h; the
+    // packages specialize it)
+    template <OversamplingMethod method, typename T, Device device>
+    class OverSampler;
     // the processors of a chunk, for each workflow, on the arrays arrayT (Processor*.h)
     template <template <typename> class arrayT>
     class Processor;

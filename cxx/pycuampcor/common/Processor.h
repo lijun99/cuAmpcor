@@ -30,6 +30,8 @@ class Processor {
 public:
     /// the types that go with the arrays
     using traits = array_traits<arrayT>;
+    /// the device of the arrays (and of the workers templated on it, e.g., OverSampler)
+    static constexpr Device device = traits::device;
     /// the arrays: batches of 2D arrays of T, e.g., cuda::cuArrays<float>
     template <typename T>
     using array_type = arrayT<T>;
@@ -49,8 +51,6 @@ public:
     // the workers
     /// the cross-correlation of the windows in the frequency domain
     using freq_correlator_type = typename traits::freq_correlator_type;
-    /// the FFT oversampler of complex windows
-    using oversampler_c2c_type = typename traits::oversampler_c2c_type;
     /// the normalizer of the correlation surfaces
     using normalizer_type = typename traits::normalizer_type;
     /// the oversampler of the correlation surfaces around their peaks

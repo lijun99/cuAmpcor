@@ -53,7 +53,7 @@ TEST_F(SincTest, ConstantCenter)
 {
     auto in = makeFrom(input(1), n, n);
     auto out = make<real_type>(n*covs, n*covs);
-    cuSincOverSamplerR2R sinc(covs, stream);
+    OverSampler<OversamplingMethod::Sinc, real_type, device> sinc(covs, stream);
     for (int2 shift : {make_int2(0, 0), make_int2(1, -2)}) {
         const int factor = covs;
         sinc.execute(in, out, shift, factor);
@@ -68,7 +68,7 @@ TEST_F(SincTest, VaryingCenter)
     auto out = make<real_type>(n*covs, n*covs, count);
     std::vector<int2> shiftV = {make_int2(0, 0), make_int2(-1, 1), make_int2(2, 0)};
     auto shifts = makeFrom(shiftV, 1, count);
-    cuSincOverSamplerR2R sinc(covs, stream);
+    OverSampler<OversamplingMethod::Sinc, real_type, device> sinc(covs, stream);
     const int factor = covs/2;
     sinc.execute(in, out, shifts, factor);
     auto r = download(out);

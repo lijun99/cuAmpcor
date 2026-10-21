@@ -20,7 +20,7 @@
 // the workers
 #include "cuCorrFrequency.h"
 #include "cuCorrNormalizer.h"
-#include "cuOverSampler.h"
+#include "cuFFTOverSampler.h"
 #include "cuSincOverSampler.h"
 // the chunks loaded from the images
 #include "cuChunkLoader.h"

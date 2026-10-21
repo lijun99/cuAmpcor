@@ -11,7 +11,7 @@ set(PYCUAMPCOR_CPU_SOURCES
     Deramp.cpp
     EstimateStats.cpp
     Offset.cpp
-    OverSampler.cpp
+    FFTOverSampler.cpp
     SincOverSampler.cpp
     ChunkLoader.cpp
     Controller.cpp

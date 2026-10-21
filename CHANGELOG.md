@@ -42,6 +42,9 @@
 - The C++ files and classes drop the `cuAmpcor` prefix (e.g., `Parameter`, `Processor`,
   `Controller`, `ChunkLoader`); the files of the CUDA package keep its `cu` prefix
   (`cuController.h`, `cuChunkLoader.h`). The python API is unchanged.
+- The oversamplers are one class template, `OverSampler<method, T, device>` (FFT or sinc, the
+  element type, CPU or CUDA), specialized by the packages for the complex windows (FFT) and the
+  real correlation surfaces (FFT, sinc); the processors take the device from their arrays.
 - Compiled as standard C++17 (`-std=c++17`, without GNU extensions); the code also builds as
   C++20.
 - `setupParams` keeps the parameters as set: `numberWindowDownInChunk` / `numberWindowAcrossInChunk`

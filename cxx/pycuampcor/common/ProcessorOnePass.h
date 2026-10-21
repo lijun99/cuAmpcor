@@ -14,6 +14,7 @@
 #pragma once
 
 #include "Processor.h"
+#include "OverSampler.h"
 
 namespace pycuampcor {
 
@@ -34,10 +35,11 @@ public:
     using typename base_type::stream_type;
     using typename base_type::chunk_type;
     using typename base_type::freq_correlator_type;
-    using typename base_type::oversampler_c2c_type;
     using typename base_type::normalizer_type;
     /// the windows: complex (copied from complex images, or real images as complex)
     using window_type = complex_type;
+    /// the oversampler of the windows: FFT, on the device of the arrays
+    using window_oversampler_type = OverSampler<OversamplingMethod::FFT, window_type, base_type::device>;
 
     /// a processor writing to the output images (see Processor)
     ProcessorOnePass(const Parameter &param,
@@ -80,8 +82,8 @@ private:
     array_type<window_type> c_secondaryBatchOverSampled;                    ///< the oversampled secondary windows
     array_type<real_type> r_referenceBatchOverSampled;                      ///< the amplitudes of the reference windows (not enlarged)
     array_type<real_type> r_secondaryBatchOverSampled;                      ///< the amplitudes of the secondary windows
-    oversampler_c2c_type referenceBatchOverSampler;                         ///< the oversampler of the reference windows
-    oversampler_c2c_type secondaryBatchOverSampler;                         ///< the oversampler of the secondary windows
+    window_oversampler_type referenceBatchOverSampler;                      ///< the oversampler of the reference windows
+    window_oversampler_type secondaryBatchOverSampler;                      ///< the oversampler of the secondary windows
 
     // the correlation surfaces
     array_type<real_type> r_corrBatch;                                      ///< the correlation surfaces
