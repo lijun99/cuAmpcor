@@ -66,7 +66,7 @@ void cuArraysCopyToBatch(cuArrays<image_complex_type> *image1, cuArrays<complex_
         image2->devData, image2->height, image2->width,
         image2->countH, image2->countW,
         strideH, strideW);
-    getLastCudaError("cuArraysCopyToBatch_kernel");
+    checkCudaAsyncErrors();
 }
 
 // kernel for cuArraysCopyToBatchWithOffset
@@ -147,7 +147,7 @@ void cuArraysCopyToBatchWithOffset(cuArrays<image_complex_type> *image1, const i
         image1->devData, inNX, inNY,
         image2->devData, image2->height, image2->width, image2->count,
         offsetH, offsetW);
-    getLastCudaError("cuArraysCopyToBatchAbsWithOffset_kernel");
+    checkCudaAsyncErrors();
 }
 
 // same as above, but from complex to real(take amplitudes)
@@ -200,7 +200,7 @@ void cuArraysCopyToBatchAbsWithOffset(cuArrays<image_complex_type> *image1, cons
         image1->devData, inNX, inNY,
         image2->devData, image2->height, image2->width, image2->count,
         offsetH, offsetW);
-    getLastCudaError("cuArraysCopyToBatchAbsWithOffset_kernel");
+    checkCudaAsyncErrors();
 }
 
 /**
@@ -224,7 +224,7 @@ void cuArraysCopyToBatchWithOffsetR2C(cuArrays<image_real_type> *image1, const i
         image1->devData, inNX, inNY,
         image2->devData, image2->height, image2->width, image2->count,
         offsetH, offsetW);
-    getLastCudaError("cuArraysCopyToBatchWithOffsetR2C_kernel");
+    checkCudaAsyncErrors();
 }
 
 //copy a chunk into a series of chips, from complex to real
@@ -265,7 +265,7 @@ void cuArraysCopyC2R(cuArrays<complex_type> *image1, cuArrays<real_type> *image2
         image2->devData, image2->height, image2->width,
         image2->countH, image2->countW,
         strideH, strideW, factor);
-    getLastCudaError("cuda Error: cuArraysCopyC2R_kernel");
+    checkCudaAsyncErrors();
 }
 
 //copy a chunk into a series of chips with varying strides
@@ -301,7 +301,7 @@ void cuArraysCopyExtract(cuArrays<T> *imagesIn, cuArrays<T> *imagesOut, cuArrays
     dim3 blockspergrid(IDIVUP(imagesOut->height,nthreads), IDIVUP(imagesOut->width,nthreads), imagesOut->count);
     cuArraysCopyExtractVaryingOffset<<<blockspergrid, threadsperblock,0, stream>>>(imagesIn->devData, imagesIn->height, imagesIn->width,
         imagesOut->devData, imagesOut->height, imagesOut->width, imagesOut->count, offsets->devData);
-    getLastCudaError("cuArraysCopyExtract error");
+    checkCudaAsyncErrors();
 }
 
 // instantiate the above template for the data types we need
@@ -353,7 +353,7 @@ void cuArraysCopyExtractCorr(cuArrays<real_type> *imagesIn, cuArrays<real_type> 
         imagesIn->devData, imagesIn->height, imagesIn->width,
         imagesOut->devData, imagesOut->height, imagesOut->width,
         imagesOut->count, maxloc->devData);
-    getLastCudaError("cuArraysCopyExtract error");
+    checkCudaAsyncErrors();
 }
 
 __global__ void cuArraysCopyExtractVaryingOffsetCorr(const real_type *imageIn, const int inNX, const int inNY,
@@ -417,7 +417,7 @@ void cuArraysCopyExtractCorr(cuArrays<real_type> *imagesIn, cuArrays<real_type> 
     cuArraysCopyExtractVaryingOffsetCorr<<<blockspergrid, threadsperblock,0, stream>>>(imagesIn->devData, imagesIn->height, imagesIn->width,
         imagesOut->devData, imagesOut->height, imagesOut->width, imagesValid->devData, imagesOut->count, maxloc->devData,
         stride, validStart, validEnd);
-    getLastCudaError("cuArraysCopyExtract error");
+    checkCudaAsyncErrors();
 }
 
 /**
@@ -482,7 +482,7 @@ void cuArraysCopyExtract(cuArrays<T_in> *imagesIn, cuArrays<T_out> *imagesOut, i
     cuArraysCopyExtractFixedOffset<<<blockspergrid, threadsperblock,0, stream>>>
         (imagesIn->devData, imagesIn->height, imagesIn->width,
         imagesOut->devData, imagesOut->height, imagesOut->width, imagesOut->count, offset.x, offset.y);
-    getLastCudaError("cuArraysCopyExtract error");
+    checkCudaAsyncErrors();
 }
 
 // instantiate the above template for the data types we need
@@ -519,7 +519,7 @@ void cuArraysCopyExtractAbs(cuArrays<complex_type> *imagesIn, cuArrays<real_type
     cuArraysCopyExtractAbsFixedOffset<<<blockspergrid, threadsperblock,0, stream>>>
         (imagesIn->devData, imagesIn->height, imagesIn->width,
         imagesOut->devData, imagesOut->height, imagesOut->width, imagesOut->count, offset.x, offset.y);
-    getLastCudaError("cuArraysCopyExtractAbs error");
+    checkCudaAsyncErrors();
 }
 
 
@@ -548,7 +548,7 @@ void cuArraysCopyInsert(cuArrays<T> *imageIn, cuArrays<T> *imageOut, int offsetX
     dim3 blockspergrid(IDIVUP(imageIn->height,nthreads), IDIVUP(imageIn->width,nthreads));
     cuArraysCopyInsert_kernel<<<blockspergrid, threadsperblock,0, stream>>>(imageIn->devData, imageIn->height, imageIn->width,
            imageOut->devData,  imageOut->width, offsetX, offsetY);
-    getLastCudaError("cuArraysCopyInsert error");
+    checkCudaAsyncErrors();
 }
 
 // instantiate the above template for the data types we need
@@ -589,7 +589,7 @@ void cuArraysCopyPadded(cuArrays<T_in> *imageIn, cuArrays<T_out> *imageOut, cuda
     dim3 gridSize(IDIVUP(imageOut->height,nthreads), IDIVUP(imageOut->width,nthreads), nImages);
     cuArraysCopyPadded_kernel<<<gridSize, blockSize, 0, stream>>>(imageIn->devData, imageIn->height, imageIn->width, imageIn->size,
        imageOut->devData, imageOut->height, imageOut->width, imageOut->size, nImages);
-    getLastCudaError("cuArraysCopyPadded error");
+    checkCudaAsyncErrors();
 }
 
 // instantiate the above template for the data types we need
@@ -619,7 +619,7 @@ void cuArraysSetConstant(cuArrays<real_type> *imageIn, real_type value, cudaStre
 
     cuArraysSetConstant_kernel<<<IDIVUP(size, nthreads), nthreads, 0, stream>>>
         (imageIn->devData, size, value);
-     getLastCudaError("cuArraysSetConstant error");
+     checkCudaAsyncErrors();
 }
 
 
@@ -643,7 +643,7 @@ void cuArraysR2C(cuArrays<real_type> *image1, cuArrays<complex_type> *image2, cu
 {
     int size = image1->getSize();
     cuArraysR2C_kernel<<<IDIVUP(size, NTHREADS), NTHREADS, 0, stream>>>(image1->devData, image2->devData, size);
-    getLastCudaError("cuArraysR2C");
+    checkCudaAsyncErrors();
 }
 
 
@@ -666,7 +666,7 @@ void cuArraysC2R(cuArrays<complex_type> *image1, cuArrays<real_type> *image2, cu
 {
     int size = image1->getSize();
     cuArraysC2R_kernel<<<IDIVUP(size, NTHREADS), NTHREADS, 0, stream>>>(image1->devData, image2->devData, size);
-    getLastCudaError("cuArraysC2R");
+    checkCudaAsyncErrors();
 }
 
 // cuda kernel for cuArraysAbs
@@ -688,7 +688,7 @@ void cuArraysAbs(cuArrays<complex_type> *image1, cuArrays<real_type> *image2, cu
 {
     int size = image1->getSize();
     cuArraysAbs_kernel<<<IDIVUP(size, NTHREADS), NTHREADS, 0, stream>>>(image1->devData, image2->devData, size);
-    getLastCudaError("cuArraysAbs_kernel");
+    checkCudaAsyncErrors();
 }
 
 // end of file

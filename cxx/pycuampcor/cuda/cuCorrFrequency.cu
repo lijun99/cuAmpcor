@@ -24,20 +24,20 @@ cuFreqCorrelator::cuFreqCorrelator(int imageNX, int imageNY, int nImages, cudaSt
     
     // set up fft plans
 #ifdef CUAMPCOR_DOUBLE
-    cufft_Error(cufftPlanMany(&forwardPlan, NRANK, n,
+    checkCudaErrors(cufftPlanMany(&forwardPlan, NRANK, n,
                               NULL, 1, imageSize,
                               NULL, 1, fImageSize,
                               CUFFT_D2Z, nImages));
-    cufft_Error(cufftPlanMany(&backwardPlan, NRANK, n,
+    checkCudaErrors(cufftPlanMany(&backwardPlan, NRANK, n,
                               NULL, 1, fImageSize,
                               NULL, 1, imageSize,
                               CUFFT_Z2D, nImages));
 #else
-    cufft_Error(cufftPlanMany(&forwardPlan, NRANK, n,
+    checkCudaErrors(cufftPlanMany(&forwardPlan, NRANK, n,
                               NULL, 1, imageSize,
                               NULL, 1, fImageSize, 
                               CUFFT_R2C, nImages));
-    cufft_Error(cufftPlanMany(&backwardPlan, NRANK, n, 
+    checkCudaErrors(cufftPlanMany(&backwardPlan, NRANK, n, 
                               NULL, 1, fImageSize,
                               NULL, 1, imageSize, 
                               CUFFT_C2R, nImages));
@@ -58,8 +58,8 @@ cuFreqCorrelator::cuFreqCorrelator(int imageNX, int imageNY, int nImages, cudaSt
 /// destructor
 cuFreqCorrelator::~cuFreqCorrelator()
 {
-    cufft_Error(cufftDestroy(forwardPlan));
-    cufft_Error(cufftDestroy(backwardPlan));	
+    checkCudaErrors(cufftDestroy(forwardPlan));
+    checkCudaErrors(cufftDestroy(backwardPlan));	
     delete workFM;
     delete workFS;
     delete workT;
@@ -79,11 +79,11 @@ void cuFreqCorrelator::execute(cuArrays<real_type> *templates, cuArrays<real_typ
     cuArraysCopyPadded(templates, workT, stream);
     // forward fft to frequency domain
 #ifdef CUAMPCOR_DOUBLE
-    cufft_Error(cufftExecD2Z(forwardPlan, workT->devData, workFM->devData));
-    cufft_Error(cufftExecD2Z(forwardPlan, images->devData, workFS->devData));
+    checkCudaErrors(cufftExecD2Z(forwardPlan, workT->devData, workFM->devData));
+    checkCudaErrors(cufftExecD2Z(forwardPlan, images->devData, workFS->devData));
 #else
-    cufft_Error(cufftExecR2C(forwardPlan, workT->devData, workFM->devData));
-    cufft_Error(cufftExecR2C(forwardPlan, images->devData, workFS->devData));
+    checkCudaErrors(cufftExecR2C(forwardPlan, workT->devData, workFM->devData));
+    checkCudaErrors(cufftExecR2C(forwardPlan, images->devData, workFS->devData));
 #endif
 
     // cufft doesn't normalize, so manually get the image size for normalization
@@ -92,9 +92,9 @@ void cuFreqCorrelator::execute(cuArrays<real_type> *templates, cuArrays<real_typ
     cuArraysElementMultiplyConjugate(workFM, workFS, coef, stream);
     // backward fft to get correlation surface in time domain
 #ifdef CUAMPCOR_DOUBLE
-    cufft_Error(cufftExecZ2D(backwardPlan, workFM->devData, workT->devData));
+    checkCudaErrors(cufftExecZ2D(backwardPlan, workFM->devData, workT->devData));
 #else
-    cufft_Error(cufftExecC2R(backwardPlan, workFM->devData, workT->devData));
+    checkCudaErrors(cufftExecC2R(backwardPlan, workFM->devData, workT->devData));
 #endif
     // extract to get proper size of correlation surface
     cuArraysCopyExtract(workT, results, make_int2(0, 0), stream);
@@ -128,7 +128,7 @@ void cuArraysElementMultiplyConjugate(cuArrays<complex_type> *image1, cuArrays<c
     int threadsperblock = NTHREADS;
     int blockspergrid = IDIVUP (size, threadsperblock);
     cudaKernel_elementMulConjugate<<<blockspergrid, threadsperblock, 0, stream>>>(image1->devData, image2->devData, size, coef );
-    getLastCudaError("cuArraysElementMultiply error\n");
+    checkCudaAsyncErrors();
 } 
 //end of file
 

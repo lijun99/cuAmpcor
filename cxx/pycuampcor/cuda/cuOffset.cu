@@ -123,7 +123,7 @@ void cuArraysMaxloc2D(cuArrays<real_type> *images,
         make_int2(images->height, images->width), images->count,
         start, range
         );
-    getLastCudaError("cudaKernel find max location 2D error\n");
+    checkCudaAsyncErrors();
 }
 
 /**
@@ -145,7 +145,7 @@ void cuArraysMaxloc2D(cuArrays<real_type> *images,
         imageSize, images->count,
         start, imageSize
         );
-    getLastCudaError("cudaKernel find max location 2D error\n");
+    checkCudaAsyncErrors();
 }
 
 // cuda kernel for cuSubPixelOffset
@@ -185,7 +185,7 @@ void cuSubPixelOffset(cuArrays<int2> *offsetInit,
     cuSubPixelOffset_kernel<<<IDIVUP(size, NTHREADS), NTHREADS, 0, stream>>>
         (offsetInit->devData, offsetZoomIn->devData,
          offsetFinal->devData, size, initOrigin, initRatio, zoomInOrigin, zoomInRatio);
-    getLastCudaError("cuSubPixelOffset_kernel");
+    checkCudaAsyncErrors();
 
 }
 
@@ -238,7 +238,7 @@ void cuSubPixelOffset2Pass(cuArrays<int2> *offsetInit, cuArrays<int2> *offsetZoo
     cuSubPixelOffset2Pass_kernel<<<IDIVUP(size, NTHREADS), NTHREADS, 0, stream>>>
         (offsetInit->devData, offsetZoomIn->devData,
          offsetFinal->devData, OSratio, xoffset, yoffset, size);
-    getLastCudaError("cuSubPixelOffset2Pass_kernel");
+    checkCudaAsyncErrors();
 
 }
 
@@ -314,7 +314,7 @@ void cuDetermineSecondaryExtractOffset(cuArrays<int2> *maxLoc, cuArrays<int2> *m
     int blockspergrid=IDIVUP(maxLoc->size, threadsperblock);
     cudaKernel_determineSecondaryExtractOffset<<<blockspergrid, threadsperblock, 0, stream>>>
         (maxLoc->devData, maxLocShift->devData, maxLoc->size, xOldRange, yOldRange, xNewRange, yNewRange);
-    getLastCudaError("cuDetermineSecondaryExtractOffset");
+    checkCudaAsyncErrors();
 }
 
 // end of file

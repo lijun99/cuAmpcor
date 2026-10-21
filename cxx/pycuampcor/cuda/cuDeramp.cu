@@ -171,7 +171,7 @@ void cuLinearDeramp(cuArrays<real2_type> *images, const int axis, cudaStream_t s
         cuLinearDeramp_kernel<512> <<<grid, 512, 0, stream>>>
         (images->devData, images->height, images->width,
         imageSize, images->count, invSize, axis); }
-    getLastCudaError("cuLinearDeramp kernel error\n");
+    checkCudaAsyncErrors();
 
 }
 

@@ -253,12 +253,12 @@ void cuCorrNormalizeSAT(cuArrays<real_type> *correlation, cuArrays<real_type> *r
     int nblocks = reference->count;
     sum_square_kernel<<<nblocks, nthreads, sMemSize, stream>>>(referenceSum2->devData, reference->devData,
         reference->width * reference->height, reference->count);
-    getLastCudaError("reference image sum_square kernel error");
+    checkCudaAsyncErrors();
 
     // compute the sum area table of the search images
     sat2d_kernel<<<nblocks, nthreads, 0, stream>>>(secondarySat->devData, secondarySat2->devData, secondary->devData,
         secondary->height, secondary->width, secondary->count);
-    getLastCudaError("search image sat kernel error");
+    checkCudaAsyncErrors();
 
     nthreads = NTHREADS2D;
     dim3 blockSize(nthreads, nthreads, 1);
@@ -268,7 +268,7 @@ void cuCorrNormalizeSAT(cuArrays<real_type> *correlation, cuArrays<real_type> *r
         correlation->height, correlation->width,
         reference->height, reference->width,
         secondary->height, secondary->width);
-    getLastCudaError("cuCorrNormalizeSAT_kernel kernel error");
+    checkCudaAsyncErrors();
 }
 
 } // namespace

@@ -68,7 +68,7 @@ void cuArraysFFTPaddingMany(cuArrays<complex_type> *image1, cuArrays<complex_typ
     cuArraysPaddingMany_kernel<<<dimGrid, dimBlock, 0, stream>>>(
         image1->devData, image1->height, image1->width, image1->size,
         image2->devData, image2->height, image2->width, image2->size, factor);
-    getLastCudaError("cuArraysPadding_kernel");
+    checkCudaAsyncErrors();
 }
 //end of file
 

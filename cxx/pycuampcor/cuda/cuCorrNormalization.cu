@@ -100,7 +100,7 @@ void cuArraysMeanValue(cuArrays<real_type> *images, cuArrays<real_type> *mean, c
     const real_type invSize = real_type(1)/imageSize;
 
     cuArraysMean_kernel<NTHREADS> <<<grid,NTHREADS,0,stream>>>(images->devData, mean->devData, imageSize, invSize, images->count);
-    getLastCudaError("cuArraysMeanValue kernel error\n");
+    checkCudaAsyncErrors();
 }
 
 // cuda kernel to compute and subtracts mean value from the images
@@ -144,7 +144,7 @@ void cuArraysSubtractMean(cuArrays<real_type> *images, cudaStream_t stream)
     const real_type invSize = real_type(1)/imageSize;
 
     cuArraysSubtractMean_kernel<NTHREADS> <<<grid,NTHREADS,0,stream>>>(images->devData, imageSize, invSize, images->count);
-    getLastCudaError("cuArraysSubtractMean kernel error\n");
+    checkCudaAsyncErrors();
 }
 
 
@@ -197,7 +197,7 @@ void cuArraysSumCorr(cuArrays<real_type> *images, cuArrays<int> *imagesValid, cu
 
     cuArraysSumCorr_kernel<NTHREADS> <<<grid,NTHREADS,0,stream>>>(images->devData, imagesValid->devData,
         imagesSum->devData, imagesValidCount->devData, imageSize, images->count);
-    getLastCudaError("cuArraysSumValueCorr kernel error\n");
+    checkCudaAsyncErrors();
 }
 
 
@@ -347,7 +347,7 @@ void cuCorrNormalize(cuArrays<real_type> *templates, cuArrays<real_type> *images
             images->devData, images->height, images->width, images->size,
             results->devData, results->height, results->width, results->size,
             invTemplateSize);
-        getLastCudaError("cuCorrNormalize kernel error");
+        checkCudaAsyncErrors();
     }
     else if (imageNY <=  128) {
         cuCorrNormalize_kernel< 7><<<grid, 128, 0, stream>>>(nImages,
@@ -355,7 +355,7 @@ void cuCorrNormalize(cuArrays<real_type> *templates, cuArrays<real_type> *images
             images->devData, images->height, images->width, images->size,
             results->devData, results->height, results->width, results->size,
             invTemplateSize);
-        getLastCudaError("cuCorrNormalize kernel error");
+        checkCudaAsyncErrors();
     }
     else if (imageNY <=  256) {
         cuCorrNormalize_kernel< 8><<<grid, 256, 0, stream>>>(nImages,
@@ -363,7 +363,7 @@ void cuCorrNormalize(cuArrays<real_type> *templates, cuArrays<real_type> *images
             images->devData, images->height, images->width, images->size,
             results->devData, results->height, results->width, results->size,
             invTemplateSize);
-        getLastCudaError("cuCorrNormalize kernel error");
+        checkCudaAsyncErrors();
     }
     else if (imageNY <=  512) {
         cuCorrNormalize_kernel< 9><<<grid, 512, 0, stream>>>(nImages,
@@ -371,7 +371,7 @@ void cuCorrNormalize(cuArrays<real_type> *templates, cuArrays<real_type> *images
             images->devData, images->height, images->width, images->size,
             results->devData, results->height, results->width, results->size,
             invTemplateSize);
-        getLastCudaError("cuCorrNormalize kernel error");
+        checkCudaAsyncErrors();
     }
     else if (imageNY <= 1024) {
         cuCorrNormalize_kernel<10><<<grid,1024, 0, stream>>>(nImages,
@@ -379,7 +379,7 @@ void cuCorrNormalize(cuArrays<real_type> *templates, cuArrays<real_type> *images
             images->devData, images->height, images->width, images->size,
             results->devData, results->height, results->width, results->size,
             invTemplateSize);
-        getLastCudaError("cuCorrNormalize kernel error");
+        checkCudaAsyncErrors();
     }
     else
     {
@@ -407,7 +407,7 @@ void cuCorrNormalizeFixed(cuArrays<real_type> *correlation, cuArrays<real_type> 
                 secondary->devData, secondary->height, secondary->width, secondary->size,
                 correlation->devData, correlation->height, correlation->width, correlation->size,
                 invReferenceSize);
-    getLastCudaError("cuCorrNormalize kernel error");
+    checkCudaAsyncErrors();
 }
 
 template void cuCorrNormalizeFixed<64>(cuArrays<real_type> *correlation,

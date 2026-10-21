@@ -78,7 +78,7 @@ void cuSincOverSamplerR2R::cuSetupSincKernel()
     cuSetupSincKernel_kernel<<<nblocks, nthreads, 0, stream>>> (
         r_filter, i_filtercoef, r_soff, r_wgthgt, i_weight,
         r_soff_inverse, r_beta, r_decfactor_inverse);
-    getLastCudaError("cuSetupSincKernel_kernel");
+    checkCudaAsyncErrors();
 }
 
 
@@ -224,7 +224,7 @@ void cuSincOverSamplerR2R::execute(cuArrays<real_type> *imagesIn, cuArrays<real_
         imagesOut->devData, outNX, outNY,
         centerShift->devData, rawOversamplingFactor,
         r_filter, i_covs, i_decfactor, i_intplength, i_int_startX, i_int_startY, i_int_size);
-    getLastCudaError("cuSincInterpolation_kernel");
+    checkCudaAsyncErrors();
 }
 
 void cuSincOverSamplerR2R::execute(cuArrays<real_type> *imagesIn, cuArrays<real_type> *imagesOut,
@@ -253,7 +253,7 @@ void cuSincOverSamplerR2R::execute(cuArrays<real_type> *imagesIn, cuArrays<real_
         imagesOut->devData, outNX, outNY,
         centerShift, rawOversamplingFactor,
         r_filter, i_covs, i_decfactor, i_intplength, i_int_startX, i_int_startY, i_int_size);
-    getLastCudaError("cuSincInterpolation_kernel");
+    checkCudaAsyncErrors();
 }
 
 // end of file

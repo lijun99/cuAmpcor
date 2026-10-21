@@ -126,70 +126,70 @@ void cuCorrTimeDomain(cuArrays<real_type> *templates,
             templates->devData, templates->height, templates->width, templates->size,
             images->devData, images->height, images->width, images->size,
             results->devData, results->height, results->width, results->size);
-        getLastCudaError("cuArraysCorrTime error");
+        checkCudaAsyncErrors();
     }
     else if (imageNY <=  128)  {
         cuArraysCorrTime_kernel< 128,NPT><<<grid, 128, 0, stream>>>(nImages,
             templates->devData, templates->height, templates->width, templates->size,
             images->devData, images->height, images->width, images->size,
             results->devData, results->height, results->width, results->size);
-        getLastCudaError("cuArraysCorrTime error");
+        checkCudaAsyncErrors();
     }
     else if (imageNY <=  192) {
         cuArraysCorrTime_kernel< 192,NPT><<<grid, 192, 0, stream>>>(nImages,
             templates->devData, templates->height, templates->width, templates->size,
             images->devData, images->height, images->width, images->size,
             results->devData, results->height, results->width, results->size);
-        getLastCudaError("cuArraysCorrTime error");
+        checkCudaAsyncErrors();
     }
     else if (imageNY <=  256) {
         cuArraysCorrTime_kernel< 256,NPT><<<grid, 256, 0, stream>>>(nImages,
             templates->devData, templates->height, templates->width, templates->size,
             images->devData, images->height, images->width, images->size,
             results->devData, results->height, results->width, results->size);
-        getLastCudaError("cuArraysCorrTime error");
+        checkCudaAsyncErrors();
     }
     else if (imageNY <=  384) {
         cuArraysCorrTime_kernel< 384,NPT><<<grid, 384, 0, stream>>>(nImages,
             templates->devData, templates->height, templates->width, templates->size,
             images->devData, images->height, images->width, images->size,
             results->devData, results->height, results->width, results->size);
-            getLastCudaError("cuArraysCorrTime error");
+            checkCudaAsyncErrors();
     }
     else if (imageNY <=  512) {
         cuArraysCorrTime_kernel< 512,NPT><<<grid, 512, 0, stream>>>(nImages,
             templates->devData, templates->height, templates->width, templates->size,
             images->devData, images->height, images->width, images->size,
             results->devData, results->height, results->width, results->size);
-        getLastCudaError("cuArraysCorrTime error");
+        checkCudaAsyncErrors();
     }
     else if (imageNY <=  640) {
         cuArraysCorrTime_kernel< 640,NPT><<<grid, 640, 0, stream>>>(nImages,
             templates->devData, templates->height, templates->width, templates->size,
             images->devData, images->height, images->width, images->size,
             results->devData, results->height, results->width, results->size);
-        getLastCudaError("cuArraysCorrTime error");
+        checkCudaAsyncErrors();
     }
     else if (imageNY <=  768) {
         cuArraysCorrTime_kernel< 768,NPT><<<grid, 768, 0, stream>>>(nImages,
             templates->devData, templates->height, templates->width, templates->size,
             images->devData, images->height, images->width, images->size,
             results->devData, results->height, results->width, results->size);
-        getLastCudaError("cuArraysCorrTime error");
+        checkCudaAsyncErrors();
     }
     else if (imageNY <=  896) {
         cuArraysCorrTime_kernel< 896,NPT><<<grid, 896, 0, stream>>>(nImages,
             templates->devData, templates->height, templates->width, templates->size,
             images->devData, images->height, images->width, images->size,
             results->devData, results->height, results->width, results->size);
-        getLastCudaError("cuArraysCorrTime error");
+        checkCudaAsyncErrors();
     }
     else if (imageNY <= 1024) {
         cuArraysCorrTime_kernel<1024,NPT><<<grid,1024, 0, stream>>>(nImages,
             templates->devData, templates->height, templates->width, templates->size,
             images->devData, images->height, images->width, images->size,
             results->devData, results->height, results->width, results->size);
-        getLastCudaError("cuArraysCorrTime error");
+        checkCudaAsyncErrors();
     }
     else {
         throw std::invalid_argument("The (oversampled) window size along the across direction "

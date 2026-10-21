@@ -44,7 +44,7 @@ void cuEstimateSnr(cuArrays<real_type> *corrSum, cuArrays<int> *corrValidCount, 
     int size = corrSum->getSize();
     cudaKernel_estimateSnr<<< IDIVUP(size, NTHREADS), NTHREADS, 0, stream>>>
         (corrSum->devData, corrValidCount->devData, maxval->devData, snrValue->devData, size);
-    getLastCudaError("cuda kernel estimate stats error\n");
+    checkCudaAsyncErrors();
 }
 
 // cuda kernel for cuEstimateVariance
@@ -127,7 +127,7 @@ void cuEstimateVariance(cuArrays<real_type> *corrBatchRaw, cuArrays<int2> *maxlo
     // One dimensional launching parameters to loop over every correlation surface.
     cudaKernel_estimateVar<<< IDIVUP(size, NTHREADS), NTHREADS, 0, stream>>>
         (corrBatchRaw->devData, corrBatchRaw->height, corrBatchRaw->width, maxloc->devData, maxval->devData, templateSize, distance, covValue->devData, size);
-    getLastCudaError("cudaKernel_estimateVar error\n");
+    checkCudaAsyncErrors();
 }
 //end of file
 

@@ -31,10 +31,6 @@ void checkCudaAsyncErrorsImpl(const char *file, int line);
 #define checkCudaAsyncErrors() \
     ::pycuampcor::cuda::checkCudaAsyncErrorsImpl(__FILE__, __LINE__)
 
-// previous names
-#define cufft_Error(call) checkCudaErrors(call)
-#define getLastCudaError(message) checkCudaAsyncErrors()
-
 } // namespace
 
 #endif //__CUDAERROR_CUH
