@@ -336,11 +336,11 @@ cuAmpcorProcessorOnePass::cuAmpcorProcessorOnePass(cuAmpcorParameter *param_,
 
 
     corrNormalizerOverSampled =
-        std::unique_ptr<cuNormalizeProcessor>(newCuNormalizer(
+        newCuNormalizer(
         param->searchWindowSizeHeight,
         param->searchWindowSizeWidth,
         param->windowsDownInChunk * param->windowsAcrossInChunk
-        ));
+        );
 
 
 #ifdef CUAMPCOR_DEBUG

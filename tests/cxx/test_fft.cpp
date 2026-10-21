@@ -155,7 +155,7 @@ void FFTTest::checkNormalizer(int h, int w, int H, int W, int2 lag)
     auto t = makeFrom(tv, h, w);
     auto s = makeFrom(sv, H, W);
     auto c = makeFrom(cv, ch, cw);
-    std::unique_ptr<cuNormalizeProcessor> normalizer(newCuNormalizer(H, W, n));
+    auto normalizer = newCuNormalizer(H, W, n);
     normalizer->execute(c.get(), t.get(), s.get(), stream);
     auto r = download(*c);
 

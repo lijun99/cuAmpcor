@@ -9,27 +9,27 @@
 
 namespace pycuampcor::cuda {
 
-cuNormalizeProcessor*
+std::unique_ptr<cuNormalizeProcessor>
 newCuNormalizer(int secondaryNX, int secondaryNY, int count)
 {
     // depending on NY, choose different processor
     if(secondaryNY <= 64) {
-        return new cuNormalizeFixed<64>();
+        return std::make_unique<cuNormalizeFixed<64>>();
     }
     else if (secondaryNY <= 128) {
-        return new cuNormalizeFixed<128>();
+        return std::make_unique<cuNormalizeFixed<128>>();
     }
     else if (secondaryNY <= 256) {
-        return new cuNormalizeFixed<256>();
+        return std::make_unique<cuNormalizeFixed<256>>();
     }
     else if (secondaryNY <= 512) {
-        return new cuNormalizeFixed<512>();
+        return std::make_unique<cuNormalizeFixed<512>>();
     }
     else if (secondaryNY <= 1024) {
-        return new cuNormalizeFixed<1024>();
+        return std::make_unique<cuNormalizeFixed<1024>>();
     }
     else {
-        return new cuNormalizeSAT(secondaryNX, secondaryNY, count);
+        return std::make_unique<cuNormalizeSAT>(secondaryNX, secondaryNY, count);
     }
 }
 
@@ -37,28 +37,23 @@ cuNormalizeSAT::cuNormalizeSAT(int secondaryNX, int secondaryNY, int count)
 {
     // allocate the work array
     // reference sum square
-    referenceSum2 = new cuArrays<real_type>(1, 1, count);
+    referenceSum2 = std::make_unique<cuArrays<real_type>>(1, 1, count);
     referenceSum2->allocate();
 
     // secondary sum and sum square
-    secondarySAT = new cuArrays<real_type>(secondaryNX, secondaryNY, count);
+    secondarySAT = std::make_unique<cuArrays<real_type>>(secondaryNX, secondaryNY, count);
     secondarySAT->allocate();
-    secondarySAT2 = new cuArrays<real_type>(secondaryNX, secondaryNY, count);
+    secondarySAT2 = std::make_unique<cuArrays<real_type>>(secondaryNX, secondaryNY, count);
     secondarySAT2->allocate();
 };
 
-cuNormalizeSAT::~cuNormalizeSAT()
-{
-    delete referenceSum2;
-    delete secondarySAT;
-    delete secondarySAT2;
-}
+cuNormalizeSAT::~cuNormalizeSAT() = default;
 
 void cuNormalizeSAT::execute(cuArrays<real_type> *correlation,
     cuArrays<real_type> *reference, cuArrays<real_type> *secondary, cudaStream_t stream)
 {
     cuCorrNormalizeSAT(correlation, reference, secondary,
-        referenceSum2, secondarySAT, secondarySAT2, stream);
+        referenceSum2.get(), secondarySAT.get(), secondarySAT2.get(), stream);
 }
 
 template<int Size>

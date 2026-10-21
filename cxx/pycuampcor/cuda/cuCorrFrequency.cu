@@ -21,49 +21,42 @@ cuFreqCorrelator::cuFreqCorrelator(int imageNX, int imageNY, int nImages, cudaSt
     int imageSize = imageNX*imageNY;
     int fImageSize = imageNX*(imageNY/2+1);
     int n[NRANK] ={imageNX, imageNY};
-    
+
     // set up fft plans
 #ifdef CUAMPCOR_DOUBLE
-    checkCudaErrors(cufftPlanMany(&forwardPlan, NRANK, n,
-                              NULL, 1, imageSize,
-                              NULL, 1, fImageSize,
-                              CUFFT_D2Z, nImages));
-    checkCudaErrors(cufftPlanMany(&backwardPlan, NRANK, n,
-                              NULL, 1, fImageSize,
-                              NULL, 1, imageSize,
-                              CUFFT_Z2D, nImages));
+    forwardPlan.planMany(NRANK, n,
+        NULL, 1, imageSize,
+        NULL, 1, fImageSize,
+        CUFFT_D2Z, nImages);
+    backwardPlan.planMany(NRANK, n,
+        NULL, 1, fImageSize,
+        NULL, 1, imageSize,
+        CUFFT_Z2D, nImages);
 #else
-    checkCudaErrors(cufftPlanMany(&forwardPlan, NRANK, n,
-                              NULL, 1, imageSize,
-                              NULL, 1, fImageSize, 
-                              CUFFT_R2C, nImages));
-    checkCudaErrors(cufftPlanMany(&backwardPlan, NRANK, n, 
-                              NULL, 1, fImageSize,
-                              NULL, 1, imageSize, 
-                              CUFFT_C2R, nImages));
+    forwardPlan.planMany(NRANK, n,
+        NULL, 1, imageSize,
+        NULL, 1, fImageSize,
+        CUFFT_R2C, nImages);
+    backwardPlan.planMany(NRANK, n,
+        NULL, 1, fImageSize,
+        NULL, 1, imageSize,
+        CUFFT_C2R, nImages);
 #endif
     stream = stream_;
     cufftSetStream(forwardPlan, stream);
     cufftSetStream(backwardPlan, stream);
 
     // set up work arrays
-    workFM = new cuArrays<complex_type>(imageNX, (imageNY/2+1), nImages);
+    workFM = std::make_unique<cuArrays<complex_type>>(imageNX, (imageNY/2+1), nImages);
     workFM->allocate();
-    workFS = new cuArrays<complex_type>(imageNX, (imageNY/2+1), nImages);
+    workFS = std::make_unique<cuArrays<complex_type>>(imageNX, (imageNY/2+1), nImages);
     workFS->allocate();
-    workT = new cuArrays<real_type> (imageNX, imageNY, nImages);
+    workT = std::make_unique<cuArrays<real_type>>(imageNX, imageNY, nImages);
     workT->allocate();
 }
 
 /// destructor
-cuFreqCorrelator::~cuFreqCorrelator()
-{
-    checkCudaErrors(cufftDestroy(forwardPlan));
-    checkCudaErrors(cufftDestroy(backwardPlan));	
-    delete workFM;
-    delete workFS;
-    delete workT;
-}	
+cuFreqCorrelator::~cuFreqCorrelator() = default;
 
 
 /**
@@ -76,7 +69,7 @@ cuFreqCorrelator::~cuFreqCorrelator()
 void cuFreqCorrelator::execute(cuArrays<real_type> *templates, cuArrays<real_type> *images, cuArrays<real_type> *results)
 {
     // pad the reference windows to the the size of search windows
-    cuArraysCopyPadded(templates, workT, stream);
+    cuArraysCopyPadded(templates, workT.get(), stream);
     // forward fft to frequency domain
 #ifdef CUAMPCOR_DOUBLE
     checkCudaErrors(cufftExecD2Z(forwardPlan, workT->devData, workFM->devData));
@@ -89,7 +82,7 @@ void cuFreqCorrelator::execute(cuArrays<real_type> *templates, cuArrays<real_typ
     // cufft doesn't normalize, so manually get the image size for normalization
     real_type coef = 1.0/(images->size);
     // multiply reference with secondary windows in frequency domain
-    cuArraysElementMultiplyConjugate(workFM, workFS, coef, stream);
+    cuArraysElementMultiplyConjugate(workFM.get(), workFS.get(), coef, stream);
     // backward fft to get correlation surface in time domain
 #ifdef CUAMPCOR_DOUBLE
     checkCudaErrors(cufftExecZ2D(backwardPlan, workFM->devData, workT->devData));
@@ -97,7 +90,7 @@ void cuFreqCorrelator::execute(cuArrays<real_type> *templates, cuArrays<real_typ
     checkCudaErrors(cufftExecC2R(backwardPlan, workFM->devData, workT->devData));
 #endif
     // extract to get proper size of correlation surface
-    cuArraysCopyExtract(workT, results, make_int2(0, 0), stream);
+    cuArraysCopyExtract(workT.get(), results, make_int2(0, 0), stream);
     // all done
 }
 
@@ -114,7 +107,7 @@ __global__ void cudaKernel_elementMulConjugate(complex_type *ainout, complex_typ
     if(idx < size) {
         ainout [idx] = cuMulConj(ainout[idx], bin[idx], coef);
     }
-} 
+}
 
 /**
  * Perform multiplication of coef*Conjugate[image1]*image2 for each element
@@ -129,7 +122,7 @@ void cuArraysElementMultiplyConjugate(cuArrays<complex_type> *image1, cuArrays<c
     int blockspergrid = IDIVUP (size, threadsperblock);
     cudaKernel_elementMulConjugate<<<blockspergrid, threadsperblock, 0, stream>>>(image1->devData, image2->devData, size, coef );
     checkCudaAsyncErrors();
-} 
+}
 //end of file
 
 

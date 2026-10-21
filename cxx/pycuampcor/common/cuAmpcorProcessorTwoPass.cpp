@@ -418,18 +418,18 @@ cuAmpcorProcessorTwoPass::cuAmpcorProcessorTwoPass(cuAmpcorParameter *param_,
             stream);
     }
 
-    corrNormalizerRaw = std::unique_ptr<cuNormalizeProcessor>(newCuNormalizer(
+    corrNormalizerRaw = newCuNormalizer(
         param->searchWindowSizeHeightRaw,
         param->searchWindowSizeWidthRaw,
         param->windowsDownInChunk * param->windowsAcrossInChunk
-        ));
+        );
 
     corrNormalizerOverSampled =
-        std::unique_ptr<cuNormalizeProcessor>(newCuNormalizer(
+        newCuNormalizer(
         param->searchWindowSizeHeight,
         param->searchWindowSizeWidth,
         param->windowsDownInChunk * param->windowsAcrossInChunk
-        ));
+        );
 
 
 #ifdef CUAMPCOR_DEBUG

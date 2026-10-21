@@ -13,7 +13,9 @@
 
 #include "cuArrays.h"
 #include "data_types.h"
-#include <cufft.h>
+#include "cufftPlan.h"
+
+#include <memory>
 
 namespace pycuampcor::cuda {
 
@@ -21,11 +23,11 @@ namespace pycuampcor::cuda {
 class cuOverSamplerC2C
 {
 private:
-     cufftHandle forwardPlan;   // forward fft handle
-     cufftHandle backwardPlan;  // backward fft handle
+     CufftPlan forwardPlan;   // forward fft handle
+     CufftPlan backwardPlan;  // backward fft handle
      cudaStream_t stream;       // cuda stream
-     cuArrays<complex_type> *workIn;  // work array to hold forward fft data
-     cuArrays<complex_type> *workOut; // work array to hold padded data
+     std::unique_ptr<cuArrays<complex_type>> workIn;  // work array to hold forward fft data
+     std::unique_ptr<cuArrays<complex_type>> workOut; // work array to hold padded data
 public:
      // disable the default constructor
      cuOverSamplerC2C() = delete;
@@ -43,11 +45,11 @@ public:
 class cuOverSamplerR2R
 {
 private:
-     cufftHandle forwardPlan;
-     cufftHandle backwardPlan;
+     CufftPlan forwardPlan;
+     CufftPlan backwardPlan;
      cudaStream_t stream;
-     cuArrays<complex_type> *workSizeIn;
-     cuArrays<complex_type> *workSizeOut;
+     std::unique_ptr<cuArrays<complex_type>> workSizeIn;
+     std::unique_ptr<cuArrays<complex_type>> workSizeOut;
 
 public:
     cuOverSamplerR2R() = delete;

@@ -12,18 +12,20 @@
 #include "data_types.h"
 #include "fftwUtil.h"
 
+#include <memory>
+
 namespace pycuampcor::cpu {
 
 class cuFreqCorrelator
 {
 private:
     // handles for forward/backward fft
-    fftw_plan_type forwardPlan;
-    fftw_plan_type backwardPlan;
+    FftwPlan forwardPlan;
+    FftwPlan backwardPlan;
     // work data
-    cuArrays<complex_type> *workFM;
-    cuArrays<complex_type> *workFS;
-    cuArrays<real_type> *workT;
+    std::unique_ptr<cuArrays<complex_type>> workFM;
+    std::unique_ptr<cuArrays<complex_type>> workFS;
+    std::unique_ptr<cuArrays<real_type>> workT;
     // stream (not used)
     stream_t stream;
 

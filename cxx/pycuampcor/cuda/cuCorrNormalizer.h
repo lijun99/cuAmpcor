@@ -15,6 +15,8 @@
 #include "cuArrays.h"
 #include "data_types.h"
 
+#include <memory>
+
 namespace pycuampcor::cuda {
 
 /**
@@ -31,7 +33,7 @@ public:
 };
 
 // factory with the secondary dimension
-cuNormalizeProcessor* newCuNormalizer(int NX, int NY, int count);
+std::unique_ptr<cuNormalizeProcessor> newCuNormalizer(int NX, int NY, int count);
 
 
 template<int Size>
@@ -44,9 +46,9 @@ public:
 class cuNormalizeSAT : public cuNormalizeProcessor
 {
 private:
-    cuArrays<real_type> *referenceSum2;
-    cuArrays<real_type> *secondarySAT;
-    cuArrays<real_type> *secondarySAT2;
+    std::unique_ptr<cuArrays<real_type>> referenceSum2;
+    std::unique_ptr<cuArrays<real_type>> secondarySAT;
+    std::unique_ptr<cuArrays<real_type>> secondarySAT2;
 
 public:
     cuNormalizeSAT(int secondaryNX, int secondaryNY, int count);

@@ -13,6 +13,7 @@
 #include "data_types.h"
 #include <fftw3.h>
 #include <mutex>
+#include <utility>
 
 namespace pycuampcor::cpu {
 
@@ -31,6 +32,46 @@ namespace pycuampcor::cpu {
 
 /// the mutex to guard the fftw planner
 std::mutex & fftwPlannerMutex();
+
+/// an fftw plan, destroyed (under the planner mutex) with its owner; move-only
+class FftwPlan {
+public:
+    FftwPlan() = default;
+    explicit FftwPlan(fftw_plan_type plan) : plan_(plan) {}
+    FftwPlan(FftwPlan &&other) noexcept : plan_(std::exchange(other.plan_, nullptr)) {}
+    FftwPlan &operator=(FftwPlan &&other) noexcept
+    {
+        if (this != &other) {
+            reset();
+            plan_ = std::exchange(other.plan_, nullptr);
+        }
+        return *this;
+    }
+    /// take a plan (created under the planner mutex; the replaced plan, if any, is destroyed)
+    FftwPlan &operator=(fftw_plan_type plan)
+    {
+        reset();
+        plan_ = plan;
+        return *this;
+    }
+    FftwPlan(const FftwPlan &) = delete;
+    FftwPlan &operator=(const FftwPlan &) = delete;
+    ~FftwPlan() { reset(); }
+
+    operator fftw_plan_type() const { return plan_; }
+
+private:
+    void reset()
+    {
+        // lock only to destroy a plan (the planner mutex may be held while plans are created)
+        if (plan_) {
+            std::lock_guard<std::mutex> lock(fftwPlannerMutex());
+            PYCUAMPCOR_FFTW(destroy_plan)(plan_);
+            plan_ = nullptr;
+        }
+    }
+    fftw_plan_type plan_ = nullptr;
+};
 
 /// cast complex arrays to fftw complex type
 inline fftw_complex_type * fftwCast(complex_type *data)

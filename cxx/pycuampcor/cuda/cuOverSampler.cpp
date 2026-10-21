@@ -38,9 +38,9 @@ cuOverSamplerC2C::cuOverSamplerC2C(int inNX, int inNY, int outNX, int outNY, int
     */
 
     // set up work arrays
-    workIn = new cuArrays<complex_type>(inNXp2, inNYp2, nImages);
+    workIn = std::make_unique<cuArrays<complex_type>>(inNXp2, inNYp2, nImages);
     workIn->allocate();
-    workOut = new cuArrays<complex_type>(outNXp2, outNYp2, nImages);
+    workOut = std::make_unique<cuArrays<complex_type>>(outNXp2, outNYp2, nImages);
     workOut->allocate();
 
     // set up fft plans
@@ -50,11 +50,11 @@ cuOverSamplerC2C::cuOverSamplerC2C(int inNX, int inNY, int outNX, int outNY, int
     int nOverSample[NRANK] = {outNXp2, outNYp2};
     int fImageOverSampleSize = outNXp2*outNYp2;
 #ifdef CUAMPCOR_DOUBLE
-    checkCudaErrors(cufftPlanMany(&forwardPlan, NRANK, n, NULL, 1, imageSize, NULL, 1, fImageSize, CUFFT_Z2Z, nImages));
-    checkCudaErrors(cufftPlanMany(&backwardPlan, NRANK, nOverSample, NULL, 1, fImageOverSampleSize, NULL, 1, fImageOverSampleSize, CUFFT_Z2Z, nImages));
+    forwardPlan.planMany(NRANK, n, NULL, 1, imageSize, NULL, 1, fImageSize, CUFFT_Z2Z, nImages);
+    backwardPlan.planMany(NRANK, nOverSample, NULL, 1, fImageOverSampleSize, NULL, 1, fImageOverSampleSize, CUFFT_Z2Z, nImages);
 #else
-    checkCudaErrors(cufftPlanMany(&forwardPlan, NRANK, n, NULL, 1, imageSize, NULL, 1, fImageSize, CUFFT_C2C, nImages));
-    checkCudaErrors(cufftPlanMany(&backwardPlan, NRANK, nOverSample, NULL, 1, fImageOverSampleSize, NULL, 1, fImageOverSampleSize, CUFFT_C2C, nImages));
+    forwardPlan.planMany(NRANK, n, NULL, 1, imageSize, NULL, 1, fImageSize, CUFFT_C2C, nImages);
+    backwardPlan.planMany(NRANK, nOverSample, NULL, 1, fImageOverSampleSize, NULL, 1, fImageOverSampleSize, CUFFT_C2C, nImages);
 #endif
     // set cuda stream
     setStream(stream_);
@@ -88,7 +88,7 @@ void cuOverSamplerC2C::execute(cuArrays<complex_type> *imagesIn, cuArrays<comple
  #endif
 
     // padding zeros in the middle
-    cuArraysFFTPaddingMany(workIn, workOut, stream);
+    cuArraysFFTPaddingMany(workIn.get(), workOut.get(), stream);
 
     // iFFT back to time domain
 #ifdef CUAMPCOR_DOUBLE
@@ -99,15 +99,7 @@ void cuOverSamplerC2C::execute(cuArrays<complex_type> *imagesIn, cuArrays<comple
 }
 
 /// destructor
-cuOverSamplerC2C::~cuOverSamplerC2C()
-{
-    // destroy fft handles
-    checkCudaErrors(cufftDestroy(forwardPlan));
-    checkCudaErrors(cufftDestroy(backwardPlan));
-    // deallocate work arrays
-    delete(workIn);
-    delete(workOut);
-}
+cuOverSamplerC2C::~cuOverSamplerC2C() = default;
 
 // end of cuOverSamplerC2C
 
@@ -138,16 +130,16 @@ cuOverSamplerR2R::cuOverSamplerR2R(int inNX, int inNY, int outNX, int outNY, int
     int fImageSize = inNXp2*inNYp2;
     int nUpSample[NRANK] = {outNXp2, outNYp2};
     int fImageUpSampleSize = outNXp2*outNYp2;
-    workSizeIn = new cuArrays<complex_type>(inNXp2, inNYp2, nImages);
+    workSizeIn = std::make_unique<cuArrays<complex_type>>(inNXp2, inNYp2, nImages);
     workSizeIn->allocate();
-    workSizeOut = new cuArrays<complex_type>(outNXp2, outNYp2, nImages);
+    workSizeOut = std::make_unique<cuArrays<complex_type>>(outNXp2, outNYp2, nImages);
     workSizeOut->allocate();
 #ifdef CUAMPCOR_DOUBLE
-    checkCudaErrors(cufftPlanMany(&forwardPlan, NRANK, n, NULL, 1, imageSize, NULL, 1, fImageSize, CUFFT_Z2Z, nImages));
-    checkCudaErrors(cufftPlanMany(&backwardPlan, NRANK, nUpSample, NULL, 1, fImageUpSampleSize, NULL, 1, outNX*outNY, CUFFT_Z2Z, nImages));
+    forwardPlan.planMany(NRANK, n, NULL, 1, imageSize, NULL, 1, fImageSize, CUFFT_Z2Z, nImages);
+    backwardPlan.planMany(NRANK, nUpSample, NULL, 1, fImageUpSampleSize, NULL, 1, outNX*outNY, CUFFT_Z2Z, nImages);
 #else
-    checkCudaErrors(cufftPlanMany(&forwardPlan, NRANK, n, NULL, 1, imageSize, NULL, 1, fImageSize, CUFFT_C2C, nImages));
-    checkCudaErrors(cufftPlanMany(&backwardPlan, NRANK, nUpSample, NULL, 1, fImageUpSampleSize, NULL, 1, outNX*outNY, CUFFT_C2C, nImages));
+    forwardPlan.planMany(NRANK, n, NULL, 1, imageSize, NULL, 1, fImageSize, CUFFT_C2C, nImages);
+    backwardPlan.planMany(NRANK, nUpSample, NULL, 1, fImageUpSampleSize, NULL, 1, outNX*outNY, CUFFT_C2C, nImages);
 #endif
     setStream(stream);
 }
@@ -167,7 +159,7 @@ void cuOverSamplerR2R::setStream(cudaStream_t stream_)
 void cuOverSamplerR2R::execute(cuArrays<real_type> *imagesIn, cuArrays<real_type> *imagesOut)
 {
 
-    cuArraysCopyPadded(imagesIn, workSizeIn, stream);
+    cuArraysCopyPadded(imagesIn, workSizeIn.get(), stream);
 
     // exp(+i) to the frequency domain and exp(-i) back, as cuOverSamplerC2C
 #ifdef CUAMPCOR_DOUBLE
@@ -176,7 +168,7 @@ void cuOverSamplerR2R::execute(cuArrays<real_type> *imagesIn, cuArrays<real_type
     checkCudaErrors(cufftExecC2C(forwardPlan, workSizeIn->devData, workSizeIn->devData, CUFFT_INVERSE));
 #endif
 
-    cuArraysFFTPaddingMany(workSizeIn, workSizeOut, stream);
+    cuArraysFFTPaddingMany(workSizeIn.get(), workSizeOut.get(), stream);
 
 #ifdef CUAMPCOR_DOUBLE
     checkCudaErrors(cufftExecZ2Z(backwardPlan, workSizeOut->devData, workSizeOut->devData, CUFFT_FORWARD));
@@ -184,17 +176,11 @@ void cuOverSamplerR2R::execute(cuArrays<real_type> *imagesIn, cuArrays<real_type
     checkCudaErrors(cufftExecC2C(backwardPlan, workSizeOut->devData, workSizeOut->devData, CUFFT_FORWARD));
 #endif
 
-    cuArraysCopyExtract(workSizeOut, imagesOut, make_int2(0,0), stream);
+    cuArraysCopyExtract(workSizeOut.get(), imagesOut, make_int2(0,0), stream);
 }
 
 /// destructor
-cuOverSamplerR2R::~cuOverSamplerR2R()
-{
-    checkCudaErrors(cufftDestroy(forwardPlan));
-    checkCudaErrors(cufftDestroy(backwardPlan));
-    delete workSizeIn;
-    delete workSizeOut;
-}
+cuOverSamplerR2R::~cuOverSamplerR2R() = default;
 
 // end of file
 

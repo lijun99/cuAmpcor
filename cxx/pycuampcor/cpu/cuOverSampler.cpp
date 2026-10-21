@@ -32,9 +32,9 @@ cuOverSamplerC2C::cuOverSamplerC2C(int inNX, int inNY, int outNX, int outNY, int
     : stream(stream_)
 {
     // set up work arrays
-    workIn = new cuArrays<complex_type>(inNX, inNY, nImages);
+    workIn = std::make_unique<cuArrays<complex_type>>(inNX, inNY, nImages);
     workIn->allocate();
-    workOut = new cuArrays<complex_type>(outNX, outNY, nImages);
+    workOut = std::make_unique<cuArrays<complex_type>>(outNX, outNY, nImages);
     workOut->allocate();
 
     // set up fft plans (out-of-place), with temporary arrays in place of the input/output images
@@ -67,24 +67,13 @@ void cuOverSamplerC2C::execute(cuArrays<complex_type> *imagesIn, cuArrays<comple
     // FFT to frequency domain
     PYCUAMPCOR_FFTW(execute_dft)(forwardPlan, fftwCast(imagesIn->devData), fftwCast(workIn->devData));
     // padding zeros in the middle
-    cuArraysFFTPaddingMany(workIn, workOut, stream);
+    cuArraysFFTPaddingMany(workIn.get(), workOut.get(), stream);
     // iFFT back to time domain
     PYCUAMPCOR_FFTW(execute_dft)(backwardPlan, fftwCast(workOut->devData), fftwCast(imagesOut->devData));
 }
 
 /// destructor
-cuOverSamplerC2C::~cuOverSamplerC2C()
-{
-    // destroy fft handles
-    {
-        std::lock_guard<std::mutex> lock(fftwPlannerMutex());
-        PYCUAMPCOR_FFTW(destroy_plan)(forwardPlan);
-        PYCUAMPCOR_FFTW(destroy_plan)(backwardPlan);
-    }
-    // deallocate work arrays
-    delete(workIn);
-    delete(workOut);
-}
+cuOverSamplerC2C::~cuOverSamplerC2C() = default;
 
 // end of cuOverSamplerC2C
 
@@ -98,14 +87,14 @@ cuOverSamplerC2C::~cuOverSamplerC2C()
 cuOverSamplerR2R::cuOverSamplerR2R(int inNX, int inNY, int outNX, int outNY, int nImages, stream_t stream_)
     : stream(stream_)
 {
-    workSizeIn = new cuArrays<complex_type>(inNX, inNY, nImages);
+    workSizeIn = std::make_unique<cuArrays<complex_type>>(inNX, inNY, nImages);
     workSizeIn->allocate();
     // work arrays for one image
-    workColumns = new cuArrays<complex_type>(outNX, inNY, 1);
+    workColumns = std::make_unique<cuArrays<complex_type>>(outNX, inNY, 1);
     workColumns->allocate();
-    workPadded = new cuArrays<complex_type>(outNX, outNY, 1);
+    workPadded = std::make_unique<cuArrays<complex_type>>(outNX, outNY, 1);
     workPadded->allocate();
-    workSizeOut = new cuArrays<complex_type>(outNX, outNY, 1);
+    workSizeOut = std::make_unique<cuArrays<complex_type>>(outNX, outNY, 1);
     workSizeOut->allocate();
 
     // the numbers of the positive and negative frequency columns, as in cuArraysFFTPaddingMany
@@ -151,7 +140,7 @@ void cuOverSamplerR2R::setStream(stream_t stream_)
 void cuOverSamplerR2R::execute(cuArrays<real_type> *imagesIn, cuArrays<real_type> *imagesOut)
 {
     // forward fft of all images
-    cuArraysCopyPadded(imagesIn, workSizeIn, stream);
+    cuArraysCopyPadded(imagesIn, workSizeIn.get(), stream);
     PYCUAMPCOR_FFTW(execute)(forwardPlan);
 
     const int inNX = workSizeIn->height, inNY = workSizeIn->width;
@@ -182,21 +171,7 @@ void cuOverSamplerR2R::execute(cuArrays<real_type> *imagesIn, cuArrays<real_type
 }
 
 /// destructor
-cuOverSamplerR2R::~cuOverSamplerR2R()
-{
-    {
-        std::lock_guard<std::mutex> lock(fftwPlannerMutex());
-        PYCUAMPCOR_FFTW(destroy_plan)(forwardPlan);
-        for(int k = 0; k < 2; k++)
-            if(backwardPlanColumns[k])
-                PYCUAMPCOR_FFTW(destroy_plan)(backwardPlanColumns[k]);
-        PYCUAMPCOR_FFTW(destroy_plan)(backwardPlanRows);
-    }
-    delete workSizeIn;
-    delete workColumns;
-    delete workPadded;
-    delete workSizeOut;
-}
+cuOverSamplerR2R::~cuOverSamplerR2R() = default;
 
 } // namespace
 // end of file
