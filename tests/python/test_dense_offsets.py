@@ -110,3 +110,22 @@ def test_gdal_rasters(impl, images, tmp_path, name, reader):
         ds = None
     expected = run(impl, images, tmp_path / "raw", "--length", str(N), "--width", str(N))
     np.testing.assert_array_equal(run(impl, rasters, tmp_path / "gdal", *reader), expected)
+
+
+def test_hdf5_datasets(impl, images, tmp_path):
+    """HDF5 datasets (HDF5:<file>:<dataset>, or <file>:<dataset> with --reader hdf5) give the results of the raw images"""
+    h5py = pytest.importorskip("h5py")
+    if not pycuampcor.has_hdf5:
+        pytest.skip("pycuampcor is built without HDF5")
+    dataset = "/science/LSAR/RSLC/swaths/frequencyA/HH"
+    names = []
+    for k, fname in zip(("ref", "sec"), images):
+        with h5py.File(tmp_path / f"{k}.h5", "w") as f:
+            f.create_dataset(dataset, data=np.fromfile(fname, np.complex64).reshape(N, N),
+                             chunks=(64, 64), compression="gzip", shuffle=True)
+        names.append(f"{tmp_path / k}.h5:{dataset}")
+    expected = run(impl, images, tmp_path / "raw", "--length", str(N), "--width", str(N))
+    np.testing.assert_array_equal(run(impl, [f"HDF5:{n}" for n in names], tmp_path / "h5"), expected)
+    np.testing.assert_array_equal(run(impl, names, tmp_path / "h5r", "--reader", "hdf5"), expected)
+    with pytest.raises(RuntimeError, match="No dataset"):
+        run(impl, [f"HDF5:{names[0]}", f"HDF5:{tmp_path / 'sec.h5'}:/missing"], tmp_path / "bad")

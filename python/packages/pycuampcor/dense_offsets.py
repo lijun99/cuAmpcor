@@ -6,12 +6,13 @@ series): the offsets of the windows on a regular grid of the reference image, wr
 band-interleaved binary files (offset.bip, offset_snr.bip, ...) with their headers, and optionally
 the geometry (lat, lon, ...) on the same grid (--full-geom, --out-geom).
 
-The images are raw binary files (single band, complex64 or float32, e.g., ISCE SLCs), or
-rasters read with GDAL (GeoTIFF, VRT, ...: the first band, any pixel type, converted to float32,
-or to complex64 if complex; if pycuampcor is built with GDAL). The size and pixel type of a raw
-image are given with --length, --width, --data-type, or read from its ISCE .xml (if ISCE2 is
-installed), or from GDAL (the .vrt next to the file, or the file itself); those of a GDAL raster
-from GDAL. The output headers are ISCE .xml (with .vrt) if ISCE2 is installed, ENVI .hdr and .vrt
+The images are raw binary files (single band, complex64 or float32, e.g., ISCE SLCs), 2D
+datasets in HDF5 files named HDF5:<file>:<dataset> (e.g., NISAR RSLCs; if pycuampcor is built
+with HDF5), or rasters read with GDAL (GeoTIFF, VRT, ...: the first band, any pixel type, converted
+to float32, or to complex64 if complex; if pycuampcor is built with GDAL). The size and pixel type
+of a raw image are given with --length, --width, --data-type, or read from its ISCE .xml (if ISCE2
+is installed), or from GDAL (the .vrt next to the file, or the file itself); those of an HDF5
+dataset with h5py (or GDAL), those of a GDAL raster from GDAL. The output headers are ISCE .xml (with .vrt) if ISCE2 is installed, ENVI .hdr and .vrt
 otherwise. ISCE2 is optional; GDAL is needed to read the image metadata without ISCE2 (or the
 options), and for the geometry.
 """
@@ -63,9 +64,10 @@ def create_parser():
                         help='Width (samples) of the images (default: from the image metadata).')
     parser.add_argument('--data-type', dest='data_type', choices=sorted(DATA_TYPES), default=None,
                         help='Pixel type of the images (default: from the image metadata).')
-    parser.add_argument('--reader', dest='reader', choices=['auto', 'raw', 'gdal'], default='auto',
-                        help='How to read the images: raw binary files, or rasters with GDAL (auto: GDAL\n'
-                             f'for the names ending with {", ".join(GDAL_EXTENSIONS)}, raw otherwise) (default: %(default)s).')
+    parser.add_argument('--reader', dest='reader', choices=['auto', 'raw', 'hdf5', 'gdal'], default='auto',
+                        help='How to read the images: raw binary files, HDF5 datasets, or rasters with GDAL\n'
+                             '(auto: hdf5 for the names HDF5:<file>:<dataset>, GDAL for the names ending with\n'
+                             f'{", ".join(GDAL_EXTENSIONS)}, raw otherwise) (default: %(default)s).')
     parser.add_argument('--fix-xml', '--fix-image-xml', dest='fixImageXml', action='store_true',
                         help='Fix the image file path in the XML file (ISCE2). Enable this if input files have been moved.')
     parser.add_argument('--fix-vrt', '--fix-image-vrt', dest='fixImageVrt', action='store_true',
@@ -198,9 +200,54 @@ def isce_available():
         return False
 
 
-def use_gdal(fname, inps):
-    """Whether the image is a raster read with GDAL (by --reader, or by the extension of its name)"""
-    return inps.reader == 'gdal' or (inps.reader == 'auto' and fname.lower().endswith(GDAL_EXTENSIONS))
+def image_reader(fname, inps):
+    """
+    The reader of the image (--reader, or by its name): hdf5 for HDF5:<file>:<dataset>, gdal for
+    the GDAL extensions, raw otherwise
+    """
+    if inps.reader != 'auto':
+        return inps.reader
+    if fname.startswith('HDF5:'):
+        return 'hdf5'
+    return 'gdal' if fname.lower().endswith(GDAL_EXTENSIONS) else 'raw'
+
+
+def split_hdf5_name(name):
+    """
+    The file and the dataset of an HDF5 image name, HDF5:<file>:<dataset> (the prefix optional, the
+    file possibly quoted), split as by pycuampcor: the dataset from the last ':/', or else the last ':'
+    """
+    rest = name[len('HDF5:'):] if name.startswith('HDF5:') else name
+    if rest.startswith('"'):
+        quote = rest.find('"', 1)
+        if quote < 0 or rest[quote + 1:quote + 2] != ':':
+            raise RuntimeError(f'Invalid HDF5 image name {name}; expect HDF5:"<file>":<dataset>')
+        return rest[1:quote], '/' + rest[quote + 2:].lstrip('/')
+    sep = rest.rfind(':/')
+    if sep < 0:
+        sep = rest.rfind(':')
+    if sep <= 0:
+        raise RuntimeError(f'Invalid HDF5 image name {name}; expect HDF5:<file>:<dataset>')
+    return rest[:sep], '/' + rest[sep + 1:].lstrip('/')
+
+
+def hdf5_info(name):
+    """The length, width and pixel type (complex64 or float32) of an HDF5 dataset, with h5py or GDAL"""
+    file, dataset = split_hdf5_name(name)
+    try:
+        import h5py
+    except ImportError:
+        from osgeo import gdal
+        ds = open_gdal(f'HDF5:"{file}":{dataset}')
+        complex_type = gdal.DataTypeIsComplex(ds.GetRasterBand(1).DataType)
+        return ds.RasterYSize, ds.RasterXSize, 'complex64' if complex_type else 'float32'
+    with h5py.File(file, 'r') as f:
+        if dataset not in f:
+            raise RuntimeError(f'No dataset {dataset} in {file}')
+        d = f[dataset]
+        if d.ndim != 2:
+            raise RuntimeError(f'The dataset {dataset} of {file} is not two-dimensional')
+        return d.shape[0], d.shape[1], 'complex64' if d.dtype.kind == 'c' else 'float32'
 
 
 def open_gdal(fname):
@@ -216,13 +263,18 @@ def open_gdal(fname):
 
 def image_info(fname, inps):
     """
-    The length, width and pixel type of an image: from the options, or else from GDAL for a GDAL
-    raster (float32, or complex64 if complex), and for a raw image from the ISCE .xml (if ISCE2 is
+    The length, width and pixel type of an image: from the options, or else for an HDF5 dataset
+    with h5py (or GDAL), for a GDAL raster from GDAL (float32, or complex64 if complex), and for a
+    raw image from the ISCE .xml (if ISCE2 is
     installed) or GDAL (the .vrt next to the image, or the image itself)
     """
     if inps.length and inps.width:
         return inps.length, inps.width, inps.data_type or 'complex64'
-    if use_gdal(fname, inps):
+    reader = image_reader(fname, inps)
+    if reader == 'hdf5':
+        length, width, data_type = hdf5_info(fname)
+        return length, width, inps.data_type or data_type
+    if reader == 'gdal':
         ds = open_gdal(fname)
         from osgeo import gdal
         data_type = 'complex64' if gdal.DataTypeIsComplex(ds.GetRasterBand(1).DataType) else 'float32'
@@ -318,7 +370,7 @@ def estimate_offset_field(reference, secondary, inps):
 
     length, width, ref_type = image_info(reference, inps)
     sec_length, sec_width, sec_type = image_info(secondary, inps)
-    readers = ['gdal' if use_gdal(fname, inps) else 'raw' for fname in (reference, secondary)]
+    readers = [image_reader(fname, inps) for fname in (reference, secondary)]
     for fname, reader, size in zip((reference, secondary), readers,
                                    ((length, width, ref_type), (sec_length, sec_width, sec_type))):
         if reader == 'raw':
