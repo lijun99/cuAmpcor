@@ -29,9 +29,9 @@ struct array_traits<cpu::Arrays> {
     /// the chunks of the reference and secondary images loaded to the work memory
     using chunk_type = cpu::Chunk;
     // the workers
-    /// the cross-correlation of the windows in the frequency domain
-    using freq_correlator_type = cpu::cuFreqCorrelator;
     // the interfaces of the normalizer and of the surface oversampler (common/), implemented by the package
+    /// the cross-correlation of the windows (by an algorithm chosen at run time)
+    using correlator_type = WindowCorrelator<cpu::Arrays>;
     /// the normalizer of the correlation surfaces
     using normalizer_type = Normalizer<cpu::Arrays>;
     /// the oversampler of the correlation surfaces around their peaks

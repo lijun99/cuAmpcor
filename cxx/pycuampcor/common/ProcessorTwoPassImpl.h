@@ -11,6 +11,7 @@
 #include "ProcessorTwoPass.h"
 #include "Options.h"
 #include "Parameter.h"
+#include "Correlator.h"
 #include "Normalizer.h"
 #include "logging.h"
 
@@ -49,7 +50,7 @@ void ProcessorTwoPass<arrayT>::run(int idxDown, int idxAcross, const chunk_type 
 
     // the normalized correlation surfaces, e.g., 41 x 41 for a half search range of 20
     correlate(r_referenceBatchRaw, r_secondaryBatchRaw, r_corrBatchRaw,
-        cuCorrFreqDomain.get(), corrNormalizerRaw.get(), "r_corrBatchRaw");
+        correlatorRaw.get(), corrNormalizerRaw.get(), "r_corrBatchRaw");
 
     // the peaks, to the pixel
     cuArraysMaxloc2D(r_corrBatchRaw, offsetInit, r_maxval, stream);
@@ -104,7 +105,7 @@ void ProcessorTwoPass<arrayT>::run(int idxDown, int idxAcross, const chunk_type 
 
     // the normalized correlation surfaces of the oversampled windows
     correlate(r_referenceBatchOverSampled, r_secondaryBatchOverSampled, r_corrBatchZoomIn,
-        cuCorrFreqDomain_OverSampled.get(), corrNormalizerOverSampled.get(), "r_corrBatchZoomIn");
+        correlatorOverSampled.get(), corrNormalizerOverSampled.get(), "r_corrBatchZoomIn");
 
     // without the last row and column, of even size, oversampled again around the peak
     cuArraysCopyExtract(r_corrBatchZoomIn, r_corrBatchZoomInAdjust, traits::make_int2(0, 0), stream);
@@ -173,13 +174,11 @@ ProcessorTwoPass<arrayT>::ProcessorTwoPass(const Parameter &param_,
         param.corrZoomWindowSize * param.corrSurfaceOverSamplingFactor);
     createSurfaceOversampler(param.corrZoomWindowSize, param.corrZoomWindowSize);
 
-    // the correlators (frequency domain) and the normalizers, of both passes
-    if (param.algorithm == Algorithm::Frequency) {
-        cuCorrFreqDomain = std::make_unique<freq_correlator_type>(
-            param.searchWindowSizeHeightRaw, param.searchWindowSizeWidthRaw, down*across, stream);
-        cuCorrFreqDomain_OverSampled = std::make_unique<freq_correlator_type>(
-            param.searchWindowSizeHeight, param.searchWindowSizeWidth, down*across, stream);
-    }
+    // the cross-correlators (by the algorithm) and the normalizers, of both passes
+    correlatorRaw = newWindowCorrelator<arrayT>(param.algorithm,
+        param.searchWindowSizeHeightRaw, param.searchWindowSizeWidthRaw, down*across, stream);
+    correlatorOverSampled = newWindowCorrelator<arrayT>(param.algorithm,
+        param.searchWindowSizeHeight, param.searchWindowSizeWidth, down*across, stream);
     corrNormalizerRaw = traits::newNormalizer(param.searchWindowSizeHeightRaw,
         param.searchWindowSizeWidthRaw, down*across);
     corrNormalizerOverSampled = traits::newNormalizer(param.searchWindowSizeHeight,

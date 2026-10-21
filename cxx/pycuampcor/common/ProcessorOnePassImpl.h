@@ -11,6 +11,7 @@
 #include "ProcessorOnePass.h"
 #include "Options.h"
 #include "Parameter.h"
+#include "Correlator.h"
 #include "Normalizer.h"
 #include "logging.h"
 
@@ -81,7 +82,7 @@ void ProcessorOnePass<arrayT>::run(int idxDown, int idxAcross, const chunk_type 
     // the normalized correlation surfaces of the oversampled windows, over the search range
     // plus the margin (halfZoomWindowSizeRaw raw pixels each way) for the surfaces around the peaks
     correlate(r_referenceBatchOverSampled, r_secondaryBatchOverSampled, r_corrBatch,
-        cuCorrFreqDomain_OverSampled.get(), corrNormalizerOverSampled.get(), "r_corrBatch");
+        correlatorOverSampled.get(), corrNormalizerOverSampled.get(), "r_corrBatch");
 
     // the peaks, to the oversampled pixel, within the search range: without the extra margin (for
     // the surfaces around the peak)
@@ -188,10 +189,9 @@ ProcessorOnePass<arrayT>::ProcessorOnePass(const Parameter &param_,
     batch(r_corrBatchZoomInOverSampled, param.corrZoomInOversampledSize.x, param.corrZoomInOversampledSize.y);
     createSurfaceOversampler(r_corrBatchZoomIn.height(), r_corrBatchZoomIn.width());
 
-    // the correlator (frequency domain) and the normalizer
-    if (param.algorithm == Algorithm::Frequency)
-        cuCorrFreqDomain_OverSampled = std::make_unique<freq_correlator_type>(
-            param.searchWindowSizeHeight, param.searchWindowSizeWidth, down*across, stream);
+    // the cross-correlator (by the algorithm) and the normalizer
+    correlatorOverSampled = newWindowCorrelator<arrayT>(param.algorithm,
+        param.searchWindowSizeHeight, param.searchWindowSizeWidth, down*across, stream);
     corrNormalizerOverSampled = traits::newNormalizer(param.searchWindowSizeHeight,
         param.searchWindowSizeWidth, down*across);
 

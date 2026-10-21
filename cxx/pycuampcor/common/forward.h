@@ -40,6 +40,12 @@ namespace pycuampcor {
     class Normalizer;
     template <template <typename> class arrayT>
     class SurfaceOverSampler;
+    // the cross-correlators of the windows (Correlator.h): of T, by algorithm, on device (the
+    // packages specialize it), and their interface for the algorithm chosen at run time
+    template <Algorithm algorithm, typename T, Device device>
+    class Correlator;
+    template <template <typename> class arrayT>
+    class WindowCorrelator;
     // the oversamplers of batches of 2D arrays of T, by method, on device (OverSampler.h; the
     // packages specialize it)
     template <OversamplingMethod method, typename T, Device device>

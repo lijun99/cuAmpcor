@@ -1,6 +1,6 @@
 /**
  * @file  CorrFrequency.cpp
- * @brief A class performs cross correlation in frequency domain (CPU backend)
+ * @brief The cross-correlator of the windows in the frequency domain on the CPU
  */
 
 #include "CorrFrequency.h"
@@ -25,14 +25,24 @@ std::mutex & fftwPlannerMutex()
     return mutex;
 }
 
+} // namespace
+
+namespace pycuampcor {
+
+// the definitions use the CPU package: its types, arrays and fftw plans
+using namespace cpu;
+
+/// the cross-correlator in the frequency domain on the CPU
+using FrequencyCorrelator = Correlator<Algorithm::Frequency, cpu::real_type, Device::CPU>;
+
 /**
- * cuFreqCorrelator constructor
+ * Constructor of the cross-correlator in the frequency domain
  * @param imageNX height of each image
  * @param imageNY width of each image
  * @param nImages number of images in the batch
  * @param stream_ (not used)
  */
-cuFreqCorrelator::cuFreqCorrelator(int imageNX, int imageNY, int nImages, stream_t stream_)
+FrequencyCorrelator::Correlator(int imageNX, int imageNY, int nImages, stream_t stream_)
     : stream(stream_)
 {
     int imageSize = imageNX*imageNY;
@@ -59,7 +69,7 @@ cuFreqCorrelator::cuFreqCorrelator(int imageNX, int imageNY, int nImages, stream
 /**
  * Release the fftw plans and the work arrays
  */
-cuFreqCorrelator::~cuFreqCorrelator() = default;
+FrequencyCorrelator::~Correlator() = default;
 
 /**
  * Execute the cross correlation
@@ -67,7 +77,7 @@ cuFreqCorrelator::~cuFreqCorrelator() = default;
  * @param[in] images the search windows
  * @param[out] results the correlation surfaces
  */
-void cuFreqCorrelator::execute(ArraysView<const real_type> templates, ArraysView<const real_type> images,
+void FrequencyCorrelator::execute(ArraysView<const real_type> templates, ArraysView<const real_type> images,
     ArraysView<real_type> results)
 {
     // pad the reference windows to the the size of search windows
@@ -87,6 +97,10 @@ void cuFreqCorrelator::execute(ArraysView<const real_type> templates, ArraysView
     cuArraysCopyExtract(workT, results, make_int2(0, 0), stream);
     // all done
 }
+
+} // namespace
+
+namespace pycuampcor::cpu {
 
 /**
  * Perform multiplication of coef*Conjugate[image1]*image2 for each element

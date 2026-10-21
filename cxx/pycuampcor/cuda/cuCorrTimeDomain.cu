@@ -167,6 +167,31 @@ void cuCorrTimeDomain(ArraysView<const real_type> templates,
             + std::to_string(imageNY) + " should be smaller than 1024.");
     }
 }
-// end of file
 
 } // namespace
+
+namespace pycuampcor {
+
+/// the cross-correlator in the time domain on the CUDA device
+using TimeCorrelator = Correlator<Algorithm::Time, cuda::real_type, Device::CUDA>;
+
+/**
+ * Constructor of the cross-correlator in the time domain
+ * @param stream_ the CUDA stream of the kernels
+ */
+TimeCorrelator::Correlator(int, int, int, cudaStream_t stream_)
+    : stream(stream_)
+{
+}
+
+/**
+ * Compute the correlation surfaces of the reference windows with the secondary windows
+ */
+void TimeCorrelator::execute(ArraysView<const real_type> templates, ArraysView<const real_type> images,
+    ArraysView<real_type> results)
+{
+    cuda::cuCorrTimeDomain(templates, images, results, stream);
+}
+
+} // namespace
+// end of file

@@ -49,8 +49,8 @@ public:
     /// a chunk of an image, loaded by the chunk loader
     using loaded_chunk_type = typename traits::loaded_chunk_type;
     // the workers
-    /// the cross-correlation of the windows in the frequency domain
-    using freq_correlator_type = typename traits::freq_correlator_type;
+    /// the cross-correlation of the windows (by the algorithm of the parameters)
+    using correlator_type = typename traits::correlator_type;
     /// the normalizer of the correlation surfaces
     using normalizer_type = typename traits::normalizer_type;
     /// the oversampler of the correlation surfaces around their peaks
@@ -135,15 +135,15 @@ protected:
         const std::vector<int> &startDown, const std::vector<int> &startAcross,
         array_type<complex_type> &batch);
 
-    /// cross-correlate the reference windows with the secondary windows (in the frequency or time
-    /// domain), and normalize the correlation surfaces
+    /// cross-correlate the reference windows with the secondary windows (by the algorithm of the
+    /// correlator: in the frequency or time domain), and normalize the correlation surfaces
     /// @param reference,secondary the windows (amplitudes, with the mean subtracted)
     /// @param[out] surface the normalized correlation surfaces
-    /// @param freqCorrelator the correlator in the frequency domain (if algorithm is frequency)
+    /// @param correlator the cross-correlator of the windows
     /// @param normalizer the normalizer of the correlation surfaces
     /// @param name the name of the surfaces in the debug dumps
     void correlate(array_type<real_type> &reference, array_type<real_type> &secondary,
-        array_type<real_type> &surface, freq_correlator_type *freqCorrelator,
+        array_type<real_type> &surface, correlator_type *correlator,
         normalizer_type *normalizer, const std::string &name);
 
     /// create the oversampler of the correlation surfaces of height x width around the peak,

@@ -1,6 +1,6 @@
 /**
  * @file  cuCorrFrequency.cu
- * @brief A class performs cross correlation in frequency domain
+ * @brief The cross-correlator of the windows in the frequency domain on the CUDA device
  */
 
 #include "cuCorrFrequency.h"
@@ -19,14 +19,24 @@ namespace pycuampcor::cuda {
 static void cuArraysElementMultiplyConjugate(ArraysView<complex_type> image1,
     ArraysView<const complex_type> image2, real_type coef, cudaStream_t stream);
 
+} // namespace
+
+namespace pycuampcor {
+
+// the definitions use the CUDA package: its types, arrays and cufft plans
+using namespace cuda;
+
+/// the cross-correlator in the frequency domain on the CUDA device
+using FrequencyCorrelator = Correlator<Algorithm::Frequency, cuda::real_type, Device::CUDA>;
+
 /**
- * cuFreqCorrelator constructor
+ * Constructor of the cross-correlator in the frequency domain
  * @param imageNX height of each image
  * @param imageNY width of each image
  * @param nImages number of images in the batch
  * @param stream_ CUDA stream
  */
-cuFreqCorrelator::cuFreqCorrelator(int imageNX, int imageNY, int nImages, cudaStream_t stream_)
+FrequencyCorrelator::Correlator(int imageNX, int imageNY, int nImages, cudaStream_t stream_)
 {
 
     int imageSize = imageNX*imageNY;
@@ -66,7 +76,7 @@ cuFreqCorrelator::cuFreqCorrelator(int imageNX, int imageNY, int nImages, cudaSt
 /**
  * Release the cufft plans and the work arrays
  */
-cuFreqCorrelator::~cuFreqCorrelator() = default;
+FrequencyCorrelator::~Correlator() = default;
 
 /**
  * Execute the cross correlation
@@ -74,7 +84,7 @@ cuFreqCorrelator::~cuFreqCorrelator() = default;
  * @param[in] images the search windows
  * @param[out] results the correlation surfaces
  */
-void cuFreqCorrelator::execute(ArraysView<const real_type> templates, ArraysView<const real_type> images,
+void FrequencyCorrelator::execute(ArraysView<const real_type> templates, ArraysView<const real_type> images,
     ArraysView<real_type> results)
 {
     // pad the reference windows to the the size of search windows
@@ -104,6 +114,10 @@ void cuFreqCorrelator::execute(ArraysView<const real_type> templates, ArraysView
     cuArraysCopyExtract(workT, results, make_int2(0, 0), stream);
     // all done
 }
+
+} // namespace
+
+namespace pycuampcor::cuda {
 
 /**
  * The product f*conj(a)*b (a^* * b, scaled by f)

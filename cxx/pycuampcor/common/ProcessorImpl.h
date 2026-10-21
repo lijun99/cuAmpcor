@@ -17,6 +17,7 @@
 #include "Parameter.h"
 #include "Normalizer.h"
 #include "SurfaceOverSampler.h"
+#include "Correlator.h"
 
 namespace pycuampcor {
 
@@ -172,12 +173,9 @@ void Processor<arrayT>::copyToBatch(const loaded_chunk_type &chunk,
 template <template <typename> class arrayT>
 void Processor<arrayT>::correlate(array_type<real_type> &reference,
     array_type<real_type> &secondary, array_type<real_type> &surface,
-    freq_correlator_type *freqCorrelator, normalizer_type *normalizer, const std::string &name)
+    correlator_type *correlator, normalizer_type *normalizer, const std::string &name)
 {
-    if (param.algorithm == Algorithm::Frequency)
-        freqCorrelator->execute(reference, secondary, surface);
-    else
-        cuCorrTimeDomain(reference, secondary, surface, stream);
+    correlator->execute(reference, secondary, surface);
     // dump: write the intermediate arrays to files, in debug builds only (CUAMPCOR_DEBUG, defined
     // without NDEBUG); a no-op otherwise
     dump(surface, name + "UnNorm");

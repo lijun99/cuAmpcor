@@ -131,12 +131,13 @@ TEST_F(FFTTest, Correlators)
         auto s = makeFrom(sv, H, W, n);
         auto c = make<real_type>(ch, cw, n);
 
-        cuFreqCorrelator correlator(H, W, n, stream);
+        Correlator<Algorithm::Frequency, real_type, device> correlator(H, W, n, stream);
         correlator.execute(t, s, c);
         auto rf = download(c);
         // overwrite the surfaces, so that any pixel the time-domain correlation misses is caught
         cuArraysSetConstant(c, 1e6, stream);
-        cuCorrTimeDomain(t, s, c, stream);
+        Correlator<Algorithm::Time, real_type, device> timeCorrelator(H, W, n, stream);
+        timeCorrelator.execute(t, s, c);
         auto rt = download(c);
         for (size_t i = 0; i < ref.size(); i++) {
             EXPECT_NEAR(rf[i], ref[i], 1e3*tol) << H << "x" << W << " " << i;

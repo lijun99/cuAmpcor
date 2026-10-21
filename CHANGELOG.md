@@ -45,6 +45,10 @@
 - The oversamplers are one class template, `OverSampler<method, T, device>` (FFT or sinc, the
   element type, CPU or CUDA), specialized by the packages for the complex windows (FFT) and the
   real correlation surfaces (FFT, sinc); the processors take the device from their arrays.
+- The cross-correlators are one class template too, `Correlator<algorithm, T, device>`
+  (frequency or time domain, the element type, CPU or CUDA), with an interface for the algorithm
+  chosen at run time (`WindowCorrelator`); other correlators (e.g., the coherence of complex
+  windows) can be added as specializations.
 - Compiled as standard C++17 (`-std=c++17`, without GNU extensions); the code also builds as
   C++20.
 - `setupParams` keeps the parameters as set: `numberWindowDownInChunk` / `numberWindowAcrossInChunk`

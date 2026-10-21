@@ -34,7 +34,7 @@ public:
     using typename base_type::int2_type;
     using typename base_type::stream_type;
     using typename base_type::chunk_type;
-    using typename base_type::freq_correlator_type;
+    using typename base_type::correlator_type;
     using typename base_type::normalizer_type;
     /// the windows: complex (copied from complex images, or real images as complex)
     using window_type = complex_type;
@@ -89,7 +89,7 @@ private:
     array_type<real_type> r_corrBatch;                                      ///< the correlation surfaces
     array_type<real_type> r_corrBatchZoomIn;                                ///< the surfaces around the peak
     array_type<real_type> r_corrBatchZoomInOverSampled;                     ///< the oversampled surfaces
-    std::unique_ptr<freq_correlator_type> cuCorrFreqDomain_OverSampled;     ///< the correlator (frequency domain)
+    std::unique_ptr<correlator_type> correlatorOverSampled;                 ///< the cross-correlator of the windows
     std::unique_ptr<normalizer_type> corrNormalizerOverSampled;             ///< the normalizer
 };
 

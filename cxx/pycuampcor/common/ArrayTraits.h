@@ -29,7 +29,7 @@ enum class Device : int {
 /// - real_type, complex_type, real2_type, real3_type, int2_type: the element types
 /// - stream_type: the stream on which the kernels are queued
 /// - loaded_chunk_type, chunk_type: the chunks of the images loaded by the chunk loader
-/// - freq_correlator_type: the cross-correlation in the frequency domain
+/// - correlator_type: the cross-correlation of the windows (an abstract class, WindowCorrelator)
 /// - normalizer_type: the normalizer of the correlation surfaces (an abstract class)
 /// - surface_oversampler_type: the oversampler of the correlation surfaces (an abstract class)
 /// - make_int2(x, y): an int2_type

@@ -29,9 +29,9 @@ struct array_traits<cuda::cuArrays> {
     /// the chunks of the reference and secondary images loaded to the device memory
     using chunk_type = cuda::Chunk;
     // the workers
-    /// the cross-correlation of the windows in the frequency domain
-    using freq_correlator_type = cuda::cuFreqCorrelator;
     // the interfaces of the normalizer and of the surface oversampler (common/), implemented by the package
+    /// the cross-correlation of the windows (by an algorithm chosen at run time)
+    using correlator_type = WindowCorrelator<cuda::cuArrays>;
     /// the normalizer of the correlation surfaces
     using normalizer_type = Normalizer<cuda::cuArrays>;
     /// the oversampler of the correlation surfaces around their peaks

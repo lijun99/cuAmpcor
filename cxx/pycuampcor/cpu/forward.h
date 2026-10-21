@@ -18,8 +18,6 @@ namespace pycuampcor::cpu {
     using array_type = Arrays<T>;
     // an fftw plan (fftwUtil.h)
     class FftwPlan;
-    // cross-correlation in the frequency domain (CorrFrequency.h)
-    class cuFreqCorrelator;
     // normalizers of the correlation surfaces (CorrNormalizer.h)
     class cuNormalizeSAT;
     // the chunks of the images loaded for processing (ChunkLoader.h)

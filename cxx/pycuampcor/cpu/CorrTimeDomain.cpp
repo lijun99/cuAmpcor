@@ -51,3 +51,29 @@ void cuCorrTimeDomain(ArraysView<const real_type> templates,
 
 } // namespace
 // end of file
+
+namespace pycuampcor {
+
+/// the cross-correlator in the time domain on the CPU
+using TimeCorrelator = Correlator<Algorithm::Time, cpu::real_type, Device::CPU>;
+
+/**
+ * Constructor of the cross-correlator in the time domain
+ * @param stream_ the stream (not used)
+ */
+TimeCorrelator::Correlator(int, int, int, cpu::stream_t stream_)
+    : stream(stream_)
+{
+}
+
+/**
+ * Compute the correlation surfaces of the reference windows with the secondary windows
+ */
+void TimeCorrelator::execute(ArraysView<const real_type> templates, ArraysView<const real_type> images,
+    ArraysView<real_type> results)
+{
+    cpu::cuCorrTimeDomain(templates, images, results, stream);
+}
+
+} // namespace
+// end of file

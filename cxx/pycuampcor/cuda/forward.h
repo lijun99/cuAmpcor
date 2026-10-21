@@ -18,8 +18,6 @@ namespace pycuampcor::cuda {
     using array_type = cuArrays<T>;
     // a cufft plan (cufftPlan.h)
     class CufftPlan;
-    // cross-correlation in the frequency domain (cuCorrFrequency.h)
-    class cuFreqCorrelator;
     // normalizers of the correlation surfaces (cuCorrNormalizer.h)
     template <int Size>
     class cuNormalizeFixed;
