@@ -262,7 +262,7 @@ void cuCorrNormalizeSAT(cuArrays<real_type> *correlation, cuArrays<real_type> *r
 
     nthreads = NTHREADS2D;
     dim3 blockSize(nthreads, nthreads, 1);
-    dim3 gridSize(IDIVUP(correlation->height,nthreads), IDIVUP(correlation->width,nthreads), correlation->count);
+    dim3 gridSize(divUp(correlation->height,nthreads), divUp(correlation->width,nthreads), correlation->count);
     cuCorrNormalizeSAT_kernel<<<gridSize, blockSize, 0, stream>>>(correlation->devData,
         referenceSum2->devData, secondarySat->devData, secondarySat2->devData,
         correlation->height, correlation->width,

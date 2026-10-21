@@ -60,7 +60,7 @@ void cuArraysCopyToBatch(cuArrays<image_complex_type> *image1, cuArrays<complex_
 {
     const int nthreads = NTHREADS2D;
     dim3 blockSize(nthreads, nthreads, 1);
-    dim3 gridSize(IDIVUP(image2->height,nthreads), IDIVUP(image2->width,nthreads), image2->count);
+    dim3 gridSize(divUp(image2->height,nthreads), divUp(image2->width,nthreads), image2->count);
     cuArraysCopyToBatch_kernel<<<gridSize,blockSize, 0 , stream>>> (
         image1->devData, image1->height, image1->width,
         image2->devData, image2->height, image2->width,
@@ -142,7 +142,7 @@ void cuArraysCopyToBatchWithOffset(cuArrays<image_complex_type> *image1, const i
 {
     const int nthreads = 16;
     dim3 blockSize(nthreads, nthreads, 1);
-    dim3 gridSize(IDIVUP(image2->height,nthreads), IDIVUP(image2->width,nthreads), image2->count);
+    dim3 gridSize(divUp(image2->height,nthreads), divUp(image2->width,nthreads), image2->count);
     cuArraysCopyToBatchWithOffset_kernel<<<gridSize,blockSize, 0 , stream>>> (
         image1->devData, inNX, inNY,
         image2->devData, image2->height, image2->width, image2->count,
@@ -195,7 +195,7 @@ void cuArraysCopyToBatchAbsWithOffset(cuArrays<image_complex_type> *image1, cons
 {
     const int nthreads = 16;
     dim3 blockSize(nthreads, nthreads, 1);
-    dim3 gridSize(IDIVUP(image2->height,nthreads), IDIVUP(image2->width,nthreads), image2->count);
+    dim3 gridSize(divUp(image2->height,nthreads), divUp(image2->width,nthreads), image2->count);
     cuArraysCopyToBatchAbsWithOffset_kernel<<<gridSize,blockSize, 0 , stream>>> (
         image1->devData, inNX, inNY,
         image2->devData, image2->height, image2->width, image2->count,
@@ -218,7 +218,7 @@ void cuArraysCopyToBatchWithOffsetR2C(cuArrays<image_real_type> *image1, const i
 {
     const int nthreads = 16;
     dim3 blockSize(nthreads, nthreads, 1);
-    dim3 gridSize(IDIVUP(image2->height,nthreads), IDIVUP(image2->width,nthreads), image2->count);
+    dim3 gridSize(divUp(image2->height,nthreads), divUp(image2->width,nthreads), image2->count);
 
     cuArraysCopyToBatchWithOffset_kernel<<<gridSize,blockSize, 0 , stream>>> (
         image1->devData, inNX, inNY,
@@ -258,7 +258,7 @@ void cuArraysCopyC2R(cuArrays<complex_type> *image1, cuArrays<real_type> *image2
 {
     const int nthreads = 16;
     dim3 blockSize(nthreads, nthreads, 1);
-    dim3 gridSize(IDIVUP(image2->height,nthreads), IDIVUP(image2->width,nthreads), image2->count);
+    dim3 gridSize(divUp(image2->height,nthreads), divUp(image2->width,nthreads), image2->count);
     real_type factor = real_type(1)/image1->size; //the FFT factor
     cuArraysCopyC2R_kernel<<<gridSize,blockSize, 0 , stream>>> (
         image1->devData, image1->height, image1->width,
@@ -298,7 +298,7 @@ void cuArraysCopyExtract(cuArrays<T> *imagesIn, cuArrays<T> *imagesOut, cuArrays
     //assert(imagesIn->height >= imagesOut && inNY >= outNY);
     const int nthreads = 16;
     dim3 threadsperblock(nthreads, nthreads,1);
-    dim3 blockspergrid(IDIVUP(imagesOut->height,nthreads), IDIVUP(imagesOut->width,nthreads), imagesOut->count);
+    dim3 blockspergrid(divUp(imagesOut->height,nthreads), divUp(imagesOut->width,nthreads), imagesOut->count);
     cuArraysCopyExtractVaryingOffset<<<blockspergrid, threadsperblock,0, stream>>>(imagesIn->devData, imagesIn->height, imagesIn->width,
         imagesOut->devData, imagesOut->height, imagesOut->width, imagesOut->count, offsets->devData);
     checkCudaAsyncErrors();
@@ -347,7 +347,7 @@ void cuArraysCopyExtractCorr(cuArrays<real_type> *imagesIn, cuArrays<real_type> 
 
     dim3 threadsperblock(nthreads, nthreads,1);
 
-    dim3 blockspergrid(IDIVUP(imagesOut->height,nthreads), IDIVUP(imagesOut->width,nthreads), imagesOut->count);
+    dim3 blockspergrid(divUp(imagesOut->height,nthreads), divUp(imagesOut->width,nthreads), imagesOut->count);
 
     cuArraysCopyExtractVaryingOffsetCorr<<<blockspergrid, threadsperblock,0, stream>>>(
         imagesIn->devData, imagesIn->height, imagesIn->width,
@@ -411,7 +411,7 @@ void cuArraysCopyExtractCorr(cuArrays<real_type> *imagesIn, cuArrays<real_type> 
 
     dim3 threadsperblock(nthreads, nthreads,1);
 
-    dim3 blockspergrid(IDIVUP(imagesOut->height,nthreads), IDIVUP(imagesOut->width,nthreads), imagesOut->count);
+    dim3 blockspergrid(divUp(imagesOut->height,nthreads), divUp(imagesOut->width,nthreads), imagesOut->count);
 
     const int2 validEnd = make_int2(validStart.x + validRange.x, validStart.y + validRange.y);
     cuArraysCopyExtractVaryingOffsetCorr<<<blockspergrid, threadsperblock,0, stream>>>(imagesIn->devData, imagesIn->height, imagesIn->width,
@@ -478,7 +478,7 @@ void cuArraysCopyExtract(cuArrays<T_in> *imagesIn, cuArrays<T_out> *imagesOut, i
     //assert(imagesIn->height >= imagesOut && inNY >= outNY);
     const int nthreads = NTHREADS2D;
     dim3 threadsperblock(nthreads, nthreads,1);
-    dim3 blockspergrid(IDIVUP(imagesOut->height,nthreads), IDIVUP(imagesOut->width,nthreads), imagesOut->count);
+    dim3 blockspergrid(divUp(imagesOut->height,nthreads), divUp(imagesOut->width,nthreads), imagesOut->count);
     cuArraysCopyExtractFixedOffset<<<blockspergrid, threadsperblock,0, stream>>>
         (imagesIn->devData, imagesIn->height, imagesIn->width,
         imagesOut->devData, imagesOut->height, imagesOut->width, imagesOut->count, offset.x, offset.y);
@@ -515,7 +515,7 @@ void cuArraysCopyExtractAbs(cuArrays<complex_type> *imagesIn, cuArrays<real_type
     //assert(imagesIn->height >= imagesOut && inNY >= outNY);
     const int nthreads = NTHREADS2D;
     dim3 threadsperblock(nthreads, nthreads,1);
-    dim3 blockspergrid(IDIVUP(imagesOut->height,nthreads), IDIVUP(imagesOut->width,nthreads), imagesOut->count);
+    dim3 blockspergrid(divUp(imagesOut->height,nthreads), divUp(imagesOut->width,nthreads), imagesOut->count);
     cuArraysCopyExtractAbsFixedOffset<<<blockspergrid, threadsperblock,0, stream>>>
         (imagesIn->devData, imagesIn->height, imagesIn->width,
         imagesOut->devData, imagesOut->height, imagesOut->width, imagesOut->count, offset.x, offset.y);
@@ -531,8 +531,8 @@ __global__ void cuArraysCopyInsert_kernel(const T* imageIn, const int inNX, cons
     int inx = threadIdx.x + blockDim.x*blockIdx.x;
     int iny = threadIdx.y + blockDim.y*blockIdx.y;
     if(inx < inNX && iny < inNY) {
-        int idxOut = IDX2R(inx+offsetX, iny+offsetY, outNY);
-        int idxIn = IDX2R(inx, iny, inNY);
+        int idxOut = idx2r(inx+offsetX, iny+offsetY, outNY);
+        int idxIn = idx2r(inx, iny, inNY);
         imageOut[idxOut] = imageIn[idxIn];
     }
 }
@@ -545,7 +545,7 @@ void cuArraysCopyInsert(cuArrays<T> *imageIn, cuArrays<T> *imageOut, int offsetX
 {
     const int nthreads = 16;
     dim3 threadsperblock(nthreads, nthreads);
-    dim3 blockspergrid(IDIVUP(imageIn->height,nthreads), IDIVUP(imageIn->width,nthreads));
+    dim3 blockspergrid(divUp(imageIn->height,nthreads), divUp(imageIn->width,nthreads));
     cuArraysCopyInsert_kernel<<<blockspergrid, threadsperblock,0, stream>>>(imageIn->devData, imageIn->height, imageIn->width,
            imageOut->devData,  imageOut->width, offsetX, offsetY);
     checkCudaAsyncErrors();
@@ -567,9 +567,9 @@ __global__ void cuArraysCopyPadded_kernel(T_in *imageIn, int inNX, int inNY, int
     if(outx < outNX && outy < outNY)
     {
         int idxImage = blockIdx.z;
-        int idxOut = IDX2R(outx, outy, outNY)+idxImage*sizeOut;
+        int idxOut = idx2r(outx, outy, outNY)+idxImage*sizeOut;
         if(outx < inNX && outy <inNY) {
-            int idxIn = IDX2R(outx, outy, inNY)+idxImage*sizeIn;
+            int idxIn = idx2r(outx, outy, inNY)+idxImage*sizeIn;
             imageOut[idxOut] = T_out{imageIn[idxIn]};
         } else {
             imageOut[idxOut] = T_out{0};
@@ -586,7 +586,7 @@ void cuArraysCopyPadded(cuArrays<T_in> *imageIn, cuArrays<T_out> *imageOut, cuda
     const int nthreads = 16;
     int nImages = imageIn->count;
     dim3 blockSize(nthreads, nthreads,1);
-    dim3 gridSize(IDIVUP(imageOut->height,nthreads), IDIVUP(imageOut->width,nthreads), nImages);
+    dim3 gridSize(divUp(imageOut->height,nthreads), divUp(imageOut->width,nthreads), nImages);
     cuArraysCopyPadded_kernel<<<gridSize, blockSize, 0, stream>>>(imageIn->devData, imageIn->height, imageIn->width, imageIn->size,
        imageOut->devData, imageOut->height, imageOut->width, imageOut->size, nImages);
     checkCudaAsyncErrors();
@@ -617,7 +617,7 @@ void cuArraysSetConstant(cuArrays<real_type> *imageIn, real_type value, cudaStre
     const int nthreads = 256;
     int size = imageIn->getSize();
 
-    cuArraysSetConstant_kernel<<<IDIVUP(size, nthreads), nthreads, 0, stream>>>
+    cuArraysSetConstant_kernel<<<divUp(size, nthreads), nthreads, 0, stream>>>
         (imageIn->devData, size, value);
      checkCudaAsyncErrors();
 }
@@ -642,7 +642,7 @@ __global__ void cuArraysR2C_kernel(real_type *image1, complex_type *image2, int 
 void cuArraysR2C(cuArrays<real_type> *image1, cuArrays<complex_type> *image2, cudaStream_t stream)
 {
     int size = image1->getSize();
-    cuArraysR2C_kernel<<<IDIVUP(size, NTHREADS), NTHREADS, 0, stream>>>(image1->devData, image2->devData, size);
+    cuArraysR2C_kernel<<<divUp(size, NTHREADS), NTHREADS, 0, stream>>>(image1->devData, image2->devData, size);
     checkCudaAsyncErrors();
 }
 
@@ -665,7 +665,7 @@ __global__ void cuArraysC2R_kernel(complex_type *image1, real_type *image2, int 
 void cuArraysC2R(cuArrays<complex_type> *image1, cuArrays<real_type> *image2, cudaStream_t stream)
 {
     int size = image1->getSize();
-    cuArraysC2R_kernel<<<IDIVUP(size, NTHREADS), NTHREADS, 0, stream>>>(image1->devData, image2->devData, size);
+    cuArraysC2R_kernel<<<divUp(size, NTHREADS), NTHREADS, 0, stream>>>(image1->devData, image2->devData, size);
     checkCudaAsyncErrors();
 }
 
@@ -687,7 +687,7 @@ __global__ void cuArraysAbs_kernel(complex_type *image1, real_type *image2, int 
 void cuArraysAbs(cuArrays<complex_type> *image1, cuArrays<real_type> *image2, cudaStream_t stream)
 {
     int size = image1->getSize();
-    cuArraysAbs_kernel<<<IDIVUP(size, NTHREADS), NTHREADS, 0, stream>>>(image1->devData, image2->devData, size);
+    cuArraysAbs_kernel<<<divUp(size, NTHREADS), NTHREADS, 0, stream>>>(image1->devData, image2->devData, size);
     checkCudaAsyncErrors();
 }
 

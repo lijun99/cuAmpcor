@@ -119,7 +119,7 @@ void cuArraysElementMultiplyConjugate(cuArrays<complex_type> *image1, cuArrays<c
 {
     int size = image1->getSize();
     int threadsperblock = NTHREADS;
-    int blockspergrid = IDIVUP (size, threadsperblock);
+    int blockspergrid = divUp(size, threadsperblock);
     cudaKernel_elementMulConjugate<<<blockspergrid, threadsperblock, 0, stream>>>(image1->devData, image2->devData, size, coef );
     checkCudaAsyncErrors();
 }

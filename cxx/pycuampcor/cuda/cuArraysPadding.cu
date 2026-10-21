@@ -43,8 +43,8 @@ __global__ void cuArraysPaddingMany_kernel(
     // divup the length to be consistent with both even and odd lengths
     int x2 = (x1 < (height1+1)/2) ? x1 : height2 - height1 + x1;
     int y2 = (y1 < (width1+1)/2) ? y1 : width2 - width1 + y1;
-    image2[IDX2R(x2, y2, width2)+imageIdx*size2]
-            = image1[IDX2R(x1, y1, width1)+imageIdx*size1]*factor;
+    image2[idx2r(x2, y2, width2)+imageIdx*size2]
+            = image1[idx2r(x1, y1, width1)+imageIdx*size1]*factor;
     return;
 }
 
@@ -57,9 +57,9 @@ __global__ void cuArraysPaddingMany_kernel(
 void cuArraysFFTPaddingMany(cuArrays<complex_type> *image1, cuArrays<complex_type> *image2, cudaStream_t stream)
 {
     int ThreadsPerBlock = NTHREADS2D;
-    // up to IDIVUP(dim, 2) for odd-length sequences
-    int BlockPerGridx = IDIVUP (image1->height, ThreadsPerBlock);
-    int BlockPerGridy = IDIVUP (image1->width, ThreadsPerBlock);
+    // up to divUp(dim, 2) for odd-length sequences
+    int BlockPerGridx = divUp(image1->height, ThreadsPerBlock);
+    int BlockPerGridy = divUp(image1->width, ThreadsPerBlock);
     dim3 dimBlock(ThreadsPerBlock, ThreadsPerBlock, 1);
     dim3 dimGrid(BlockPerGridx, BlockPerGridy, image1->count);
 

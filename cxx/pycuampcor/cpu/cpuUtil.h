@@ -7,18 +7,7 @@
 #ifndef __CPUUTIL_H
 #define __CPUUTIL_H
 
-#define IDX2R(i,j,NJ) (((i)*(NJ))+(j))  //row-major order
-#define IDX2C(i,j,NI) (((j)*(NI))+(i))  //col-major order
-
-#define IDIVUP(i,j) ((i+j-1)/j)
-
-#ifndef MAX
-#define MAX(a,b) (a > b ? a : b)
-#endif
-
-#ifndef MIN
-#define MIN(a,b) (a > b ? b: a)
-#endif
+#include "indexing.h"
 
 namespace pycuampcor::cpu {
 

@@ -6,6 +6,7 @@
 #ifndef __CUDAUTIL_H
 #define __CUDAUTIL_H
 
+#include "indexing.h"
 #include <cstddef>
 #include <string>
 #include <vector>
@@ -13,16 +14,12 @@
 namespace pycuampcor::cuda {
 
 // for 2D FFT
-#define NRANK 2
+constexpr int NRANK = 2;
 
-//typical choices of number of threads in a block
+// typical choices of number of threads in a block
 // for processing 1D and 2D arrays
-#define NTHREADS 512  //
-#define NTHREADS2D 16 //
-
-#define IDX2R(i,j,NJ) (((i)*(NJ))+(j))  //row-major order
-
-#define IDIVUP(i,j) ((i+j-1)/j)
+constexpr int NTHREADS = 512;
+constexpr int NTHREADS2D = 16;
 
 // compute the next integer in power of 2
 inline int nextpower2(int value)

@@ -28,7 +28,7 @@ namespace pycuampcor::cpu {
 #endif
 
 // fftw planner flag: FFTW_ESTIMATE gives deterministic plans (FFTW_MEASURE may vary between runs)
-#define PYCUAMPCOR_FFTW_FLAGS FFTW_ESTIMATE
+constexpr unsigned fftwFlags = FFTW_ESTIMATE;
 
 /// the mutex to guard the fftw planner
 std::mutex & fftwPlannerMutex();

@@ -18,7 +18,7 @@ static fftw_plan_type planMany2D(int nx, int ny, int nImages, complex_type *in, 
     return PYCUAMPCOR_FFTW(plan_many_dft)(2, n, nImages,
         fftwCast(in), NULL, 1, size,
         fftwCast(out), NULL, 1, size,
-        sign, PYCUAMPCOR_FFTW_FLAGS);
+        sign, fftwFlags);
 }
 
 /**
@@ -114,12 +114,12 @@ cuOverSamplerR2R::cuOverSamplerR2R(int inNX, int inNY, int outNX, int outNY, int
             backwardPlanColumns[k] = (nColumns[k] == 0) ? nullptr : PYCUAMPCOR_FFTW(plan_many_dft)(1, &outNX, nColumns[k],
                 fftwCast(workColumns->devData + columnIn[k]), NULL, inNY, 1,
                 fftwCast(workPadded->devData + columnOut[k]), NULL, outNY, 1,
-                FFTW_FORWARD, PYCUAMPCOR_FFTW_FLAGS | FFTW_PRESERVE_INPUT);
+                FFTW_FORWARD, fftwFlags | FFTW_PRESERVE_INPUT);
         // inverse fft along the rows, out-of-place to keep the zero columns of workPadded
         backwardPlanRows = PYCUAMPCOR_FFTW(plan_many_dft)(1, &outNY, outNX,
             fftwCast(workPadded->devData), NULL, 1, outNY,
             fftwCast(workSizeOut->devData), NULL, 1, outNY,
-            FFTW_FORWARD, PYCUAMPCOR_FFTW_FLAGS | FFTW_PRESERVE_INPUT);
+            FFTW_FORWARD, fftwFlags | FFTW_PRESERVE_INPUT);
     }
 
     // the zeros padded in the middle, set once (only the non-zero parts are written in execute)
@@ -155,7 +155,7 @@ void cuOverSamplerR2R::execute(cuArrays<real_type> *imagesIn, cuArrays<real_type
         for(int x1 = 0; x1 < inNX; x1++) {
             const int x2 = (x1 < (inNX+1)/2) ? x1 : outNX - inNX + x1;
             for(int y = 0; y < inNY; y++)
-                workColumns->devData[IDX2R(x2, y, inNY)] = spectrum[IDX2R(x1, y, inNY)]*factor;
+                workColumns->devData[idx2r(x2, y, inNY)] = spectrum[idx2r(x1, y, inNY)]*factor;
         }
         // inverse fft along the columns, then along the rows
         for(int k = 0; k < 2; k++)
@@ -166,7 +166,7 @@ void cuOverSamplerR2R::execute(cuArrays<real_type> *imagesIn, cuArrays<real_type
         real_type *imageOut = imagesOut->devData + (size_t)imageIdx*imagesOut->size;
         for(int x = 0; x < imagesOutNX; x++)
             for(int y = 0; y < imagesOutNY; y++)
-                imageOut[IDX2R(x, y, imagesOutNY)] = workSizeOut->devData[IDX2R(x, y, outNY)].x;
+                imageOut[idx2r(x, y, imagesOutNY)] = workSizeOut->devData[idx2r(x, y, outNY)].x;
     }
 }
 

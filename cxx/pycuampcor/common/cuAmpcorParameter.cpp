@@ -5,6 +5,7 @@
 
 #include "cuAmpcorParameter.h"
 #include "backend.h"
+#include "indexing.h"
 #include <stdio.h>
 #include <algorithm>
 #include <iostream>
@@ -14,9 +15,6 @@
 namespace pycuampcor::PYCUAMPCOR_BACKEND {
 
 
-#ifndef IDIVUP
-#define IDIVUP(i,j) ((i+j-1)/j)
-#endif
 
 /**
  * To determine other process parameters after reading essential parameters from python
@@ -58,8 +56,8 @@ void cuAmpcorParameter::setupParameters()
             windowsAcrossInChunk = std::min(across, numberWindowAcross);
     }
 
-    numberChunkDown = IDIVUP(numberWindowDown, windowsDownInChunk);
-    numberChunkAcross = IDIVUP(numberWindowAcross, windowsAcrossInChunk);
+    numberChunkDown = divUp(numberWindowDown, windowsDownInChunk);
+    numberChunkAcross = divUp(numberWindowAcross, windowsAcrossInChunk);
     numberChunks = numberChunkDown*numberChunkAcross;
     allocateArrays();
 }

@@ -32,7 +32,7 @@ __device__ void max_reduction_2d(const real_type* const image,
     int tid = threadIdx.x;
     shval[tid] = -REAL_MAX;
     // default to the first pixel in case no value is larger (e.g., all NaNs)
-    shloc[tid] = IDX2R(start.x, start.y, imageSize.y);
+    shloc[tid] = idx2r(start.x, start.y, imageSize.y);
 
     // reduction for intra-block elements
     // i.e., for elements with i, i+BLOCKSIZE, i+2*BLOCKSIZE ...
@@ -43,7 +43,7 @@ __device__ void max_reduction_2d(const real_type* const image,
         int idx = start.x + gid / range.y;
         int idy = start.y + gid % range.y;
         // get the flattened 1d coordinate
-        int pixelId = IDX2R(idx, idy, imageSize.y);
+        int pixelId = idx2r(idx, idy, imageSize.y);
         real_type pixelValue = image[pixelId];
         if(shval[tid] < pixelValue) {
             shval[tid] = pixelValue;
@@ -182,7 +182,7 @@ void cuSubPixelOffset(cuArrays<int2> *offsetInit,
     real_type zoomInRatio = 1.0f/(real_type)(zoomInFactor);
 
 
-    cuSubPixelOffset_kernel<<<IDIVUP(size, NTHREADS), NTHREADS, 0, stream>>>
+    cuSubPixelOffset_kernel<<<divUp(size, NTHREADS), NTHREADS, 0, stream>>>
         (offsetInit->devData, offsetZoomIn->devData,
          offsetFinal->devData, size, initOrigin, initRatio, zoomInOrigin, zoomInRatio);
     checkCudaAsyncErrors();
@@ -235,7 +235,7 @@ void cuSubPixelOffset2Pass(cuArrays<int2> *offsetInit, cuArrays<int2> *offsetZoo
     real_type xoffset = xHalfRangeInit ;
     real_type yoffset = yHalfRangeInit ;
 
-    cuSubPixelOffset2Pass_kernel<<<IDIVUP(size, NTHREADS), NTHREADS, 0, stream>>>
+    cuSubPixelOffset2Pass_kernel<<<divUp(size, NTHREADS), NTHREADS, 0, stream>>>
         (offsetInit->devData, offsetZoomIn->devData,
          offsetFinal->devData, OSratio, xoffset, yoffset, size);
     checkCudaAsyncErrors();
@@ -311,7 +311,7 @@ void cuDetermineSecondaryExtractOffset(cuArrays<int2> *maxLoc, cuArrays<int2> *m
     int xOldRange, int yOldRange, int xNewRange, int yNewRange, cudaStream_t stream)
 {
     int threadsperblock=NTHREADS;
-    int blockspergrid=IDIVUP(maxLoc->size, threadsperblock);
+    int blockspergrid=divUp(maxLoc->size, threadsperblock);
     cudaKernel_determineSecondaryExtractOffset<<<blockspergrid, threadsperblock, 0, stream>>>
         (maxLoc->devData, maxLocShift->devData, maxLoc->size, xOldRange, yOldRange, xNewRange, yNewRange);
     checkCudaAsyncErrors();

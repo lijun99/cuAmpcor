@@ -28,7 +28,7 @@ void cuArraysMaxloc2D(cuArrays<real_type> *images,
         real_type val = -REAL_MAX;
         int2 loc = start;
         for(int idx = start.x; idx < start.x + range.x; idx++) {
-            const real_type *row = image + IDX2R(idx, start.y, imageNY);
+            const real_type *row = image + idx2r(idx, start.y, imageNY);
             // the row maximum (if larger than the current maximum), vectorized
             real_type rowMax = val;
             #pragma omp simd reduction(max:rowMax)

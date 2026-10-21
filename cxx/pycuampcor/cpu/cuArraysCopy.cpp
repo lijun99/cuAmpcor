@@ -296,7 +296,7 @@ void cuArraysCopyInsert(cuArrays<T> *imageIn, cuArrays<T> *imageOut, int offsetX
     const int outNY = imageOut->width;
     for(int inx = 0; inx < inNX; inx++)
         for(int iny = 0; iny < inNY; iny++)
-            imageOut->devData[IDX2R(inx+offsetX, iny+offsetY, outNY)] = imageIn->devData[IDX2R(inx, iny, inNY)];
+            imageOut->devData[idx2r(inx+offsetX, iny+offsetY, outNY)] = imageIn->devData[idx2r(inx, iny, inNY)];
 }
 
 // instantiate the above template for the data types we need
@@ -324,10 +324,10 @@ void cuArraysCopyPadded(cuArrays<T_in> *imageIn, cuArrays<T_out> *imageOut, stre
     for(int idxImage = 0; idxImage < imageIn->count; idxImage++)
         for(int outx = 0; outx < outNX; outx++)
             for(int outy = 0; outy < outNY; outy++) {
-                int idxOut = IDX2R(outx, outy, outNY)+idxImage*imageOut->size;
+                int idxOut = idx2r(outx, outy, outNY)+idxImage*imageOut->size;
                 if(outx < inNX && outy < inNY)
                     imageOut->devData[idxOut] = PaddedConverter<T_in, T_out>::apply(
-                        imageIn->devData[IDX2R(outx, outy, inNY)+idxImage*imageIn->size]);
+                        imageIn->devData[idx2r(outx, outy, inNY)+idxImage*imageIn->size]);
                 else
                     imageOut->devData[idxOut] = T_out{0};
             }

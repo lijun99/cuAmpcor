@@ -36,8 +36,8 @@ void cuArraysFFTPaddingMany(cuArrays<complex_type> *image1, cuArrays<complex_typ
             const int x2 = (x1 < (height1+1)/2) ? x1 : height2 - height1 + x1;
             for(int y1 = 0; y1 < width1; y1++) {
                 const int y2 = (y1 < (width1+1)/2) ? y1 : width2 - width1 + y1;
-                image2->devData[IDX2R(x2, y2, width2)+imageIdx*size2]
-                    = image1->devData[IDX2R(x1, y1, width1)+imageIdx*size1]*factor;
+                image2->devData[idx2r(x2, y2, width2)+imageIdx*size2]
+                    = image1->devData[idx2r(x1, y1, width1)+imageIdx*size1]*factor;
             }
         }
 }

@@ -67,7 +67,7 @@ __global__ void cuSetupSincKernel_kernel(real_type *r_filter_, const int i_filte
 void cuSincOverSamplerR2R::cuSetupSincKernel()
 {
     const int nthreads = 128;
-    const int nblocks = IDIVUP(i_filtercoef+1, nthreads);
+    const int nblocks = divUp(i_filtercoef+1, nthreads);
 
     // compute some commonly used constants at first
     real_type r_wgthgt =  (1.0f - r_pedestal)/2.0f;
@@ -218,7 +218,7 @@ void cuSincOverSamplerR2R::execute(cuArrays<real_type> *imagesIn, cuArrays<real_
 
     static const int nthreads = 16;
     dim3 threadsperblock(nthreads, nthreads, 1);
-    dim3 blockspergrid (IDIVUP(i_int_size, nthreads), IDIVUP(i_int_size, nthreads), nImages);
+    dim3 blockspergrid (divUp(i_int_size, nthreads), divUp(i_int_size, nthreads), nImages);
     cuSincInterpolation_kernel<<<blockspergrid, threadsperblock, 0, stream>>>(nImages,
         imagesIn->devData, inNX, inNY,
         imagesOut->devData, outNX, outNY,
@@ -247,7 +247,7 @@ void cuSincOverSamplerR2R::execute(cuArrays<real_type> *imagesIn, cuArrays<real_
 
     static const int nthreads = 16;
     dim3 threadsperblock(nthreads, nthreads, 1);
-    dim3 blockspergrid (IDIVUP(i_int_size, nthreads), IDIVUP(i_int_size, nthreads), nImages);
+    dim3 blockspergrid (divUp(i_int_size, nthreads), divUp(i_int_size, nthreads), nImages);
     cuSincInterpolation_kernel<<<blockspergrid, threadsperblock, 0, stream>>>(nImages,
         imagesIn->devData, inNX, inNY,
         imagesOut->devData, outNX, outNY,
