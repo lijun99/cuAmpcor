@@ -8,7 +8,6 @@ SAR amplitude images.
 | File | What it does |
 |---|---|
 | `s2_download.py` | Searches the public Sentinel-2 archive for scenes over a point, and downloads a band of the chosen scenes |
-| `plot_displacements.py` | Plots the east and north displacements and the SNR of a `geo_offsets` output |
 | `fault_slip.py` | Measures the strike-slip offset in sections along a fault |
 | `ridgecrest.sh` | Runs everything for the 2019 Ridgecrest earthquakes (California) |
 | `turkey.sh` | Runs everything for the 2023 Kahramanmaraş earthquakes (Türkiye) |
@@ -16,7 +15,8 @@ SAR amplitude images.
 ## Requirements
 
 * pycuampcor built with GDAL support (`python -c "import pycuampcor; print(pycuampcor.has_gdal)"` prints `True`).
-* The GDAL Python bindings, numpy and matplotlib.
+* The GDAL Python bindings, numpy and matplotlib. The maps are plotted with
+  `python -m pycuampcor.plot_offsets`, which also plots the outputs of `dense_offsets`.
 * A GPU, or add `--cpu` to the `geo_offsets` command. A Sentinel-2 tile takes about 25 s on a recent
   GPU and about 2 minutes on 64 CPU cores.
 * About 400 MB of disk space per example for the two images. The downloads need no account.

@@ -14,7 +14,7 @@ python "$here/s2_download.py" --items $ref $sec --outdir data
 python -m pycuampcor.geo_offsets -r data/${ref}_B08.tif -s data/${sec}_B08.tif --op turkey \
     --ww 64 --wh 64 --sw 8 --sh 8 --kw 16 --kh 16
 
-python "$here/plot_displacements.py" turkey.tif --vmax 5 \
+python -m pycuampcor.plot_offsets turkey.tif --center zero --vmax 5 \
     --title "Kahramanmaras 2023, Sentinel-2A B08, 2023-01-10 / 2023-03-21"
 # the Mw 7.8 rupture: strike N62E, near (360, 4171.5) km (UTM 37N)
 python "$here/fault_slip.py" turkey.tif --strike 62 --center 360 4171.5 --sections -40 50 10

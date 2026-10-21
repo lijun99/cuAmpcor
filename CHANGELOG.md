@@ -9,9 +9,12 @@
 
 ### New
 
+- `python -m pycuampcor.plot_offsets`: a first look at the outputs of `dense_offsets` (with the SNR
+  file found next to the offsets) and `geo_offsets` (on map coordinates): the two components and the
+  SNR, the vectors (`--vectors`) or 3D surfaces (`--3d`), with robust color scales, SNR masking,
+  crops, and saved to a file without a display. It replaces `examples/plotOffsets.py`.
 - `examples/optical`: GeoTIFF and optical images with `geo_offsets` (README), with scripts to search
-  and download Sentinel-2 scenes (`s2_download.py`), plot the displacements and measure the slip
-  along a fault, and the Ridgecrest 2019 and Kahramanmaraş 2023 earthquakes as examples.
+  and download Sentinel-2 scenes (`s2_download.py`) and measure the slip along a fault, and the Ridgecrest 2019 and Kahramanmaraş 2023 earthquakes as examples.
 - `python -m pycuampcor.geo_offsets`: the displacement field between two georeferenced images
   (e.g., optical images of an earthquake or a glacier), read with GDAL: the shift of their grids
   from the georeferencing as the gross offset, the windows over the area common to the images (or

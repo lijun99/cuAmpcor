@@ -14,7 +14,8 @@ python "$here/s2_download.py" --items $ref $sec --outdir data
 python -m pycuampcor.geo_offsets -r data/${ref}_B08.tif -s data/${sec}_B08.tif --op ridgecrest \
     --ww 64 --wh 64 --sw 8 --sh 8 --kw 16 --kh 16
 
-python "$here/plot_displacements.py" ridgecrest.tif --lonlat -117.85 35.50 -117.30 35.95 --vmax 3 \
+# the maps around the ruptures (python -m pycuampcor.plot_offsets ridgecrest.tif to look at the whole tile)
+python -m pycuampcor.plot_offsets ridgecrest.tif --lonlat -117.85 35.50 -117.30 35.95 --center zero --vmax 3 \
     --title "Ridgecrest 2019, Sentinel-2B B08, 2019-06-28 / 2019-07-08"
 # the Mw 7.1 rupture: strike N34W through (446, 3956) km (UTM 11N)
 python "$here/fault_slip.py" ridgecrest.tif --strike 326 --center 446 3956 --sections -12 12 4 --width 6

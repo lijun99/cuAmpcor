@@ -154,7 +154,7 @@ The headers are organized as in [pyre](https://github.com/pyre/pyre): in each of
 
 ## 3. User Guide
 
-The main procedures of PyCuAmpcor are implemented with CUDA/C++. A Python interface to configure and run PyCuAmpcor is offered. The package includes the dense offsets tool *pycuampcor.dense_offsets* (3.1), for images in radar geometry, and the displacement tool *pycuampcor.geo_offsets* (3.2), for georeferenced images such as optical images; the *examples* directory has a self-contained example on synthetic images (*simple_offsets.py*, 3.3), a plotting script (*plotOffsets.py*, 3.4), and examples of GeoTIFF and optical images (*examples/optical*: Sentinel-2 images of the Ridgecrest 2019 and Kahramanmaraş 2023 earthquakes, with scripts to download the images, plot the displacements and measure the fault slip; see its README).
+The main procedures of PyCuAmpcor are implemented with CUDA/C++. A Python interface to configure and run PyCuAmpcor is offered. The package includes the dense offsets tool *pycuampcor.dense_offsets* (3.1), for images in radar geometry, the displacement tool *pycuampcor.geo_offsets* (3.2), for georeferenced images such as optical images, and *pycuampcor.plot_offsets* (3.4) to plot their outputs; the *examples* directory has a self-contained example on synthetic images (*simple_offsets.py*, 3.3), and examples of GeoTIFF and optical images (*examples/optical*: Sentinel-2 images of the Ridgecrest 2019 and Kahramanmaraş 2023 earthquakes, with scripts to download the images and measure the fault slip; see its README).
 
 ### 3.1 pycuampcor.dense_offsets
 
@@ -298,25 +298,18 @@ The messages written while running (progress to stdout, warnings to stderr) are 
 
 ### 3.4 Offset visualization
 
-The output offset fields may be visualized by the *mdx.py* tool in the *ISCE2* package. Here, we also provide a python script *plotOffsets.py* for more visualization options. 
+*pycuampcor.plot_offsets* gives a first look at an offset field: the output of *pycuampcor.dense_offsets* (the offset file, *.bip*, its *.vrt*, or its ENVI *.hdr*; the SNR file *<prefix>_snr.bip* next to it is found and plotted too), or the GeoTIFF of *pycuampcor.geo_offsets* (with map coordinates and the units of the displacements). It needs GDAL and matplotlib.
 
-```
-usage: plotOffsets.py [-h] [--plot_3d] [--plot_velocity] [--velocity_grid VELOCITY_GRID]
-                      [--range RANGE] [--pixel_unit_azimuth PIXEL_UNIT_AZIMUTH]
-                      [--pixel_unit_range PIXEL_UNIT_RANGE] [--vmin_azimuth VMIN_AZIMUTH]
-                      [--vmax_azimuth VMAX_AZIMUTH] [--vmin_range VMIN_RANGE]
-                      [--vmax_range VMAX_RANGE] [--cmap CMAP]
-                      offset_file
+```bash
+python -m pycuampcor.plot_offsets offsets/offset.bip                  # the two components and the SNR
+python -m pycuampcor.plot_offsets offsets/offset.bip --min-snr 5 --vectors --pixel-size 2.3 14.1
+python -m pycuampcor.plot_offsets ridgecrest.tif --lonlat -117.85 35.5 -117.3 35.95 --vmax 3 -o ridgecrest.png
 ```
 
-The offset file is any GDAL-readable two-band raster, e.g., a VRT, or an ENVI file given by its data file (*.bip*) or its header (*.hdr*). A simple example to plot the offset fields in a color map with range (-10, 10) is 
-
-```commandline
-python3 plotOffsets.py offset.bip.vrt --range 10
-```
-
-If you prefer to plot the offsets in 3D or overlay the velocity vectors (quiver), use *--plot_3d* and *--plot_velocity* options. Other options help to adjust the details, e.g., *--vmin_azimuth* and *--vmax_azimutu* specify the minimum and maximum ranges of azimuth offsets; *--pixel_unit_azimuth* and *--pixel_unit_range* scale the offsets with the real pixel dimensions; and *--velocity_grid* adjusts the plot density of the velocity vectors.     
-
+* By default, the maps of the two components and the SNR; *--vectors [STEP]* plots the magnitude with the vectors (every STEP windows), *--3d* the components as 3D surfaces.
+* The color scales are centered on the medians (*--center zero* for zero), with a half range of three times the median absolute deviation, so that the outliers of decorrelated windows saturate; *--vmax* sets the half range.
+* *--min-snr* masks the windows of a lower SNR; *--pixel-size* scales offsets in pixels (e.g., to meters); *--subset* plots rows and columns of the field, *--bbox* or *--lonlat* an area of a georeferenced field.
+* The figure is shown if a display is available, or saved to *<file>.png* (or *-o*). The output files may also be viewed with other tools, e.g., *mdx.py* of ISCE2, or QGIS for the GeoTIFF of *geo_offsets*.
 
 ## 4. List of Parameters (ROIPAC/ampcor workflow)
 

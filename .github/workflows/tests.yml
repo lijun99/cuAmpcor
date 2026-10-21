@@ -34,7 +34,7 @@ jobs:
       - name: Install dependencies
         run: >
           conda install -y -c conda-forge python=3.12 cmake ninja cxx-compiler fftw hdf5 zlib gdal pybind11 gtest
-          scikit-build-core pip numpy pytest h5py ${{ matrix.extra }}
+          scikit-build-core pip numpy pytest h5py matplotlib ${{ matrix.extra }}
       - name: C++ unit tests
         run: |
           cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DPYCUAMPCOR_CUDA=OFF -DPYCUAMPCOR_HDF5=ON -DPYCUAMPCOR_GDAL=ON \
