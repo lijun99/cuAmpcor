@@ -3,6 +3,7 @@ set(PYCUAMPCOR_CUDA_SOURCES
     cuArrays.cpp
     cuArraysCopy.cu
     cuArraysPadding.cu
+    cuCorrCoherence.cu
     cuCorrFrequency.cu
     cuCorrNormalization.cu
     cuCorrNormalizationSAT.cu

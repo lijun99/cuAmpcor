@@ -202,4 +202,62 @@ TEST_F(FFTTest, NormalizerWide)
     checkNormalizer(3, 1090, 7, 1100, make_int2(2, 6));
 }
 
+/**
+ * The coherent correlator: the squared coherence at each shift, against a direct computation;
+ * the templates are parts of the search windows (at a lag), with noise in all but the first window
+ */
+TEST_F(FFTTest, CoherenceCorrelator)
+{
+    for (auto [h, w, H, W] : {std::array<int, 4>{6, 10, 14, 40}, std::array<int, 4>{12, 8, 20, 30}}) {
+        const int n = 3, ch = H - h + 1, cw = W - w + 1;
+        const int2 lag = make_int2(H - h - 2, 3);
+        auto sv = randomComplex(H*W*n, 7);
+        auto noise = randomComplex(h*w*n, 8);
+        std::vector<complex_type> tv(h*w*n);
+        for (int k = 0; k < n; k++)
+            for (int m = 0; m < h; m++)
+                for (int l = 0; l < w; l++) {
+                    const complex_type v = sv[(k*H + lag.x + m)*W + lag.y + l];
+                    const complex_type e = noise[(k*h + m)*w + l];
+                    const double f = (k == 0) ? 0.0 : 0.5*k;
+                    tv[(k*h + m)*w + l] = make_complex_type(v.x + f*e.x + 0.3, v.y + f*e.y - 0.2);
+                }
+        auto t = makeFrom(tv, h, w, n);
+        auto s = makeFrom(sv, H, W, n);
+        auto c = make<real_type>(ch, cw, n);
+        Correlator<Algorithm::Coherence, complex_type, device> correlator(H, W, n, stream);
+        correlator.execute(t, s, c);
+        auto r = download(c);
+
+        for (int k = 0; k < n; k++) {
+            // the template with its mean subtracted, and its norm
+            std::complex<double> mean = 0;
+            for (int i = 0; i < h*w; i++)
+                mean += std::complex<double>(tv[k*h*w + i].x, tv[k*h*w + i].y);
+            mean /= h*w;
+            double t2 = 0;
+            for (int i = 0; i < h*w; i++)
+                t2 += std::norm(std::complex<double>(tv[k*h*w + i].x, tv[k*h*w + i].y) - mean);
+            for (int i = 0; i < ch; i++)
+                for (int j = 0; j < cw; j++) {
+                    std::complex<double> corr = 0, s1 = 0;
+                    double s2 = 0;
+                    for (int m = 0; m < h; m++)
+                        for (int l = 0; l < w; l++) {
+                            const complex_type tt = tv[(k*h + m)*w + l];
+                            const complex_type ss = sv[(k*H + i + m)*W + j + l];
+                            const std::complex<double> a(tt.x, tt.y), b(ss.x, ss.y);
+                            corr += std::conj(a - mean)*b;
+                            s1 += b;
+                            s2 += std::norm(b);
+                        }
+                    const double ref = std::norm(corr)/(t2*(s2 - std::norm(s1)/(h*w)));
+                    EXPECT_NEAR(r[(k*ch + i)*cw + j], ref, 1e-4) << h << "x" << w << " " << k << " " << i << " " << j;
+                }
+        }
+        // the template without noise matches at the lag
+        EXPECT_NEAR(r[lag.x*cw + lag.y], 1.0, 1e-4);
+    }
+}
+
 } // namespace

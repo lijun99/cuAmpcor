@@ -11,10 +11,11 @@
 
 namespace pycuampcor {
 
-/// Cross-correlation domain
+/// Cross-correlation algorithm
 enum class Algorithm : int {
-    Frequency = 0,  ///< in the frequency domain, with FFTs
-    Time = 1,       ///< in the time (spatial) domain
+    Frequency = 0,  ///< of the amplitudes, in the frequency domain, with FFTs
+    Time = 1,       ///< of the amplitudes, in the time (spatial) domain
+    Coherence = 2,  ///< of the complex windows (the squared coherence), in the frequency domain (two-pass only)
 };
 
 /// Cross-correlation workflow

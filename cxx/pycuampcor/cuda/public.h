@@ -41,6 +41,7 @@
 // workers with their own buffers and plans
 #include "cuFFTOverSampler.h"
 #include "cuSincOverSampler.h"
+#include "cuCorrCoherence.h"
 #include "cuCorrFrequency.h"
 #include "cuCorrNormalizer.h"
 

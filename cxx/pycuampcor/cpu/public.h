@@ -39,6 +39,7 @@
 // workers with their own buffers and plans
 #include "FFTOverSampler.h"
 #include "SincOverSampler.h"
+#include "CorrCoherence.h"
 #include "CorrFrequency.h"
 #include "CorrNormalizer.h"
 

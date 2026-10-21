@@ -12,8 +12,10 @@
  * - Correlator<Algorithm::Frequency, real_type, device>: the amplitudes of the windows, in the
  *   frequency domain (CorrFrequency.h, cuCorrFrequency.h);
  * - Correlator<Algorithm::Time, real_type, device>: the amplitudes of the windows, in the time
- *   domain (CorrTimeDomain.h, cuCorrTimeDomain.h).
- * Other correlators (e.g., the coherence of complex windows) are other specializations.
+ *   domain (CorrTimeDomain.h, cuCorrTimeDomain.h);
+ * - Correlator<Algorithm::Coherence, complex_type, device>: the complex windows, in the frequency
+ *   domain, normalized to the squared coherence (CorrCoherence.h, cuCorrCoherence.h); used directly by
+ *   the two-pass workflow (on complex windows), not through WindowCorrelator.
  *
  * The processors choose the algorithm at run time (Parameter::algorithm): WindowCorrelator is the
  * interface, implemented by WindowCorrelatorBy for each algorithm on the correlators of the
@@ -90,6 +92,8 @@ std::unique_ptr<WindowCorrelator<arrayT>> newWindowCorrelator(Algorithm algorith
             return std::make_unique<WindowCorrelatorBy<arrayT, Algorithm::Frequency>>(height, width, count, stream);
         case Algorithm::Time:
             return std::make_unique<WindowCorrelatorBy<arrayT, Algorithm::Time>>(height, width, count, stream);
+        case Algorithm::Coherence:
+            throw std::invalid_argument("The coherence is correlated by the complex windows, not their amplitudes");
         default:
             throw std::invalid_argument("Unsupported correlation algorithm");
     }

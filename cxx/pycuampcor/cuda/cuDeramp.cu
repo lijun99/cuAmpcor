@@ -178,6 +178,96 @@ static void cuLinearDeramp(ArraysView<real2_type> images, const int axis, cudaSt
 }
 
 /**
+ * Remove the phase ramp (phaseX, phaseY per pixel down and across) from a window, the threads of
+ * the block striding over its pixels
+ */
+template<const int nthreads>
+__device__ void removeRamp(ArraysView<real2_type> image, double phaseX, double phaseY)
+{
+    const int width = image.width();
+    for (int i = threadIdx.x; i < image.arraySize(); i += nthreads) {
+        double phase = (i/width)*phaseX + (i%width)*phaseY;
+        double phase_sin, phase_cos;
+        sincos(phase, &phase_sin, &phase_cos);
+        image[i] = make_real2(
+            image[i].x*phase_cos - image[i].y*phase_sin,
+            image[i].x*phase_sin + image[i].y*phase_cos);
+    }
+}
+
+/**
+ * CUDA kernel for cuDerampByReference: one block per window (blockIdx.x), the phase ramp of the
+ * reference window estimated as in cuLinearDeramp_kernel, and removed from both windows
+ * @param[in] axis 0: deramp along x-axis; 1: deramp along y-axis; others: deramp along both axes
+ */
+template<const int nthreads>
+__global__ void cuDerampByReference_kernel(ArraysView<real2_type> reference,
+    ArraysView<real2_type> secondary, int axis)
+{
+    __shared__ real_type shmem[2*nthreads];
+    const int imageNX = reference.height(), imageNY = reference.width();
+    const int imageSize = reference.arraySize();
+
+    const int bid = blockIdx.x;
+    if(bid >= reference.count()) return;
+    const ArraysView<real2_type> image = reference.array(bid);
+    const int tid = threadIdx.x;
+
+    // the phase difference along y
+    double phaseY = 0.0;
+    if (axis != 0) {
+        real2_type phaseDiffY  = make_real2(0.0, 0.0);
+        for (int i = tid; i < imageSize; i += nthreads) {
+            if(i % imageNY < imageNY - 1)
+                phaseDiffY += complexMulConj(image[i], image[i+1]);
+        }
+        complexSumReduceBlock<nthreads>(phaseDiffY, shmem);
+        phaseY = atan2(phaseDiffY.y, phaseDiffY.x);
+    }
+
+    // the phase difference along x
+    double phaseX = 0.0;
+    if (axis != 1) {
+        real2_type phaseDiffX  = make_real2(0.0, 0.0);
+        for (int i = tid; i < imageSize; i += nthreads) {
+            if(i / imageNY < imageNX - 1)
+                phaseDiffX += complexMulConj(image[i], image[i+imageNY]);
+        }
+        complexSumReduceBlock<nthreads>(phaseDiffX, shmem);
+        phaseX = atan2(phaseDiffX.y, phaseDiffX.x);
+    }
+
+    // remove the ramp from the reference window and from the secondary window
+    removeRamp<nthreads>(image, phaseX, phaseY);
+    removeRamp<nthreads>(secondary.array(bid), phaseX, phaseY);
+}
+
+/**
+ * Remove the phase ramps of the reference windows from both the reference windows and the
+ * secondary windows (in place), along the axis, with the method: the ramp of each reference window
+ * is removed from it and from its secondary window, which keeps their relative phase
+ * @note only DerampMethod::Complex deramps; the other methods do nothing
+ */
+void cuDerampByReference(DerampMethod method, ArraysView<complex_type> reference,
+    ArraysView<complex_type> secondary, DerampAxis axis, cudaStream_t stream)
+{
+    if (method != DerampMethod::Complex)
+        return;
+    const dim3 grid(reference.count());
+    const int imageSize = reference.arraySize();
+    const int ax = static_cast<int>(axis);
+    if(imageSize <=64)
+        cuDerampByReference_kernel<64> <<<grid, 64, 0, stream>>>(reference, secondary, ax);
+    else if(imageSize <=128)
+        cuDerampByReference_kernel<128> <<<grid, 128, 0, stream>>>(reference, secondary, ax);
+    else if(imageSize <=256)
+        cuDerampByReference_kernel<256> <<<grid, 256, 0, stream>>>(reference, secondary, ax);
+    else
+        cuDerampByReference_kernel<512> <<<grid, 512, 0, stream>>>(reference, secondary, ax);
+    checkCudaAsyncErrors();
+}
+
+/**
  * Remove the phase ramps of the complex windows (in place), along the axis, with the method
  * @note only DerampMethod::Complex deramps (with cuLinearDeramp); the other methods do nothing
  */

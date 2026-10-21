@@ -3,6 +3,7 @@ set(PYCUAMPCOR_CPU_SOURCES
     Arrays.cpp
     ArraysCopy.cpp
     ArraysPadding.cpp
+    CorrCoherence.cpp
     CorrFrequency.cpp
     CorrNormalization.cpp
     CorrNormalizationSAT.cpp
