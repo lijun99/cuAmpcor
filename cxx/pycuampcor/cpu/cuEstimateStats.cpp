@@ -5,7 +5,9 @@
  * 9/23/2017, Minyan Zhong
  */
 
-#include "public.h"
+#include "cuEstimateStats.h"
+#include "float2.h"
+#include "cuArrays.h"
 #include <algorithm>
 #include <cmath>
 

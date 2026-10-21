@@ -148,7 +148,7 @@ PyCuAmpcor is included in [ISCE2](https://github.com/isce-framework/isce2) (as *
 * *python/packages/pycuampcor*: the python package;
 * *tests/cxx*, *tests/python*, *tests/data*: tests and test data (see [2.4 Tests](#24-tests)).
 
-The headers are organized as in [pyre](https://github.com/pyre/pyre): *common/externals.h* (the external headers, with the backend's *backend_externals.h*), *common/forward.h* (forward declarations, with *backend_forward.h*), *common/api.h* (the public type aliases) and *common/public.h* (everything, in dependency order, with *backend_public.h*). Clients include *public.h*, with the include directories of the library `pycuampcor_<backend>` (*common/* and the backend's directory); each header includes *forward.h* and the headers of the types it needs complete.
+The headers are organized as in [pyre](https://github.com/pyre/pyre): *common/externals.h* (the external headers, with the backend's *backend_externals.h*), *common/forward.h* (forward declarations, with *backend_forward.h*), *common/api.h* (the public type aliases) and *common/public.h* (everything, in dependency order, with *backend_public.h*). Clients (the python bindings, the C++ tests) include *public.h*, with the include directories of the library `pycuampcor_<backend>` (*common/* and the backend's directory). Each header includes *forward.h* and the headers of the types it needs complete, and compiles on its own; each source includes its own header and the headers it uses, so that changing a header recompiles only the sources using it.
 
 ## 3. User Guide
 

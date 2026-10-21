@@ -1,4 +1,9 @@
-#include "public.h"
+#include "cuAmpcorProcessor.h"
+#include "cuAmpcorProcessorTwoPass.h"
+#include "cuAmpcorProcessorOnePass.h"
+#include "cuArraysCopy.h"
+#include "cuAmpcorParameter.h"
+#include "cuAmpcorChunkLoader.h"
 
 #include <stdexcept>
 

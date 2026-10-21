@@ -20,7 +20,11 @@
  */
 
 // dependencies
-#include "public.h"
+#include "cuArraysCopy.h"
+#include "cuArrays.h"
+#include "cudaUtil.h"
+#include "cudaError.h"
+#include "float2.h"
 
 namespace pycuampcor::cuda {
 

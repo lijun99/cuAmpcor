@@ -4,7 +4,12 @@
  */
 
 // my declarations
-#include "public.h"
+#include "cuOverSampler.h"
+#include "float2.h"
+#include "cuArraysCopy.h"
+#include "cuArraysPadding.h"
+#include "cpuUtil.h"
+#include "cuArrays.h"
 // dependencies
 
 namespace pycuampcor::cpu {

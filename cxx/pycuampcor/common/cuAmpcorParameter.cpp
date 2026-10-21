@@ -3,7 +3,9 @@
  * Input parameters for ampcor
  */
 
-#include "public.h"
+#include "cuAmpcorParameter.h"
+#include "indexing.h"
+#include "logging.h"
 #include <cstdio>
 #include <algorithm>
 #include <iostream>

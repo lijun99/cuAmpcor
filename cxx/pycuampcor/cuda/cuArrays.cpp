@@ -5,7 +5,10 @@
  */
 
 // dependencies
-#include "public.h"
+#include "cuArrays.h"
+#include "logging.h"
+#include "cudaError.h"
+#include "float2.h"
 #include <cuda_runtime.h>
 #include <cstdlib>
 #include <fstream>

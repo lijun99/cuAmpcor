@@ -1,4 +1,5 @@
-#include "public.h"
+#include "cudaError.h"
+#include "logging.h"
 
 #include <cstdio>
 #include <exception>

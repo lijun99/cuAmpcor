@@ -5,7 +5,11 @@
  */
 
 // my declaration
-#include "public.h"
+#include "cuSincOverSampler.h"
+#include "cuArrays.h"
+#include "cudaUtil.h"
+#include "cudaError.h"
+#include "float2.h"
 
 // dependencies
 

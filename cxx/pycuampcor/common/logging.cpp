@@ -3,7 +3,7 @@
  * @brief Messages with a level set for the process
  */
 
-#include "public.h"
+#include "logging.h"
 
 #include <atomic>
 #include <cstdio>

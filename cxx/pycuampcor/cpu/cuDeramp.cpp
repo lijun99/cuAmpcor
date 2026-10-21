@@ -12,7 +12,12 @@
  *
  */
 
-#include "public.h"
+#include "cuDeramp.h"
+#include "cuAmpcorOptions.h"
+#include "float2.h"
+#include "logging.h"
+#include "debug.h"
+#include "cuArrays.h"
 #include <cmath>
 #include <cstdio>
 

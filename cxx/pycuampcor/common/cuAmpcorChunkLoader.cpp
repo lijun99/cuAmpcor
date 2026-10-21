@@ -1,4 +1,7 @@
-#include "public.h"
+#include "cuAmpcorChunkLoader.h"
+#include "cuAmpcorParameter.h"
+#include "cuArrays.h"
+#include "SlcImage.h"
 
 #include <algorithm>
 #include <climits>

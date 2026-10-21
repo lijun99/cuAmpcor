@@ -3,7 +3,10 @@
  * @brief Utilities for padding zeros to cuArrays for FFT (zero padding in the middle), CPU backend
  */
 
-#include "public.h"
+#include "cuArraysPadding.h"
+#include "float2.h"
+#include "cpuUtil.h"
+#include "cuArrays.h"
 
 namespace pycuampcor::cpu {
 

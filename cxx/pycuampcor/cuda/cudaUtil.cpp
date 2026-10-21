@@ -1,4 +1,7 @@
-#include "public.h"
+#include "cudaUtil.h"
+#include "logging.h"
+#include "cuAmpcorParameter.h"
+#include "cudaError.h"
 
 #include <cuda_runtime.h>
 #include <cstdio>

@@ -5,7 +5,11 @@
  */
 
 // my module dependencies
-#include "public.h"
+#include "cuOffset.h"
+#include "float2.h"
+#include "cudaUtil.h"
+#include "cudaError.h"
+#include "cuArrays.h"
 
 namespace pycuampcor::cuda {
 

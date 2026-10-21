@@ -1,4 +1,18 @@
-#include "public.h"
+#include "cuAmpcorProcessorOnePass.h"
+#include "logging.h"
+#include "cuArraysCopy.h"
+#include "cuDeramp.h"
+#include "cuCorrNormalization.h"
+#include "cuOffset.h"
+#include "cuCorrTimeDomain.h"
+#include "cuEstimateStats.h"
+#include "debug.h"
+#include "cuAmpcorChunkLoader.h"
+#include "cuAmpcorParameter.h"
+#include "cuOverSampler.h"
+#include "cuCorrFrequency.h"
+#include "cuCorrNormalizer.h"
+#include "cuSincOverSampler.h"
 
 #include <iostream>
 

@@ -1,4 +1,7 @@
-#include "public.h"
+#include "SlcImage.h"
+#ifdef PYCUAMPCOR_WITH_HDF5
+#include "Hdf5SlcImage.h"
+#endif
 
 #include <sys/types.h>
 #include <sys/stat.h>

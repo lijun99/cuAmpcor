@@ -12,7 +12,13 @@
  *
  */
 
-#include "public.h"
+#include "cuDeramp.h"
+#include "cuAmpcorOptions.h"
+#include "cuArrays.h"
+#include "float2.h"
+#include "cudaError.h"
+#include "cudaUtil.h"
+#include "debug.h"
 #include <iostream>
 #include <iomanip>
 #include <cmath>

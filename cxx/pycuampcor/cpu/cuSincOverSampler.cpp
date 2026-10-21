@@ -5,7 +5,9 @@
  */
 
 // my declaration
-#include "public.h"
+#include "cuSincOverSampler.h"
+#include "float2.h"
+#include "cuArrays.h"
 
 // dependencies
 #include <cmath>

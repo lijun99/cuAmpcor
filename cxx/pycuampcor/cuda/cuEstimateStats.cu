@@ -5,7 +5,11 @@
  * 9/23/2017, Minyan Zhong
  */
 
-#include "public.h"
+#include "cuEstimateStats.h"
+#include "cuArrays.h"
+#include "float2.h"
+#include "cudaUtil.h"
+#include "cudaError.h"
 #include "float.h"
 #include <iostream>
 #include <iomanip>

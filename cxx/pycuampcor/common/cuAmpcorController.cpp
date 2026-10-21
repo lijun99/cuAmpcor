@@ -4,7 +4,14 @@
  */
 
 // my declaration
-#include "public.h"
+#include "cuAmpcorController.h"
+#include "logging.h"
+#include "SlcImage.h"
+#include "cuArrays.h"
+#include "cuAmpcorProcessor.h"
+#include "cuAmpcorChunkLoader.h"
+#include "cuArraysCopy.h"
+#include "float2.h"
 
 // dependencies
 #include <algorithm>

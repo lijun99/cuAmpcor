@@ -4,7 +4,9 @@
  *
  */
 
-#include "public.h"
+#include "cuCorrTimeDomain.h"
+#include "float2.h"
+#include "cuArrays.h"
 
 namespace pycuampcor::cpu {
 

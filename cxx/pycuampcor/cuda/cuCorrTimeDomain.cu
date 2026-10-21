@@ -5,7 +5,10 @@
  * This code is adapted from the nxcor package.
  */
 
-#include "public.h"
+#include "cuCorrTimeDomain.h"
+#include "float2.h"
+#include "cudaError.h"
+#include "cuArrays.h"
 #include <stdexcept>
 #include <string>
 

@@ -19,7 +19,11 @@
  *
  */
 
-#include "public.h"
+#include "cuCorrNormalization.h"
+#include "float2.h"
+#include "cudaUtil.h"
+#include "cudaError.h"
+#include "cuArrays.h"
 #include <stdexcept>
 #include <string>
 #include <cstdio>

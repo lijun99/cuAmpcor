@@ -3,7 +3,13 @@
  * @brief A class performs cross correlation in frequency domain
  */
 
-#include "public.h"
+#include "cuCorrFrequency.h"
+#include "float2.h"
+#include "cuArraysCopy.h"
+#include "cudaUtil.h"
+#include "cudaError.h"
+#include "logging.h"
+#include "cuArrays.h"
 
 namespace pycuampcor::cuda {
 

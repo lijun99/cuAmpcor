@@ -4,7 +4,11 @@
  *
  */
 
-#include "public.h"
+#include "cuCorrNormalizer.h"
+#include "float2.h"
+#include "cuCorrNormalization.h"
+#include "cuCorrNormalizationSAT.h"
+#include "cuArrays.h"
 
 namespace pycuampcor::cuda {
 
