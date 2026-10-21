@@ -14,16 +14,6 @@
 #include "float2.h"
 
 // dependencies
-#include <algorithm>
-#include <atomic>
-#include <exception>
-#include <cstdio>
-#include <iostream>
-#include <memory>
-#include <set>
-#include <stdexcept>
-#include <string>
-#include <vector>
 
 namespace pycuampcor::PYCUAMPCOR_BACKEND {
 

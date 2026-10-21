@@ -3,18 +3,6 @@
 #include "Hdf5SlcImage.h"
 #endif
 
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <cassert>
-#include <algorithm>
-#include <iostream>
-#include <cstring>
-#include <stdexcept>
-#include <vector>
-
 namespace pycuampcor::PYCUAMPCOR_BACKEND {
 
 bool SlcImage::parseHdf5Name(const std::string& name, std::string& file, std::string& dataset)

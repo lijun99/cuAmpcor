@@ -8,8 +8,6 @@
 #include "cuEstimateStats.h"
 #include "float2.h"
 #include "cuArrays.h"
-#include <algorithm>
-#include <cmath>
 
 namespace pycuampcor::cpu {
 

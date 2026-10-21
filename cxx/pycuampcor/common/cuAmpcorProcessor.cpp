@@ -5,8 +5,6 @@
 #include "cuAmpcorParameter.h"
 #include "cuAmpcorChunkLoader.h"
 
-#include <stdexcept>
-
 namespace pycuampcor::PYCUAMPCOR_BACKEND {
 
 // Factory method implementation

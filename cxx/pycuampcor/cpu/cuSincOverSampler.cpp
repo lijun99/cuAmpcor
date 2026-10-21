@@ -10,7 +10,6 @@
 #include "cuArrays.h"
 
 // dependencies
-#include <cmath>
 
 namespace pycuampcor::cpu {
 

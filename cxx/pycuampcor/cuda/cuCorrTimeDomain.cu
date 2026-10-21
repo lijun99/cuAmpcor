@@ -9,8 +9,6 @@
 #include "float2.h"
 #include "cudaError.h"
 #include "cuArrays.h"
-#include <stdexcept>
-#include <string>
 
 namespace pycuampcor::cuda {
 

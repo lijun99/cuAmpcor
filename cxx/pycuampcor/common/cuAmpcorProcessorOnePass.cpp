@@ -14,8 +14,6 @@
 #include "cuCorrNormalizer.h"
 #include "cuSincOverSampler.h"
 
-#include <iostream>
-
 namespace pycuampcor::PYCUAMPCOR_BACKEND {
 
 /**

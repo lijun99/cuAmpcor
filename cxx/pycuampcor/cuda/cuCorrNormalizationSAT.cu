@@ -4,11 +4,6 @@
  *
  */
 
-#include <cooperative_groups.h>
-
-#if __CUDACC_VER_MAJOR__ >= 11
-#include <cooperative_groups/reduce.h>
-#endif
 
 // my declarations
 #include "cuCorrNormalizationSAT.h"

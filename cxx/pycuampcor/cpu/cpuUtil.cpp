@@ -7,11 +7,6 @@
 #include "cpuUtil.h"
 #include "logging.h"
 #include "cuAmpcorParameter.h"
-#include <cstring>
-#include <iostream>
-#ifdef _OPENMP
-#include <omp.h>
-#endif
 
 namespace pycuampcor::cpu {
 

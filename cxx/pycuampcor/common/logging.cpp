@@ -5,10 +5,6 @@
 
 #include "logging.h"
 
-#include <atomic>
-#include <cstdio>
-#include <mutex>
-
 namespace pycuampcor::PYCUAMPCOR_BACKEND {
 
 namespace {

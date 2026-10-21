@@ -1,17 +1,6 @@
 #include "Hdf5SlcImage.h"
 #include "logging.h"
 
-#include <fcntl.h>
-#include <unistd.h>
-#include <zlib.h>
-
-#include <algorithm>
-#include <cstdlib>
-#include <cstring>
-#include <iostream>
-#include <stdexcept>
-#include <thread>
-
 namespace pycuampcor::PYCUAMPCOR_BACKEND {
 
 namespace {

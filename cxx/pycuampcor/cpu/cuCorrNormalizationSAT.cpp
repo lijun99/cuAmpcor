@@ -7,7 +7,6 @@
 #include "cuCorrNormalizationSAT.h"
 #include "float2.h"
 #include "cuArrays.h"
-#include <cmath>
 
 namespace pycuampcor::cpu {
 

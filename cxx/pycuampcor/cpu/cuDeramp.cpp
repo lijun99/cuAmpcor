@@ -18,8 +18,6 @@
 #include "logging.h"
 #include "debug.h"
 #include "cuArrays.h"
-#include <cmath>
-#include <cstdio>
 
 namespace pycuampcor::cpu {
 
