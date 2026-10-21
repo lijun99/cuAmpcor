@@ -50,9 +50,12 @@ std::string location(const char *file, int line)
 
 void checkCudaErrorsImpl(cudaError_t result, const char *call, const char *file, int line)
 {
-    if (result != cudaSuccess)
+    if (result != cudaSuccess) {
+        // clear the (non-sticky) error, so that it is not reported again by later checks
+        cudaGetLastError();
         reportError("CUDA error " + std::string(cudaGetErrorName(result)) + " ("
             + cudaGetErrorString(result) + ") in " + call + " at " + location(file, line));
+    }
 }
 
 void checkCudaErrorsImpl(cufftResult result, const char *call, const char *file, int line)
