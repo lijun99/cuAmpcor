@@ -30,8 +30,6 @@ public:
      cuOverSamplerC2C() = delete;
      // constructor
      cuOverSamplerC2C(int inNX, int inNY, int outNX, int outNY, int nImages, stream_t stream_);
-     // set stream
-     void setStream(stream_t stream_);
      // execute oversampling
      void execute(ArraysView<const complex_type> imagesIn, ArraysView<complex_type> imagesOut);
      // destructor
@@ -56,7 +54,6 @@ private:
 public:
     cuOverSamplerR2R() = delete;
     cuOverSamplerR2R(int inNX, int inNY, int outNX, int outNY, int nImages, stream_t stream_);
-    void setStream(stream_t stream_);
     void execute(ArraysView<const real_type> imagesIn, ArraysView<real_type> imagesOut);
     ~cuOverSamplerR2R();
 };

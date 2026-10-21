@@ -29,6 +29,7 @@ namespace pycuampcor::cuda {
  * @param stream_ cuda stream
  */
 cuOverSamplerC2C::cuOverSamplerC2C(int inNX, int inNY, int outNX, int outNY, int nImages, cudaStream_t stream_)
+    : stream(stream_)
 {
 
     int inNXp2 = inNX;
@@ -53,16 +54,7 @@ cuOverSamplerC2C::cuOverSamplerC2C(int inNX, int inNY, int outNX, int outNY, int
     forwardPlan.planMany(NRANK, n, nullptr, 1, imageSize, nullptr, 1, fImageSize, CUFFT_C2C, nImages);
     backwardPlan.planMany(NRANK, nOverSample, nullptr, 1, fImageOverSampleSize, nullptr, 1, fImageOverSampleSize, CUFFT_C2C, nImages);
 #endif
-    // set cuda stream
-    setStream(stream_);
-}
-
-/**
- * Set up cuda stream
- */
-void cuOverSamplerC2C::setStream(cudaStream_t stream_)
-{
-    this->stream = stream_;
+    // the transforms are queued on the stream
     cufftSetStream(forwardPlan, stream);
     cufftSetStream(backwardPlan, stream);
 }
@@ -109,7 +101,8 @@ cuOverSamplerC2C::~cuOverSamplerC2C() = default;
  * @param nImages the number of images
  * @param stream_ cuda stream
  */
-cuOverSamplerR2R::cuOverSamplerR2R(int inNX, int inNY, int outNX, int outNY, int nImages, cudaStream_t stream)
+cuOverSamplerR2R::cuOverSamplerR2R(int inNX, int inNY, int outNX, int outNY, int nImages, cudaStream_t stream_)
+    : stream(stream_)
 {
 
     int inNXp2 = inNX;
@@ -131,12 +124,7 @@ cuOverSamplerR2R::cuOverSamplerR2R(int inNX, int inNY, int outNX, int outNY, int
     forwardPlan.planMany(NRANK, n, nullptr, 1, imageSize, nullptr, 1, fImageSize, CUFFT_C2C, nImages);
     backwardPlan.planMany(NRANK, nUpSample, nullptr, 1, fImageUpSampleSize, nullptr, 1, outNX*outNY, CUFFT_C2C, nImages);
 #endif
-    setStream(stream);
-}
-
-void cuOverSamplerR2R::setStream(cudaStream_t stream_)
-{
-    stream = stream_;
+    // the transforms are queued on the stream
     cufftSetStream(forwardPlan, stream);
     cufftSetStream(backwardPlan, stream);
 }

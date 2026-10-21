@@ -55,14 +55,6 @@ cuOverSamplerC2C::cuOverSamplerC2C(int inNX, int inNY, int outNX, int outNY, int
 }
 
 /**
- * Set up stream (not used)
- */
-void cuOverSamplerC2C::setStream(stream_t stream_)
-{
-    this->stream = stream_;
-}
-
-/**
  * Execute fft oversampling
  * @param[in] imagesIn input batch of images
  * @param[out] imagesOut output batch of images
@@ -128,11 +120,6 @@ cuOverSamplerR2R::cuOverSamplerR2R(int inNX, int inNY, int outNX, int outNY, int
     // the zeros padded in the middle, set once (only the non-zero parts are written in execute)
     workColumns.setZero(stream);
     workPadded.setZero(stream);
-}
-
-void cuOverSamplerR2R::setStream(stream_t stream_)
-{
-    stream = stream_;
 }
 
 /**
