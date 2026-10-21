@@ -1,11 +1,11 @@
 /**
- * @file  cuAmpcorChunkLoader.cpp
+ * @file  cuChunkLoader.cpp
  * @brief Load the chunks of the reference and secondary images to the device memory (CUDA)
  */
 
-#include "cuAmpcorChunkLoader.h"
+#include "cuChunkLoader.h"
 #include "cuArrays.h"
-#include "cuAmpcorOptions.h"
+#include "Options.h"
 #include "cudaError.h"
 #include "logging.h"
 #include "SlcImage.h"
@@ -18,7 +18,7 @@ namespace pycuampcor::cuda {
  * @param dataType the pixel type of the image: complex or real
  * @param image_ the image
  */
-cuAmpcorChunkLoader::Source::Source(const cuAmpcorChunkFootprint &footprint_, DataType dataType,
+ChunkLoader::Source::Source(const ChunkFootprint &footprint_, DataType dataType,
     SlcImage &image_)
     : footprint(footprint_), image(image_)
 {
@@ -45,7 +45,7 @@ cuAmpcorChunkLoader::Source::Source(const cuAmpcorChunkFootprint &footprint_, Da
 /**
  * Wait for the last copy from the staging memory, and free it
  */
-cuAmpcorChunkLoader::Source::~Source()
+ChunkLoader::Source::~Source()
 {
     // the last copy from the staging memory must be done before the memory is freed
     if (stagingDone) {
@@ -62,7 +62,7 @@ cuAmpcorChunkLoader::Source::~Source()
  * @param[out] chunk the description of the loaded chunk: its buffer, position and size
  * @param stream the stream on which the copy to the device is queued
  */
-void cuAmpcorChunkLoader::Source::load(int idxChunk, cuAmpcorLoadedChunk &chunk, cudaStream_t stream)
+void ChunkLoader::Source::load(int idxChunk, LoadedChunk &chunk, cudaStream_t stream)
 {
     chunk.startDown = footprint.startDown[idxChunk];
     chunk.startAcross = footprint.startAcross[idxChunk];
@@ -104,9 +104,9 @@ void cuAmpcorChunkLoader::Source::load(int idxChunk, cuAmpcorLoadedChunk &chunk,
  * A loader with the device buffers and the staging memory for the largest chunks of the reference
  * and secondary images
  */
-cuAmpcorChunkLoader::cuAmpcorChunkLoader(
-    const cuAmpcorChunkFootprint &referenceFootprint, DataType referenceDataType,
-    SlcImage &referenceImage, const cuAmpcorChunkFootprint &secondaryFootprint,
+ChunkLoader::ChunkLoader(
+    const ChunkFootprint &referenceFootprint, DataType referenceDataType,
+    SlcImage &referenceImage, const ChunkFootprint &secondaryFootprint,
     DataType secondaryDataType, SlcImage &secondaryImage, cudaStream_t stream_)
     : reference(referenceFootprint, referenceDataType, referenceImage),
       secondary(secondaryFootprint, secondaryDataType, secondaryImage),
@@ -118,7 +118,7 @@ cuAmpcorChunkLoader::cuAmpcorChunkLoader(
  * Load the idxChunk-th chunk of both images (the copies to the device are queued on the stream)
  * @return the loaded chunks, valid until the next load
  */
-const cuAmpcorChunk &cuAmpcorChunkLoader::load(int idxChunk)
+const Chunk &ChunkLoader::load(int idxChunk)
 {
     reference.load(idxChunk, chunk.reference, stream);
     secondary.load(idxChunk, chunk.secondary, stream);

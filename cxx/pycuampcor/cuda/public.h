@@ -45,11 +45,11 @@
 #include "cuCorrNormalizer.h"
 
 // the processing: chunks loaded from the images, processors of the chunks, and the controller
-#include "cuAmpcorChunkLoader.h"
-#include "arrayTraits.h"
-#include "cuAmpcorProcessor.h"
-#include "cuAmpcorProcessorTwoPass.h"
-#include "cuAmpcorProcessorOnePass.h"
-#include "cuAmpcorController.h"
+#include "cuChunkLoader.h"
+#include "traits.h"
+#include "Processor.h"
+#include "ProcessorTwoPass.h"
+#include "ProcessorOnePass.h"
+#include "cuController.h"
 
 //end of file

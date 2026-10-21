@@ -3,13 +3,13 @@
  * @brief The processors of the chunks (the two-pass and one-pass workflows), for the arrays of
  *     the CPU package
  *
- * The processors are written once (common/cuAmpcorProcessor*Impl.h), as templates on the array
+ * The processors are written once (common/Processor*Impl.h), as templates on the array
  * type; their kernels are found from the arrays of their arguments, those of this package.
  */
 
 // the arrays of the package, and the types and workers that go with them
 #include "Arrays.h"
-#include "arrayTraits.h"
+#include "traits.h"
 // the kernels
 #include "ArraysCopy.h"
 #include "CorrNormalization.h"
@@ -23,7 +23,7 @@
 #include "OverSampler.h"
 #include "SincOverSampler.h"
 // the chunks loaded from the images
-#include "cuAmpcorChunkLoader.h"
+#include "ChunkLoader.h"
 #include "float2.h"
 
 // the factories of the workers, for the processors
@@ -34,7 +34,7 @@
 std::unique_ptr<pycuampcor::array_traits<pycuampcor::cpu::Arrays>::normalizer_type>
 pycuampcor::array_traits<pycuampcor::cpu::Arrays>::newNormalizer(int height, int width, int count)
 {
-    return cpu::newCuNormalizer(height, width, count);
+    return cpu::newNormalizer(height, width, count);
 }
 
 /**
@@ -49,13 +49,13 @@ pycuampcor::array_traits<pycuampcor::cpu::Arrays>::newSurfaceOverSampler(Oversam
 }
 
 // the processors
-#include "cuAmpcorProcessorImpl.h"
-#include "cuAmpcorProcessorTwoPassImpl.h"
-#include "cuAmpcorProcessorOnePassImpl.h"
+#include "ProcessorImpl.h"
+#include "ProcessorTwoPassImpl.h"
+#include "ProcessorOnePassImpl.h"
 
 // for the arrays of this package
-template class pycuampcor::cuAmpcorProcessor<pycuampcor::cpu::Arrays>;
-template class pycuampcor::cuAmpcorProcessorTwoPass<pycuampcor::cpu::Arrays>;
-template class pycuampcor::cuAmpcorProcessorOnePass<pycuampcor::cpu::Arrays>;
+template class pycuampcor::Processor<pycuampcor::cpu::Arrays>;
+template class pycuampcor::ProcessorTwoPass<pycuampcor::cpu::Arrays>;
+template class pycuampcor::ProcessorOnePass<pycuampcor::cpu::Arrays>;
 
 //end of file

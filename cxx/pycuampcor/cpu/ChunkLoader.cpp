@@ -1,11 +1,11 @@
 /**
- * @file  cuAmpcorChunkLoader.cpp
+ * @file  ChunkLoader.cpp
  * @brief Load the chunks of the reference and secondary images to the work memory (CPU)
  */
 
-#include "cuAmpcorChunkLoader.h"
+#include "ChunkLoader.h"
 #include "Arrays.h"
-#include "cuAmpcorOptions.h"
+#include "Options.h"
 #include "SlcImage.h"
 
 namespace pycuampcor::cpu {
@@ -16,7 +16,7 @@ namespace pycuampcor::cpu {
  * @param dataType the pixel type of the image: complex or real
  * @param image_ the image
  */
-cuAmpcorChunkLoader::Source::Source(const cuAmpcorChunkFootprint &footprint_, DataType dataType,
+ChunkLoader::Source::Source(const ChunkFootprint &footprint_, DataType dataType,
     SlcImage &image_)
     : footprint(footprint_), image(image_)
 {
@@ -34,7 +34,7 @@ cuAmpcorChunkLoader::Source::Source(const cuAmpcorChunkFootprint &footprint_, Da
  * @param idxChunk the index of the chunk
  * @param[out] chunk the description of the loaded chunk: its buffer, position and size
  */
-void cuAmpcorChunkLoader::Source::load(int idxChunk, cuAmpcorLoadedChunk &chunk)
+void ChunkLoader::Source::load(int idxChunk, LoadedChunk &chunk)
 {
     chunk.startDown = footprint.startDown[idxChunk];
     chunk.startAcross = footprint.startAcross[idxChunk];
@@ -56,9 +56,9 @@ void cuAmpcorChunkLoader::Source::load(int idxChunk, cuAmpcorLoadedChunk &chunk)
 /**
  * A loader with the buffers for the largest chunks of the reference and secondary images
  */
-cuAmpcorChunkLoader::cuAmpcorChunkLoader(
-    const cuAmpcorChunkFootprint &referenceFootprint, DataType referenceDataType,
-    SlcImage &referenceImage, const cuAmpcorChunkFootprint &secondaryFootprint,
+ChunkLoader::ChunkLoader(
+    const ChunkFootprint &referenceFootprint, DataType referenceDataType,
+    SlcImage &referenceImage, const ChunkFootprint &secondaryFootprint,
     DataType secondaryDataType, SlcImage &secondaryImage)
     : reference(referenceFootprint, referenceDataType, referenceImage),
       secondary(secondaryFootprint, secondaryDataType, secondaryImage)
@@ -69,7 +69,7 @@ cuAmpcorChunkLoader::cuAmpcorChunkLoader(
  * Load the idxChunk-th chunk of both images
  * @return the loaded chunks, valid until the next load
  */
-const cuAmpcorChunk &cuAmpcorChunkLoader::load(int idxChunk)
+const Chunk &ChunkLoader::load(int idxChunk)
 {
     reference.load(idxChunk, chunk.reference);
     secondary.load(idxChunk, chunk.secondary);

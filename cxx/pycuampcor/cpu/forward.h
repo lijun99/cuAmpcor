@@ -26,12 +26,12 @@ namespace pycuampcor::cpu {
     class cuFreqCorrelator;
     // normalizers of the correlation surfaces (CorrNormalizer.h)
     class cuNormalizeSAT;
-    // the chunks of the images loaded for processing (cuAmpcorChunkLoader.h)
-    struct cuAmpcorLoadedChunk;
-    struct cuAmpcorChunk;
-    class cuAmpcorChunkLoader;
-    // the controller, running the processors over the chunks (cuAmpcorController.h)
-    class cuAmpcorController;
+    // the chunks of the images loaded for processing (ChunkLoader.h)
+    struct LoadedChunk;
+    struct Chunk;
+    class ChunkLoader;
+    // the controller, running the processors over the chunks (Controller.h)
+    class Controller;
 }
 
 //end of file

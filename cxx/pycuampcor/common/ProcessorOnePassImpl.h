@@ -1,17 +1,17 @@
 /**
- * @file  cuAmpcorProcessorOnePassImpl.h
+ * @file  ProcessorOnePassImpl.h
  * @brief The one-pass workflow: the implementation
  *
- * The definitions of the member functions of cuAmpcorProcessorOnePass (templates); only the packages'
- * processors.cpp include them (see cuAmpcorProcessorImpl.h).
+ * The definitions of the member functions of ProcessorOnePass (templates); only the packages'
+ * processors.cpp include them (see ProcessorImpl.h).
  */
 
 #pragma once
 
-#include "cuAmpcorProcessorOnePass.h"
-#include "cuAmpcorOptions.h"
-#include "cuAmpcorParameter.h"
-#include "cuNormalizer.h"
+#include "ProcessorOnePass.h"
+#include "Options.h"
+#include "Parameter.h"
+#include "Normalizer.h"
 #include "logging.h"
 
 namespace pycuampcor {
@@ -22,7 +22,7 @@ namespace pycuampcor {
  * @param chunk the chunk, loaded by the chunk loader
  */
 template <template <typename> class arrayT>
-void cuAmpcorProcessorOnePass<arrayT>::run(int idxDown, int idxAcross, const chunk_type &chunk)
+void ProcessorOnePass<arrayT>::run(int idxDown, int idxAcross, const chunk_type &chunk)
 {
     using traits = typename base_type::traits;
     setIndex(idxDown, idxAcross);
@@ -153,7 +153,7 @@ void cuAmpcorProcessorOnePass<arrayT>::run(int idxDown, int idxAcross, const chu
  * A processor writing to the output images: allocate its buffers and workers
  */
 template <template <typename> class arrayT>
-cuAmpcorProcessorOnePass<arrayT>::cuAmpcorProcessorOnePass(const cuAmpcorParameter &param_,
+ProcessorOnePass<arrayT>::ProcessorOnePass(const Parameter &param_,
     array_type<real2_type> &offsetImage, array_type<real_type> &snrImage,
     array_type<real3_type> &covImage, array_type<real_type> &peakValueImage, stream_type stream_)
     : base_type(param_, offsetImage, snrImage, covImage, peakValueImage, stream_),
@@ -202,7 +202,7 @@ cuAmpcorProcessorOnePass<arrayT>::cuAmpcorProcessorOnePass(const cuAmpcorParamet
  * Release the buffers and workers (they are released with their owners)
  */
 template <template <typename> class arrayT>
-cuAmpcorProcessorOnePass<arrayT>::~cuAmpcorProcessorOnePass() = default;
+ProcessorOnePass<arrayT>::~ProcessorOnePass() = default;
 
 } // namespace
 //end of file

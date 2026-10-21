@@ -1,44 +1,44 @@
 /**
- * @file  arrayTraits.h
- * @brief The types and workers that go with the arrays of the CPU package (see cuAmpcorArrayTraits.h)
+ * @file  traits.h
+ * @brief The types and workers that go with the arrays of the CUDA package (see ArrayTraits.h)
  */
 
 #pragma once
 
 #include "forward.h"
-#include "cuAmpcorArrayTraits.h"
+#include "ArrayTraits.h"
 
 namespace pycuampcor {
 
-/// the types and workers that go with the arrays of the CPU package, for the processors
+/// the types and workers that go with the arrays of the CUDA package, for the processors
 template <>
-struct array_traits<cpu::Arrays> {
+struct array_traits<cuda::cuArrays> {
     // the element types
-    using real_type = cpu::real_type;         ///< the real type
-    using complex_type = cpu::complex_type;   ///< the complex type
-    using real2_type = cpu::real2_type;       ///< a pair of reals (e.g., the offsets)
-    using real3_type = cpu::real3_type;       ///< a triple of reals (e.g., the covariances)
-    using int2_type = cpu::int2;              ///< a pair of ints (e.g., the window positions)
+    using real_type = cuda::real_type;         ///< the real type
+    using complex_type = cuda::complex_type;   ///< the complex type
+    using real2_type = cuda::real2_type;       ///< a pair of reals (e.g., the offsets)
+    using real3_type = cuda::real3_type;       ///< a triple of reals (e.g., the covariances)
+    using int2_type = ::int2;                  ///< a pair of ints (e.g., the window positions)
     /// the stream on which the kernels are queued
-    using stream_type = cpu::stream_t;
+    using stream_type = cuda::stream_t;
     // the chunks of the images loaded by the chunk loader
-    /// a chunk of an image loaded to the work memory
-    using loaded_chunk_type = cpu::cuAmpcorLoadedChunk;
-    /// the chunks of the reference and secondary images loaded to the work memory
-    using chunk_type = cpu::cuAmpcorChunk;
+    /// a chunk of an image loaded to the device memory
+    using loaded_chunk_type = cuda::LoadedChunk;
+    /// the chunks of the reference and secondary images loaded to the device memory
+    using chunk_type = cuda::Chunk;
     // the workers
     /// the cross-correlation of the windows in the frequency domain
-    using freq_correlator_type = cpu::cuFreqCorrelator;
+    using freq_correlator_type = cuda::cuFreqCorrelator;
     /// the FFT oversampler of complex windows
-    using oversampler_c2c_type = cpu::cuOverSamplerC2C;
+    using oversampler_c2c_type = cuda::cuOverSamplerC2C;
     // the interfaces of the normalizer and of the surface oversampler (common/), implemented by the package
     /// the normalizer of the correlation surfaces
-    using normalizer_type = cuNormalizer<cpu::Arrays>;
+    using normalizer_type = Normalizer<cuda::cuArrays>;
     /// the oversampler of the correlation surfaces around their peaks
-    using surface_oversampler_type = cuSurfaceOverSampler<cpu::Arrays>;
+    using surface_oversampler_type = SurfaceOverSampler<cuda::cuArrays>;
 
     /// an int2_type (x: down, y: across)
-    static int2_type make_int2(int x, int y) { return cpu::make_int2(x, y); }
+    static int2_type make_int2(int x, int y) { return ::make_int2(x, y); }
 
     /// a normalizer for the correlation surfaces of count windows of height x width
     /// (defined with the processors, processors.cpp)

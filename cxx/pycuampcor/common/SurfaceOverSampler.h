@@ -1,5 +1,5 @@
 /**
- * @file  cuSurfaceOverSampler.h
+ * @file  SurfaceOverSampler.h
  * @brief The interface of the oversamplers of correlation surfaces around their peaks
  *
  * The correlation surfaces around their peaks are oversampled to find the sub-pixel peak, with
@@ -11,19 +11,19 @@
 #pragma once
 
 #include "forward.h"
-#include "cuAmpcorArrayTraits.h"
+#include "ArrayTraits.h"
 #include "ArraysView.h"
 
 namespace pycuampcor {
 
 /// an oversampler of correlation surfaces around their peaks, for the arrays arrayT
 template <template <typename> class arrayT>
-class cuSurfaceOverSampler {
+class SurfaceOverSampler {
 public:
     using real_type = typename array_traits<arrayT>::real_type;  ///< the real type
     using int2_type = typename array_traits<arrayT>::int2_type;  ///< a pair of ints (e.g., the peak shifts)
 
-    virtual ~cuSurfaceOverSampler() = default;
+    virtual ~SurfaceOverSampler() = default;
 
     /// oversample the correlation surfaces
     /// @param surfaces the correlation surfaces around their peaks

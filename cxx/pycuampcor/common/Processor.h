@@ -1,32 +1,32 @@
 /**
- * @file  cuAmpcorProcessor.h
+ * @file  Processor.h
  * @brief The processor of a chunk (a batch of windows): the base of the workflows
  *
  * A processor runs a workflow (two-pass or one-pass) on the windows of a chunk, loaded by the
  * chunk loader, and writes the offsets and their statistics to the output images. The processors
  * are written once, as templates on the array type (e.g., cpu::Arrays or cuda::cuArrays; see
- * cuAmpcorArrayTraits.h), and instantiated by each package (processors.cpp of the package).
+ * ArrayTraits.h), and instantiated by each package (processors.cpp of the package).
  *
  * The base class holds what the workflows share: the parameters, the output images, the stream,
  * the buffers of the per-window results (peaks, offsets, SNR, covariance), and the steps they
  * have in common (copying the windows from the chunk, correlating, oversampling the correlation
  * surface, writing the results).
  *
- * The definitions are in cuAmpcorProcessorImpl.h, included only by the packages'
+ * The definitions are in ProcessorImpl.h, included only by the packages'
  * processors.cpp, which instantiate the processors for their arrays (compiled once per package).
  */
 
 #pragma once
 
 #include "forward.h"
-#include "cuAmpcorArrayTraits.h"
+#include "ArrayTraits.h"
 #include "ArraysView.h"
 
 namespace pycuampcor {
 
-/// the processor of a chunk: the base of the workflows (cuAmpcorProcessorTwoPass, OnePass)
+/// the processor of a chunk: the base of the workflows (ProcessorTwoPass, OnePass)
 template <template <typename> class arrayT>
-class cuAmpcorProcessor {
+class Processor {
 public:
     /// the types that go with the arrays
     using traits = array_traits<arrayT>;
@@ -61,16 +61,16 @@ public:
     /// @param offsetImage,snrImage,covImage,peakValueImage the output images, covering whole
     ///     chunks, kept for the lifetime of the processor
     /// @param stream the stream on which the kernels are queued
-    cuAmpcorProcessor(const cuAmpcorParameter &param,
+    Processor(const Parameter &param,
         array_type<real2_type> &offsetImage, array_type<real_type> &snrImage,
         array_type<real3_type> &covImage, array_type<real_type> &peakValueImage,
         stream_type stream);
     /// release the buffers and workers (defined with the processors, where the workers are complete)
-    virtual ~cuAmpcorProcessor();
+    virtual ~Processor();
 
     /// the processor of a workflow (two-pass or one-pass); the arguments are those of the constructor
-    static std::unique_ptr<cuAmpcorProcessor> create(Workflow workflow,
-        const cuAmpcorParameter &param,
+    static std::unique_ptr<Processor> create(Workflow workflow,
+        const Parameter &param,
         array_type<real2_type> &offsetImage, array_type<real_type> &snrImage,
         array_type<real3_type> &covImage, array_type<real_type> &peakValueImage,
         stream_type stream);
@@ -80,7 +80,7 @@ public:
     virtual void run(int idxDown, int idxAcross, const chunk_type &chunk) = 0;
 
 protected:
-    const cuAmpcorParameter &param;          ///< the parameters
+    const Parameter &param;                  ///< the parameters
     array_type<real2_type> &offsetImage;     ///< the output dense offsets
     array_type<real_type> &snrImage;         ///< the output SNR
     array_type<real3_type> &covImage;        ///< the output covariance

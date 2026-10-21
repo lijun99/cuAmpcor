@@ -1,5 +1,5 @@
 /**
- * @file  cuAmpcorParameter.h
+ * @file  Parameter.h
  * @brief Parameters of ampcor
  *
  * Author: Lijun Zhu @ Seismo Lab, Caltech
@@ -8,7 +8,7 @@
 #pragma once
 
 #include "forward.h"
-#include "cuAmpcorOptions.h"
+#include "Options.h"
 
 namespace pycuampcor {
 
@@ -39,7 +39,7 @@ struct Index2 {
 /// 4. optionally, checkPixelInImageRange(): warn about windows outside the images (debug builds).
 /// setupParameters() does not change the inputs: it may be called again after changing them,
 /// followed by setStartPixels().
-class cuAmpcorParameter {
+class Parameter {
 public:
     // ==== inputs (not changed by setupParameters) ====
 

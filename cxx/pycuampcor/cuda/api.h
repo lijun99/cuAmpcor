@@ -11,9 +11,9 @@
 
 namespace pycuampcor::cuda {
     /// the controller, which runs ampcor with the parameters
-    using controller_t = cuAmpcorController;
+    using controller_t = Controller;
     /// the processor of a chunk (the base of the workflows), for the arrays of this package
-    using processor_t = pycuampcor::cuAmpcorProcessor<cuArrays>;
+    using processor_t = pycuampcor::Processor<cuArrays>;
 }
 
 //end of file

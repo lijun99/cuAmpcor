@@ -141,7 +141,7 @@ PyCuAmpcor is included in [ISCE2](https://github.com/isce-framework/isce2) (as *
 
 ### 2.6 Code organization
 
-* *cxx/pycuampcor/common*: the shared code, in namespace `pycuampcor`, compiled once (library `pycuampcor_common`): the parameters and their options, logging, the image readers (raw files and HDF5 datasets), and the layers processed together (chunk footprints); and the processors of the two-pass and one-pass workflows, written once as templates on the array type (*cuAmpcorProcessor\*.h*, with the definitions in *cuAmpcorProcessor\*Impl.h*, with the types that go with the arrays in `array_traits`) and instantiated by each package (*processors.cpp*);
+* *cxx/pycuampcor/common*: the shared code, in namespace `pycuampcor`, compiled once (library `pycuampcor_common`): the parameters and their options, logging, the image readers (raw files and HDF5 datasets), and the layers processed together (chunk footprints); and the processors of the two-pass and one-pass workflows, written once as templates on the array type (*Processor\*.h*, with the definitions in *Processor\*Impl.h*, with the types that go with the arrays in `array_traits`) and instantiated by each package (*processors.cpp*);
 * *cxx/pycuampcor/cpu*: the CPU package, in namespace `pycuampcor::cpu` (library `pycuampcor_cpu`): arrays and kernels, FFTs with FFTW, and the controller and chunk loader, running chunks in parallel with OpenMP threads;
 * *cxx/pycuampcor/cuda*: the CUDA package, in namespace `pycuampcor::cuda` (library `pycuampcor_cuda`): arrays and kernels, FFTs with cuFFT, and the controller and chunk loader, running chunks on CUDA streams;
 * *python/extensions*: the pybind11 bindings, compiled to `pycuampcor._cuda` and `pycuampcor._cpu`;

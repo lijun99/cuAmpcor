@@ -1,9 +1,9 @@
 /**
- * @file  cuAmpcorParameter.cpp
+ * @file  Parameter.cpp
  * @brief Parameters of ampcor: the setup of the windows, correlation surfaces and chunks
  */
 
-#include "cuAmpcorParameter.h"
+#include "Parameter.h"
 #include "indexing.h"
 #include "logging.h"
 
@@ -15,7 +15,7 @@ namespace pycuampcor {
  *     numberWindowDownInChunk is 0 (automatic)
  * @param defaultWindowsAcrossInChunk the same across
  */
-void cuAmpcorParameter::setupParameters(int defaultWindowsDownInChunk, int defaultWindowsAcrossInChunk)
+void Parameter::setupParameters(int defaultWindowsDownInChunk, int defaultWindowsAcrossInChunk)
 {
     // workflow specific parameter settings
     //
@@ -59,7 +59,7 @@ void cuAmpcorParameter::setupParameters(int defaultWindowsDownInChunk, int defau
  * The first pass correlates the raw windows over the full search range; the second pass
  * correlates the oversampled windows over the zoom-in search range around the first-pass peak.
  */
-void cuAmpcorParameter::_setupParameters_TwoPass()
+void Parameter::_setupParameters_TwoPass()
 {
     // Size to extract the raw correlation surface for snr/cov
     corrRawZoomInHeight = std::min(corrStatWindowSize, 2*halfSearchRangeDownRaw+1);
@@ -106,7 +106,7 @@ void cuAmpcorParameter::_setupParameters_TwoPass()
  * The search range is extended by the zoom-in margin, and the reference windows are enlarged
  * (loaded) to the size of the search windows.
  */
-void cuAmpcorParameter::_setupParameters_OnePass()
+void Parameter::_setupParameters_OnePass()
 {
 
     // template window size (after antialiasing oversampling)
@@ -178,7 +178,7 @@ void cuAmpcorParameter::_setupParameters_OnePass()
 /**
  * (Re)size the arrays of the windows and chunks, discarding the values of previous setups
  */
-void cuAmpcorParameter::allocateArrays()
+void Parameter::allocateArrays()
 {
     // (re)size arrays, discarding values from previous setups, if any
     chunkStartPixelsSet = false;
@@ -198,7 +198,7 @@ void cuAmpcorParameter::allocateArrays()
 /**
  * Check whether the arrays for windows/chunks are allocated (by setupParameters)
  */
-void cuAmpcorParameter::checkArraysAllocated() const
+void Parameter::checkArraysAllocated() const
 {
     if (grossOffsetDown.empty())
         throw std::logic_error("Parameters are not set up; call setupParams() first");
@@ -207,7 +207,7 @@ void cuAmpcorParameter::checkArraysAllocated() const
 /**
  * Check whether the parameters are ready to run (setupParameters and setStartPixels are called)
  */
-void cuAmpcorParameter::checkReadyToRun() const
+void Parameter::checkReadyToRun() const
 {
     checkArraysAllocated();
     if (!chunkStartPixelsSet)
@@ -224,7 +224,7 @@ void cuAmpcorParameter::checkReadyToRun() const
  *
  * Set also gross offsets between reference and secondary windows.
  */
-void cuAmpcorParameter::setStartPixels(const int *mStartD, const int *mStartA, const int *gOffsetD, const int *gOffsetA)
+void Parameter::setStartPixels(const int *mStartD, const int *mStartA, const int *gOffsetD, const int *gOffsetA)
 {
     checkArraysAllocated();
     for(int i=0; i<numberWindows; i++)
@@ -242,7 +242,7 @@ void cuAmpcorParameter::setStartPixels(const int *mStartD, const int *mStartA, c
 /**
  * Set starting pixels for each window with a varying gross offset
  */
-void cuAmpcorParameter::setStartPixels(int mStartD, int mStartA, const int *gOffsetD, const int *gOffsetA)
+void Parameter::setStartPixels(int mStartD, int mStartA, const int *gOffsetD, const int *gOffsetA)
 {
     checkArraysAllocated();
     for(int row=0; row<numberWindowDown; row++)
@@ -264,7 +264,7 @@ void cuAmpcorParameter::setStartPixels(int mStartD, int mStartA, const int *gOff
 /**
  * Set starting pixels for each window with a constant gross offset
  */
-void cuAmpcorParameter::setStartPixels(int mStartD, int mStartA, int gOffsetD, int gOffsetA)
+void Parameter::setStartPixels(int mStartD, int mStartA, int gOffsetD, int gOffsetA)
 {
     checkArraysAllocated();
     for(int row=0; row<numberWindowDown; row++)
@@ -289,7 +289,7 @@ void cuAmpcorParameter::setStartPixels(int mStartD, int mStartA, int gOffsetD, i
  * The chunks cover the windows in them, within the images; their maximum sizes determine the
  * sizes of the read buffers.
  */
-void cuAmpcorParameter::setChunkStartPixels()
+void Parameter::setChunkStartPixels()
 {
     checkArraysAllocated();
 
@@ -387,7 +387,7 @@ void cuAmpcorParameter::setChunkStartPixels()
  *
  * Now issue warnings rather than errors (debug builds only).
  */
-void cuAmpcorParameter::checkPixelInImageRange() const
+void Parameter::checkPixelInImageRange() const
 {
 // check range is no longer required, but offered as an option in DEBUG
 #ifdef CUAMPCOR_DEBUG

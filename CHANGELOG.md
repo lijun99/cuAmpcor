@@ -39,6 +39,9 @@
   (`pycuampcor::cpu`, `pycuampcor::cuda`), each with its arrays, kernels, controller and chunk
   loader; the processors of the workflows are written once, as templates on the array type, and
   instantiated by each package. The results are unchanged.
+- The C++ files and classes drop the `cuAmpcor` prefix (e.g., `Parameter`, `Processor`,
+  `Controller`, `ChunkLoader`); the files of the CUDA package keep its `cu` prefix
+  (`cuController.h`, `cuChunkLoader.h`). The python API is unchanged.
 - Compiled as standard C++17 (`-std=c++17`, without GNU extensions); the code also builds as
   C++20.
 - `setupParams` keeps the parameters as set: `numberWindowDownInChunk` / `numberWindowAcrossInChunk`

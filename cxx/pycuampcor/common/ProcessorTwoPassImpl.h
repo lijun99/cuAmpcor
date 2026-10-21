@@ -1,17 +1,17 @@
 /**
- * @file  cuAmpcorProcessorTwoPassImpl.h
+ * @file  ProcessorTwoPassImpl.h
  * @brief The two-pass workflow: the implementation
  *
- * The definitions of the member functions of cuAmpcorProcessorTwoPass (templates); only the packages'
- * processors.cpp include them (see cuAmpcorProcessorImpl.h).
+ * The definitions of the member functions of ProcessorTwoPass (templates); only the packages'
+ * processors.cpp include them (see ProcessorImpl.h).
  */
 
 #pragma once
 
-#include "cuAmpcorProcessorTwoPass.h"
-#include "cuAmpcorOptions.h"
-#include "cuAmpcorParameter.h"
-#include "cuNormalizer.h"
+#include "ProcessorTwoPass.h"
+#include "Options.h"
+#include "Parameter.h"
+#include "Normalizer.h"
 #include "logging.h"
 
 namespace pycuampcor {
@@ -22,7 +22,7 @@ namespace pycuampcor {
  * @param chunk the chunk, loaded by the chunk loader
  */
 template <template <typename> class arrayT>
-void cuAmpcorProcessorTwoPass<arrayT>::run(int idxDown, int idxAcross, const chunk_type &chunk)
+void ProcessorTwoPass<arrayT>::run(int idxDown, int idxAcross, const chunk_type &chunk)
 {
     using traits = typename base_type::traits;
     setIndex(idxDown, idxAcross);
@@ -129,7 +129,7 @@ void cuAmpcorProcessorTwoPass<arrayT>::run(int idxDown, int idxAcross, const chu
  * A processor writing to the output images: allocate its buffers and workers
  */
 template <template <typename> class arrayT>
-cuAmpcorProcessorTwoPass<arrayT>::cuAmpcorProcessorTwoPass(const cuAmpcorParameter &param_,
+ProcessorTwoPass<arrayT>::ProcessorTwoPass(const Parameter &param_,
     array_type<real2_type> &offsetImage, array_type<real_type> &snrImage,
     array_type<real3_type> &covImage, array_type<real_type> &peakValueImage, stream_type stream_)
     : base_type(param_, offsetImage, snrImage, covImage, peakValueImage, stream_),
@@ -192,7 +192,7 @@ cuAmpcorProcessorTwoPass<arrayT>::cuAmpcorProcessorTwoPass(const cuAmpcorParamet
  * Release the buffers and workers (they are released with their owners)
  */
 template <template <typename> class arrayT>
-cuAmpcorProcessorTwoPass<arrayT>::~cuAmpcorProcessorTwoPass() = default;
+ProcessorTwoPass<arrayT>::~ProcessorTwoPass() = default;
 
 } // namespace
 //end of file

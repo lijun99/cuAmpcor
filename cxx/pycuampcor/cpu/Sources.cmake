@@ -13,7 +13,7 @@ set(PYCUAMPCOR_CPU_SOURCES
     Offset.cpp
     OverSampler.cpp
     SincOverSampler.cpp
-    cuAmpcorChunkLoader.cpp
-    cuAmpcorController.cpp
+    ChunkLoader.cpp
+    Controller.cpp
     processors.cpp
     )

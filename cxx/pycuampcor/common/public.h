@@ -20,24 +20,24 @@
 #include "hostDevice.h"
 #include "indexing.h"
 #include "logging.h"
-#include "cuAmpcorOptions.h"
+#include "Options.h"
 // the views of batches of 2D arrays, and their output to files
 #include "ArraysView.h"
 #include "ArraysFile.h"
 
 // the parameters
-#include "cuAmpcorParameter.h"
+#include "Parameter.h"
 // the images
 #include "SlcImage.h"
 #ifdef PYCUAMPCOR_WITH_HDF5
 #include "Hdf5SlcImage.h"
 #endif
 // layers processed together
-#include "cuAmpcorLayers.h"
+#include "Layers.h"
 // the processors on the arrays of a package: what goes with the arrays, the interfaces of the
 // workers, and the workflows (templates, instantiated by the packages)
-#include "cuAmpcorArrayTraits.h"
-#include "cuNormalizer.h"
-#include "cuSurfaceOverSampler.h"
+#include "ArrayTraits.h"
+#include "Normalizer.h"
+#include "SurfaceOverSampler.h"
 
 //end of file

@@ -13,7 +13,7 @@ namespace pycuampcor::PYCUAMPCOR_BACKEND::test {
 /**
  * Set the window sizes, search ranges and numbers of windows of the tests
  */
-static void setWindows(cuAmpcorParameter &p)
+static void setWindows(Parameter &p)
 {
     p.windowSizeWidthRaw = 64;
     p.windowSizeHeightRaw = 32;
@@ -30,7 +30,7 @@ static void setWindows(cuAmpcorParameter &p)
 
 TEST(ParameterTest, TwoPassSizes)
 {
-    cuAmpcorParameter p;
+    Parameter p;
     setWindows(p);
     p.workflow = Workflow::TwoPass;
     setupParameters(p);
@@ -51,7 +51,7 @@ TEST(ParameterTest, TwoPassSizes)
 
 TEST(ParameterTest, TwoPassZoomWindowLimitedBySearchRange)
 {
-    cuAmpcorParameter p;
+    Parameter p;
     setWindows(p);
     p.halfSearchRangeAcrossRaw = 3;
     p.workflow = Workflow::TwoPass;
@@ -67,7 +67,7 @@ TEST(ParameterTest, TwoPassZoomWindowLimitedBySearchRange)
 
 TEST(ParameterTest, OnePassSizes)
 {
-    cuAmpcorParameter p;
+    Parameter p;
     setWindows(p);
     p.workflow = Workflow::OnePass;
     setupParameters(p);
@@ -98,7 +98,7 @@ TEST(ParameterTest, OnePassSizes)
 
 TEST(ParameterTest, SetupChecks)
 {
-    cuAmpcorParameter p;
+    Parameter p;
     setWindows(p);
     // not set up yet
     EXPECT_THROW(p.checkReadyToRun(), std::logic_error);
@@ -112,11 +112,11 @@ TEST(ParameterTest, SetupChecks)
     setupParameters(p);
     EXPECT_THROW(p.checkReadyToRun(), std::logic_error);
 
-    cuAmpcorParameter bad;
+    Parameter bad;
     setWindows(bad);
     bad.workflow = static_cast<Workflow>(2);
     EXPECT_THROW(setupParameters(bad), std::invalid_argument);
-    cuAmpcorParameter empty;
+    Parameter empty;
     setWindows(empty);
     empty.numberWindowDown = 0;
     EXPECT_THROW(setupParameters(empty), std::invalid_argument);
@@ -125,7 +125,7 @@ TEST(ParameterTest, SetupChecks)
 // automatic numbers of windows in a chunk (0), limited by the numbers of windows
 TEST(ParameterTest, AutoChunkSize)
 {
-    cuAmpcorParameter p;
+    Parameter p;
     setWindows(p);
     p.numberWindowDown = 1000;
     p.numberWindowAcross = 2;
@@ -147,7 +147,7 @@ TEST(ParameterTest, AutoChunkSize)
     EXPECT_EQ(p.windowsDownInChunk, 1);
 
     // explicit values are kept
-    cuAmpcorParameter q;
+    Parameter q;
     setWindows(q);
     q.numberWindowDownInChunk = 2;
     q.numberWindowAcrossInChunk = 3;
@@ -159,7 +159,7 @@ TEST(ParameterTest, AutoChunkSize)
 // the starting pixels of windows and chunks (to load from the images)
 TEST(ParameterTest, WindowAndChunkPixels)
 {
-    cuAmpcorParameter p;
+    Parameter p;
     p.workflow = Workflow::TwoPass;
     p.windowSizeWidthRaw = p.windowSizeHeightRaw = 16;
     p.halfSearchRangeDownRaw = p.halfSearchRangeAcrossRaw = 4;
@@ -227,7 +227,7 @@ TEST(ParameterTest, WindowAndChunkPixels)
     EXPECT_EQ(p.secondaryChunkWidth[3], 0);
 
     // copies own their arrays
-    cuAmpcorParameter q = p;
+    Parameter q = p;
     q.setStartPixels(0, 0, 0, 0);
     EXPECT_EQ(p.referenceStartPixelAcross[1], startA + 16);
     EXPECT_EQ(q.referenceStartPixelAcross[1], 16);

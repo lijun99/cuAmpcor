@@ -1,5 +1,5 @@
 /**
- * @file  cuAmpcorOptions.h
+ * @file  Options.h
  * @brief Options of the ampcor parameters
  *
  * The values are those of the integer enums in pycuampcor.options (python).

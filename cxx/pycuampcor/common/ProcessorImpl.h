@@ -1,22 +1,22 @@
 /**
- * @file  cuAmpcorProcessorImpl.h
+ * @file  ProcessorImpl.h
  * @brief The processor of a chunk: the implementation of the base of the workflows
  *
- * The definitions of the member functions of cuAmpcorProcessor (templates). Only the packages'
+ * The definitions of the member functions of Processor (templates). Only the packages'
  * processors.cpp include them, after their arrays, kernels and array_traits, and instantiate the
  * processors for their arrays: the processors are compiled once per package, and the other code
- * (e.g., the controllers) needs only the declarations (cuAmpcorProcessor.h).
+ * (e.g., the controllers) needs only the declarations (Processor.h).
  */
 
 #pragma once
 
-#include "cuAmpcorProcessor.h"
-#include "cuAmpcorProcessorTwoPass.h"
-#include "cuAmpcorProcessorOnePass.h"
-#include "cuAmpcorOptions.h"
-#include "cuAmpcorParameter.h"
-#include "cuNormalizer.h"
-#include "cuSurfaceOverSampler.h"
+#include "Processor.h"
+#include "ProcessorTwoPass.h"
+#include "ProcessorOnePass.h"
+#include "Options.h"
+#include "Parameter.h"
+#include "Normalizer.h"
+#include "SurfaceOverSampler.h"
 
 namespace pycuampcor {
 
@@ -26,18 +26,18 @@ namespace pycuampcor {
  * @return the processor
  */
 template <template <typename> class arrayT>
-std::unique_ptr<cuAmpcorProcessor<arrayT>> cuAmpcorProcessor<arrayT>::create(Workflow workflow,
-    const cuAmpcorParameter &param,
+std::unique_ptr<Processor<arrayT>> Processor<arrayT>::create(Workflow workflow,
+    const Parameter &param,
     array_type<real2_type> &offsetImage, array_type<real_type> &snrImage,
     array_type<real3_type> &covImage, array_type<real_type> &peakValueImage,
     stream_type stream)
 {
     switch (workflow) {
         case Workflow::TwoPass:
-            return std::make_unique<cuAmpcorProcessorTwoPass<arrayT>>(
+            return std::make_unique<ProcessorTwoPass<arrayT>>(
                 param, offsetImage, snrImage, covImage, peakValueImage, stream);
         case Workflow::OnePass:
-            return std::make_unique<cuAmpcorProcessorOnePass<arrayT>>(
+            return std::make_unique<ProcessorOnePass<arrayT>>(
                 param, offsetImage, snrImage, covImage, peakValueImage, stream);
         default:
             throw std::invalid_argument("Unsupported workflow");
@@ -48,7 +48,7 @@ std::unique_ptr<cuAmpcorProcessor<arrayT>> cuAmpcorProcessor<arrayT>::create(Wor
  * A processor writing to the output images: allocate the buffers of the per-window results
  */
 template <template <typename> class arrayT>
-cuAmpcorProcessor<arrayT>::cuAmpcorProcessor(const cuAmpcorParameter &param_,
+Processor<arrayT>::Processor(const Parameter &param_,
     array_type<real2_type> &offsetImage_, array_type<real_type> &snrImage_,
     array_type<real3_type> &covImage_, array_type<real_type> &peakValueImage_,
     stream_type stream_)
@@ -90,13 +90,13 @@ cuAmpcorProcessor<arrayT>::cuAmpcorProcessor(const cuAmpcorParameter &param_,
  * Release the buffers and workers (they are released with their owners)
  */
 template <template <typename> class arrayT>
-cuAmpcorProcessor<arrayT>::~cuAmpcorProcessor() = default;
+Processor<arrayT>::~Processor() = default;
 
 /**
  * Set the index of the current chunk, and its number of windows (fewer in the last chunks)
  */
 template <template <typename> class arrayT>
-void cuAmpcorProcessor<arrayT>::setIndex(int idxDown, int idxAcross)
+void Processor<arrayT>::setIndex(int idxDown, int idxAcross)
 {
     idxChunkDown = idxDown;
     idxChunkAcross = idxAcross;
@@ -113,7 +113,7 @@ void cuAmpcorProcessor<arrayT>::setIndex(int idxDown, int idxAcross)
  * (the windows beyond the last ones of the chunk repeat the last ones)
  */
 template <template <typename> class arrayT>
-void cuAmpcorProcessor<arrayT>::getRelativeOffset(int *relative, const std::vector<int> &absolute,
+void Processor<arrayT>::getRelativeOffset(int *relative, const std::vector<int> &absolute,
     int chunkStart)
 {
     for (int i = 0; i < param.windowsDownInChunk; ++i) {
@@ -132,7 +132,7 @@ void cuAmpcorProcessor<arrayT>::getRelativeOffset(int *relative, const std::vect
  * Copy the windows of the current chunk from a loaded chunk to a batch
  */
 template <template <typename> class arrayT>
-void cuAmpcorProcessor<arrayT>::copyToBatch(const loaded_chunk_type &chunk,
+void Processor<arrayT>::copyToBatch(const loaded_chunk_type &chunk,
     const std::vector<int> &startDown, const std::vector<int> &startAcross,
     array_type<complex_type> &batch)
 {
@@ -170,7 +170,7 @@ void cuAmpcorProcessor<arrayT>::copyToBatch(const loaded_chunk_type &chunk,
  * Cross-correlate the reference windows with the secondary windows, and normalize
  */
 template <template <typename> class arrayT>
-void cuAmpcorProcessor<arrayT>::correlate(array_type<real_type> &reference,
+void Processor<arrayT>::correlate(array_type<real_type> &reference,
     array_type<real_type> &secondary, array_type<real_type> &surface,
     freq_correlator_type *freqCorrelator, normalizer_type *normalizer, const std::string &name)
 {
@@ -190,7 +190,7 @@ void cuAmpcorProcessor<arrayT>::correlate(array_type<real_type> &reference,
  * Create the oversampler of the correlation surfaces of height x width around the peak
  */
 template <template <typename> class arrayT>
-void cuAmpcorProcessor<arrayT>::createSurfaceOversampler(int height, int width)
+void Processor<arrayT>::createSurfaceOversampler(int height, int width)
 {
     surfaceOverSampler = traits::newSurfaceOverSampler(param.corrSurfaceOverSamplingMethod,
         height, width, param.corrSurfaceOverSamplingFactor, param.rawDataOversamplingFactor,
@@ -201,7 +201,7 @@ void cuAmpcorProcessor<arrayT>::createSurfaceOversampler(int height, int width)
  * Oversample the correlation surfaces around the peak
  */
 template <template <typename> class arrayT>
-void cuAmpcorProcessor<arrayT>::oversampleSurface(array_type<real_type> &surface,
+void Processor<arrayT>::oversampleSurface(array_type<real_type> &surface,
     array_type<real_type> &oversampled, ArraysView<const int2_type> shift)
 {
     surfaceOverSampler->execute(surface, oversampled, shift);
@@ -212,7 +212,7 @@ void cuAmpcorProcessor<arrayT>::oversampleSurface(array_type<real_type> &surface
  * Write the results of the current chunk to the output images
  */
 template <template <typename> class arrayT>
-void cuAmpcorProcessor<arrayT>::writeResults()
+void Processor<arrayT>::writeResults()
 {
     // the first window of the chunk in the output images
     const int down = idxChunkDown*param.windowsDownInChunk;
@@ -228,7 +228,7 @@ void cuAmpcorProcessor<arrayT>::writeResults()
  */
 template <template <typename> class arrayT>
 template <typename T>
-void cuAmpcorProcessor<arrayT>::dump([[maybe_unused]] const array_type<T> &array,
+void Processor<arrayT>::dump([[maybe_unused]] const array_type<T> &array,
     [[maybe_unused]] const std::string &name)
 {
 #ifdef CUAMPCOR_DEBUG

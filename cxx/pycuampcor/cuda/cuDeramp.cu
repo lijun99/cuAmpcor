@@ -13,7 +13,7 @@
  */
 
 #include "cuDeramp.h"
-#include "cuAmpcorOptions.h"
+#include "Options.h"
 #include "float2.h"
 #include "cudaError.h"
 #include "device.h"

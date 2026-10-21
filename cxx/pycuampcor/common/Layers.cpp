@@ -1,10 +1,10 @@
 /**
- * @file  cuAmpcorLayers.cpp
+ * @file  Layers.cpp
  * @brief Layers: several parameter sets processed together, sharing the loaded image chunks
  */
 
-#include "cuAmpcorLayers.h"
-#include "cuAmpcorParameter.h"
+#include "Layers.h"
+#include "Parameter.h"
 
 #include <climits>
 #include <set>
@@ -18,10 +18,10 @@ namespace {
  * @param layers the parameters of the layers
  * @param reference whether for the reference image (or the secondary image)
  */
-cuAmpcorChunkFootprint unionFootprint(const std::vector<const cuAmpcorParameter *> &layers, bool reference)
+ChunkFootprint unionFootprint(const std::vector<const Parameter *> &layers, bool reference)
 {
     const int nChunks = layers.front()->numberChunks;
-    cuAmpcorChunkFootprint fp;
+    ChunkFootprint fp;
     for (auto *v : {&fp.startDown, &fp.startAcross, &fp.height, &fp.width})
         v->assign(nChunks, 0);
 
@@ -54,14 +54,14 @@ cuAmpcorChunkFootprint unionFootprint(const std::vector<const cuAmpcorParameter 
 } // namespace
 
 /**
- * Check that the layers can be processed together (see cuAmpcorLayers.h)
+ * Check that the layers can be processed together (see Layers.h)
  * @param params the parameters of the layers
  */
-void checkLayers(const std::vector<const cuAmpcorParameter *> &params)
+void checkLayers(const std::vector<const Parameter *> &params)
 {
     if (params.empty())
         throw std::invalid_argument("No layers are given");
-    const cuAmpcorParameter *p0 = params.front();
+    const Parameter *p0 = params.front();
     std::set<std::string> outputs;
     for (const auto *p : params) {
         p->checkReadyToRun();
@@ -89,11 +89,11 @@ void checkLayers(const std::vector<const cuAmpcorParameter *> &params)
 }
 
 /**
- * The footprints of the chunks of the reference and secondary images (see cuAmpcorLayers.h)
+ * The footprints of the chunks of the reference and secondary images (see Layers.h)
  * @param layers the parameters of the layers
  */
-std::pair<cuAmpcorChunkFootprint, cuAmpcorChunkFootprint>
-chunkFootprints(const std::vector<const cuAmpcorParameter *> &layers)
+std::pair<ChunkFootprint, ChunkFootprint>
+chunkFootprints(const std::vector<const Parameter *> &layers)
 {
     checkLayers(layers);
     return {unionFootprint(layers, true), unionFootprint(layers, false)};

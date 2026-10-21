@@ -28,12 +28,12 @@ namespace pycuampcor::cuda {
     template <int Size>
     class cuNormalizeFixed;
     class cuNormalizeSAT;
-    // the chunks of the images loaded for processing (cuAmpcorChunkLoader.h)
-    struct cuAmpcorLoadedChunk;
-    struct cuAmpcorChunk;
-    class cuAmpcorChunkLoader;
-    // the controller, running the processors over the chunks (cuAmpcorController.h)
-    class cuAmpcorController;
+    // the chunks of the images loaded for processing (cuChunkLoader.h)
+    struct LoadedChunk;
+    struct Chunk;
+    class ChunkLoader;
+    // the controller, running the processors over the chunks (cuController.h)
+    class Controller;
 }
 
 //end of file

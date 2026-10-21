@@ -14,7 +14,7 @@ namespace pycuampcor {
     // a view of a batch of 2D arrays (ArraysView.h)
     template <typename T>
     class ArraysView;
-    // the options of the parameters (cuAmpcorOptions.h)
+    // the options of the parameters (Options.h)
     enum class Algorithm : int;
     enum class Workflow : int;
     enum class DerampMethod : int;
@@ -23,28 +23,28 @@ namespace pycuampcor {
     enum class DataType : int;
     // the level of the messages (logging.h)
     enum class LogLevel : int;
-    // the parameters (cuAmpcorParameter.h)
+    // the parameters (Parameter.h)
     struct Index2;
-    class cuAmpcorParameter;
+    class Parameter;
     // the images (SlcImage.h, Hdf5SlcImage.h)
     class SlcImage;
     class MmapSlcImage;
     class Hdf5SlcImage;
-    // the chunks of the layers processed together (cuAmpcorLayers.h)
-    struct cuAmpcorChunkFootprint;
+    // the chunks of the layers processed together (Layers.h)
+    struct ChunkFootprint;
     // the interfaces of the workers, for the arrays arrayT: the normalizer of the correlation
-    // surfaces (cuNormalizer.h), the oversampler of the surfaces around the peaks (cuSurfaceOverSampler.h)
+    // surfaces (Normalizer.h), the oversampler of the surfaces around the peaks (SurfaceOverSampler.h)
     template <template <typename> class arrayT>
-    class cuNormalizer;
+    class Normalizer;
     template <template <typename> class arrayT>
-    class cuSurfaceOverSampler;
-    // the processors of a chunk, for each workflow, on the arrays arrayT (cuAmpcorProcessor*.h)
+    class SurfaceOverSampler;
+    // the processors of a chunk, for each workflow, on the arrays arrayT (Processor*.h)
     template <template <typename> class arrayT>
-    class cuAmpcorProcessor;
+    class Processor;
     template <template <typename> class arrayT>
-    class cuAmpcorProcessorTwoPass;
+    class ProcessorTwoPass;
     template <template <typename> class arrayT>
-    class cuAmpcorProcessorOnePass;
+    class ProcessorOnePass;
 }
 
 //end of file

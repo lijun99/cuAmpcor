@@ -16,8 +16,8 @@ namespace pycuampcor::cuda {
  * The normalizer of the correlation surfaces: cuNormalizeFixed for the smallest size that fits
  * the width of the secondary windows, or cuNormalizeSAT beyond 1024
  */
-std::unique_ptr<cuNormalizer<cuArrays>>
-newCuNormalizer(int secondaryNX, int secondaryNY, int count)
+std::unique_ptr<Normalizer<cuArrays>>
+newNormalizer(int secondaryNX, int secondaryNY, int count)
 {
     // depending on NY, choose different processor
     if(secondaryNY <= 64) {

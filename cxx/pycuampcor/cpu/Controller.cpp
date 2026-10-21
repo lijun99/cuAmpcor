@@ -1,38 +1,40 @@
 /**
- * @file  cuAmpcorController.cpp
- * @brief The controller running ampcor on a CUDA device
+ * @file  Controller.cpp
+ * @brief The controller running ampcor on the CPU
  */
 
-#include "cuAmpcorController.h"
-#include "cuAmpcorChunkLoader.h"
-#include "cuAmpcorLayers.h"
+#include "Controller.h"
+#include "ChunkLoader.h"
+#include "Layers.h"
 #include "api.h"
-#include "arrayTraits.h"
-#include "cuAmpcorProcessor.h"
-#include "cuArrays.h"
+#include "traits.h"
+#include "Processor.h"
+#include "Arrays.h"
 #include "ArraysFile.h"
-#include "cuArraysCopy.h"
-#include "cudaError.h"
-#include "device.h"
+#include "ArraysCopy.h"
 #include "float2.h"
 #include "logging.h"
 #include "SlcImage.h"
 
-namespace pycuampcor::cuda {
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
+namespace pycuampcor::cpu {
 
 namespace {
 
 /// the output images of a layer; the run images, written by the processors, are padded to
 /// whole chunks, and extracted to the output images at the end
 struct LayerImages {
-    cuArrays<real2_type> offsetRun, offset;        ///< the dense offsets
-    cuArrays<real_type> snrRun, snr;               ///< the SNR
-    cuArrays<real3_type> covRun, cov;              ///< the covariance
-    cuArrays<real_type> peakValueRun, peakValue;   ///< the correlation peak
+    array_type<real2_type> offsetRun, offset;        ///< the dense offsets
+    array_type<real_type> snrRun, snr;               ///< the SNR
+    array_type<real3_type> covRun, cov;              ///< the covariance
+    array_type<real_type> peakValueRun, peakValue;   ///< the correlation peak
 
     /// allocate the run and output images of a layer; the run images cover whole chunks: they may
     /// be larger than the output images
-    explicit LayerImages(const cuAmpcorParameter &param)
+    explicit LayerImages(const Parameter &param)
         : offsetRun(runHeight(param), runWidth(param)), offset(param.numberWindowDown, param.numberWindowAcross),
           snrRun(runHeight(param), runWidth(param)), snr(param.numberWindowDown, param.numberWindowAcross),
           covRun(runHeight(param), runWidth(param)), cov(param.numberWindowDown, param.numberWindowAcross),
@@ -40,19 +42,20 @@ struct LayerImages {
     {}
 
     /// the height of the run images: the windows down in whole chunks
-    static int runHeight(const cuAmpcorParameter &param)
+    static int runHeight(const Parameter &param)
     {
         return param.numberChunkDown * param.windowsDownInChunk;
     }
     /// the width of the run images: the windows across in whole chunks
-    static int runWidth(const cuAmpcorParameter &param)
+    static int runWidth(const Parameter &param)
     {
         return param.numberChunkAcross * param.windowsAcrossInChunk;
     }
 
     /// extract the run images to the output images, and write them (and the gross offsets) to files
-    void write(const cuAmpcorParameter &param, cudaStream_t stream)
+    void write(const Parameter &param)
     {
+        const stream_t stream{};
         cuArraysCopyExtract(offsetRun, offset, make_int2(0,0), stream);
         cuArraysCopyExtract(snrRun, snr, make_int2(0,0), stream);
         cuArraysCopyExtract(covRun, cov, make_int2(0,0), stream);
@@ -81,43 +84,29 @@ struct LayerImages {
     }
 };
 
-/// a worker: a CUDA stream, with its chunk loader and the processors of the layers
+/// a worker (an OpenMP thread), with its chunk loader and the processors of the layers
 struct Worker {
-    cudaStream_t stream;                                          ///< the stream of the worker
-    std::unique_ptr<cuAmpcorChunkLoader> loader;                  ///< loads the chunks
+    std::unique_ptr<ChunkLoader> loader;                          ///< loads the chunks
     std::vector<std::unique_ptr<processor_t>> processors;   ///< one per layer
-
-    /// a worker with a new stream
-    Worker() { checkCudaErrors(cudaStreamCreate(&stream)); }
-    Worker(const Worker&) = delete;
-    Worker& operator=(const Worker&) = delete;
-    /// release the processors and the loader (their fft plans and copies use the stream), then the stream
-    ~Worker()
-    {
-        processors.clear();
-        loader.reset();
-        checkCudaErrors(cudaStreamDestroy(stream));
-    }
 };
 
 } // namespace
 
 /**
- * The default number of windows in a chunk on the device
+ * The default number of windows in a chunk on the CPU
  */
-void defaultWindowsInChunk(const cuAmpcorParameter &param, int &down, int &across)
+void defaultWindowsInChunk(const Parameter &, int &down, int &across)
 {
-    // windows in a chunk are processed in parallel; 2x the number of SMs keeps the GPU busy
-    // (benchmarked on V100 and RTX PRO 6000 Blackwell), stacked down (SM/4) to share more rows
-    const int sms = getSMCount(param.deviceID);
-    down = std::max(sms / 4, 1);
-    across = 8;
+    // each thread processes a chunk, its windows one after another; one window per chunk
+    // keeps the work in cache and balances the load among threads
+    down = 1;
+    across = 1;
 }
 
 /**
- * Set up the parameters with the default number of windows in a chunk on the device
+ * Set up the parameters with the default number of windows in a chunk on the CPU
  */
-void setupParameters(cuAmpcorParameter &param)
+void setupParameters(Parameter &param)
 {
     // the default is needed (and, for CUDA, the device queried) only if a number is automatic (0)
     int down = 0, across = 0;
@@ -127,9 +116,23 @@ void setupParameters(cuAmpcorParameter &param)
 }
 
 /**
+ * The number of threads processing the chunks
+ */
+int numberOfThreads(const Parameter &param)
+{
+    if (param.nThreads > 0)
+        return param.nThreads;
+#ifdef _OPENMP
+    return omp_get_max_threads();
+#else
+    return 1;
+#endif
+}
+
+/**
  * Whether the computations and the outputs are in double precision
  */
-bool cuAmpcorController::isDoublePrecision()
+bool Controller::isDoublePrecision()
 {
 #ifdef CUAMPCOR_DOUBLE
     return true;
@@ -141,30 +144,28 @@ bool cuAmpcorController::isDoublePrecision()
 /**
  * Run ampcor with the parameters, and write the outputs
  */
-void cuAmpcorController::runAmpcor()
+void Controller::runAmpcor()
 {
     runAmpcorLayers({this});
 }
 
 /**
  * Run several layers (parameter sets) sharing the images and the chunk partition
- * Each chunk is loaded once and processed by all layers. The device (deviceID) and the number
- * of streams (nStreams) are taken from the first layer.
+ * Each chunk is loaded once and processed by all layers. The number of threads (nThreads) is
+ * taken from the first layer.
  */
-void cuAmpcorController::runAmpcorLayers(const std::vector<cuAmpcorController *> &layers)
+void Controller::runAmpcorLayers(const std::vector<Controller *> &layers)
 {
-    std::vector<cuAmpcorParameter *> params;
+    std::vector<Parameter *> params;
     for (auto *layer : layers)
         params.push_back(layer->param.get());
     // check whether the parameters are set up and compatible, and get the chunks to load
     const auto footprints = chunkFootprints({params.begin(), params.end()});
-    const cuAmpcorParameter &param = *params.front();
+    const Parameter &param = *params.front();
     const int nLayers = params.size();
 
-    // select the device for this thread; all layers run on it
-    const int deviceID = gpuDeviceInit(param.deviceID);
-    for (auto *p : params)
-        p->deviceID = deviceID;
+    const int nWorkers = numberOfThreads(param);
+    logInfo("Using ", nWorkers, " CPU thread(s) ...");
 
     // the reference and secondary images, with the largest buffer of the layers
     int mmapSizeInGB = 0;
@@ -184,19 +185,17 @@ void cuAmpcorController::runAmpcorLayers(const std::vector<cuAmpcorController *>
     for (const auto *p : params)
         images.push_back(std::make_unique<LayerImages>(*p));
 
-    // the workers, one per stream, each with its loader and the processors of the layers
-    const int nWorkers = param.nStreams;
+    // the workers, one per thread, each with its loader and the processors of the layers
     std::vector<std::unique_ptr<Worker>> workers(nWorkers);
     for (auto &worker : workers) {
         worker = std::make_unique<Worker>();
-        worker->loader = std::make_unique<cuAmpcorChunkLoader>(
+        worker->loader = std::make_unique<ChunkLoader>(
             footprints.first, param.referenceImageDataType, *referenceImage,
-            footprints.second, param.secondaryImageDataType, *secondaryImage,
-            worker->stream);
+            footprints.second, param.secondaryImageDataType, *secondaryImage);
         for (int l = 0; l < nLayers; l++) {
             LayerImages &im = *images[l];
             worker->processors.push_back(processor_t::create(params[l]->workflow, *params[l],
-                im.offsetRun, im.snrRun, im.covRun, im.peakValueRun, worker->stream));
+                im.offsetRun, im.snrRun, im.covRun, im.peakValueRun, stream_t{}));
         }
     }
 
@@ -209,27 +208,43 @@ void cuAmpcorController::runAmpcorLayers(const std::vector<cuAmpcorController *>
     if (nLayers > 1)
         logInfo("for ", nLayers, " layers sharing the loaded chunks");
 
-    // assign the chunks to the streams in turn; the work of each chunk is queued on its stream
+    // process the chunks in parallel, each thread with its worker
+    // (exceptions can't propagate out of an OpenMP region: keep the first one, and rethrow it after)
     const int message_interval = std::max(nChunksDown/10, 1);
+    std::exception_ptr error;
+    std::atomic<bool> failed(false);
+    #pragma omp parallel for schedule(dynamic) num_threads(nWorkers)
     for (int k = 0; k < nChunks; k++) {
+        if (failed) continue;
         const int i = k / nChunksAcross;
         const int j = k % nChunksAcross;
         if (j == 0 && i%message_interval == 0)
             logInfo("Processing chunks (", i+1, ", x) - (", std::min(nChunksDown, i+message_interval),
                 ", x) out of ", nChunksDown);
-        auto &worker = *workers[k % nWorkers];
-        // load the chunk once, and process it for all layers
-        const cuAmpcorChunk &chunk = worker.loader->load(k);
-        for (auto &processor : worker.processors)
-            processor->run(i, j, chunk);
+        try {
+#ifdef _OPENMP
+            auto &worker = *workers[omp_get_thread_num()];
+#else
+            auto &worker = *workers[0];
+#endif
+            // load the chunk once, and process it for all layers
+            const Chunk &chunk = worker.loader->load(k);
+            for (auto &processor : worker.processors)
+                processor->run(i, j, chunk);
+        }
+        catch (...) {
+            #pragma omp critical
+            {
+                if (!failed) error = std::current_exception();
+                failed = true;
+            }
+        }
     }
-
-    // wait for all streams to finish
-    checkCudaErrors(cudaDeviceSynchronize());
+    if (error) std::rethrow_exception(error);
 
     // write the outputs of each layer
     for (int l = 0; l < nLayers; l++)
-        images[l]->write(*params[l], workers[0]->stream);
+        images[l]->write(*params[l]);
 }
 
 } // namespace

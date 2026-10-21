@@ -1,12 +1,12 @@
 /**
- * @file  cuAmpcorArrayTraits.h
+ * @file  ArrayTraits.h
  * @brief What goes with an array type: the types and workers the processors use with it
  *
- * The processors (cuAmpcorProcessor*) are written once, as templates on the array type: a family
+ * The processors (Processor*) are written once, as templates on the array type: a family
  * of batches of 2D arrays, e.g., cpu::Arrays or cuda::cuArrays. array_traits gives the element
  * types, the stream and chunk types, and the workers (FFT correlator, oversamplers, normalizer)
  * that go with an array type; each package (cpu, cuda) specializes it for its arrays
- * (arrayTraits.h of the package).
+ * (traits.h of the package).
  *
  * The kernels (e.g., cuArraysAbs) are found from the array type of their arguments (by argument
  * dependent lookup), so the processors call them as is.

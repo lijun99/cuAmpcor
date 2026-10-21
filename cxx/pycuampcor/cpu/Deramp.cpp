@@ -13,7 +13,7 @@
  */
 
 #include "Deramp.h"
-#include "cuAmpcorOptions.h"
+#include "Options.h"
 #include "float2.h"
 #include "logging.h"
 #include "debug.h"

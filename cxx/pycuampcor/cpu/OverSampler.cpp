@@ -10,9 +10,9 @@
 #include "ArraysPadding.h"
 #include "Arrays.h"
 #include "SincOverSampler.h"
-#include "cuSurfaceOverSampler.h"
-#include "arrayTraits.h"
-#include "cuAmpcorOptions.h"
+#include "SurfaceOverSampler.h"
+#include "traits.h"
+#include "Options.h"
 
 #include <utility>
 // dependencies
@@ -178,7 +178,7 @@ cuOverSamplerR2R::~cuOverSamplerR2R() = default;
 namespace {
 
 /// the FFT oversampler of correlation surfaces (the whole surfaces)
-class FFTSurfaceOverSampler : public cuSurfaceOverSampler<Arrays> {
+class FFTSurfaceOverSampler : public SurfaceOverSampler<Arrays> {
 public:
     /// an oversampler of count surfaces of height x width, by factor
     FFTSurfaceOverSampler(int height, int width, int factor, int count, stream_t stream)
@@ -196,7 +196,7 @@ private:
 };
 
 /// the sinc oversampler of correlation surfaces (around their peaks only)
-class SincSurfaceOverSampler : public cuSurfaceOverSampler<Arrays> {
+class SincSurfaceOverSampler : public SurfaceOverSampler<Arrays> {
 public:
     /// an oversampler by factor; the peaks are shifted by factor*rawFactor
     SincSurfaceOverSampler(int factor, int rawFactor, stream_t stream)
@@ -222,7 +222,7 @@ private:
 /**
  * An oversampler of correlation surfaces around their peaks: FFT or sinc, by method
  */
-std::unique_ptr<cuSurfaceOverSampler<Arrays>> newSurfaceOverSampler(OversamplingMethod method,
+std::unique_ptr<SurfaceOverSampler<Arrays>> newSurfaceOverSampler(OversamplingMethod method,
     int height, int width, int factor, int rawFactor, int count, stream_t stream)
 {
     if (method == OversamplingMethod::Sinc)

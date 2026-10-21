@@ -1,5 +1,5 @@
 /**
- * @file  cuAmpcorController.h
+ * @file  cuController.h
  * @brief The controller running ampcor on a CUDA device
  *
  * The controller divides the windows into chunks (batches of windows, processed in parallel on
@@ -11,15 +11,15 @@
 #pragma once
 
 #include "forward.h"
-#include "cuAmpcorParameter.h"
+#include "Parameter.h"
 
 namespace pycuampcor::cuda {
 
 /// the controller running ampcor on a CUDA device, with its parameters
-class cuAmpcorController {
+class Controller {
 public:
     /// the parameters
-    std::unique_ptr<cuAmpcorParameter> param = std::make_unique<cuAmpcorParameter>();
+    std::unique_ptr<Parameter> param = std::make_unique<Parameter>();
 
     /// run ampcor with the parameters (set up, with the starting pixels), and write the outputs
     void runAmpcor();
@@ -27,7 +27,7 @@ public:
     /// run several layers (parameter sets) sharing the images and the chunk partition, loading
     /// each chunk once for all layers; the device and the number of streams are taken from the
     /// first layer
-    static void runAmpcorLayers(const std::vector<cuAmpcorController *> &layers);
+    static void runAmpcorLayers(const std::vector<Controller *> &layers);
 
     /// whether the computations and the outputs are in double precision
     bool isDoublePrecision();
@@ -37,11 +37,11 @@ public:
 /// (SM/4) x 8 windows (down x across)
 /// @param param the parameters
 /// @param[out] down,across the number of windows in a chunk, down and across
-void defaultWindowsInChunk(const cuAmpcorParameter &param, int &down, int &across);
+void defaultWindowsInChunk(const Parameter &param, int &down, int &across);
 
-/// set up the parameters (cuAmpcorParameter::setupParameters), with the default number of
+/// set up the parameters (Parameter::setupParameters), with the default number of
 /// windows in a chunk on the device
-void setupParameters(cuAmpcorParameter &param);
+void setupParameters(Parameter &param);
 
 } // namespace
 //end of file

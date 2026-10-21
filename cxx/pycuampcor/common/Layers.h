@@ -1,5 +1,5 @@
 /**
- * @file  cuAmpcorLayers.h
+ * @file  Layers.h
  * @brief Layers: several parameter sets processed together, sharing the loaded image chunks
  *
  * A layer is a set of parameters (e.g., template/search window sizes) applied to the same
@@ -15,7 +15,7 @@
 namespace pycuampcor {
 
 /// the area of each chunk of an image to load, covering the windows of all layers
-struct cuAmpcorChunkFootprint {
+struct ChunkFootprint {
     std::vector<int> startDown;    ///< first line of each chunk
     std::vector<int> startAcross;  ///< first column of each chunk
     std::vector<int> height;       ///< height of each chunk; 0 if the chunk is outside the image
@@ -27,13 +27,13 @@ struct cuAmpcorChunkFootprint {
 /// check that the layers can be processed together: set up (with their starting pixels), with
 /// the same images, numbers of windows and windows in a chunk, and distinct output files
 /// @throw std::invalid_argument if not
-void checkLayers(const std::vector<const cuAmpcorParameter *> &layers);
+void checkLayers(const std::vector<const Parameter *> &layers);
 
 /// the footprints of the chunks of the reference and secondary images, covering all layers
 /// @param layers the parameters of the layers, checked by checkLayers
 /// @return the footprints of the reference and secondary chunks
-std::pair<cuAmpcorChunkFootprint, cuAmpcorChunkFootprint>
-    chunkFootprints(const std::vector<const cuAmpcorParameter *> &layers);
+std::pair<ChunkFootprint, ChunkFootprint>
+    chunkFootprints(const std::vector<const Parameter *> &layers);
 
 } // namespace
 //end of file

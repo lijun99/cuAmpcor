@@ -14,8 +14,8 @@ namespace pycuampcor::cpu {
 /**
  * The normalizer of the correlation surfaces: cuNormalizeSAT for all sizes
  */
-std::unique_ptr<cuNormalizer<Arrays>>
-newCuNormalizer(int secondaryNX, int secondaryNY, int count)
+std::unique_ptr<Normalizer<Arrays>>
+newNormalizer(int secondaryNX, int secondaryNY, int count)
 {
     // the sum area table algorithm applies to all sizes
     return std::make_unique<cuNormalizeSAT>(secondaryNX, secondaryNY, count);

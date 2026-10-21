@@ -24,7 +24,7 @@ namespace {
 // (pycuampcor::cpu or pycuampcor::cuda, chosen by the build)
 using namespace pycuampcor;
 using namespace pycuampcor::PYCUAMPCOR_BACKEND;
-using cls = cuAmpcorController;
+using cls = Controller;
 
 /// setters of the parameters by their python names, for the keyword constructor
 using Setters = std::map<std::string, std::function<void(cls&, pybind11::handle)>>;
@@ -91,10 +91,10 @@ std::string defaultText(pybind11::handle value)
  */
 template <typename T, typename ToPython, typename FromPython>
 void defParam(pybind11::class_<cls> &c, Setters &setters, const char *name,
-              T cuAmpcorParameter::*member, const char *doc,
+              T Parameter::*member, const char *doc,
               ToPython toPython, FromPython fromPython)
 {
-    static const cuAmpcorParameter defaults;
+    static const Parameter defaults;
     auto setter = [member, fromPython, name = std::string(name)](cls& self, pybind11::handle value) {
         auto invalid = [&]() {
             return "invalid value " + pybind11::repr(value).cast<std::string>()
@@ -127,7 +127,7 @@ void defParam(pybind11::class_<cls> &c, Setters &setters, const char *name,
  */
 template <typename T>
 void defParam(pybind11::class_<cls> &c, Setters &setters, const char *name,
-              T cuAmpcorParameter::*member, const char *doc)
+              T Parameter::*member, const char *doc)
 {
     defParam(c, setters, name, member, doc, [](const T &value) { return value; }, toParam<T>);
 }
@@ -139,7 +139,7 @@ void defParam(pybind11::class_<cls> &c, Setters &setters, const char *name,
  */
 template <typename E>
 void defOption(pybind11::class_<cls> &c, Setters &setters, const char *name,
-               E cuAmpcorParameter::*member, const char *option, const char *doc)
+               E Parameter::*member, const char *option, const char *doc)
 {
     defParam(c, setters, name, member, doc,
         [option](E value) { return options().attr(option)(static_cast<int>(value)); },
@@ -152,7 +152,7 @@ void defOption(pybind11::class_<cls> &c, Setters &setters, const char *name,
  * Define a property for a boolean flag, set by a bool or an integer
  */
 void defFlag(pybind11::class_<cls> &c, Setters &setters, const char *name,
-             bool cuAmpcorParameter::*member, const char *doc)
+             bool Parameter::*member, const char *doc)
 {
     defParam(c, setters, name, member, doc,
         [](bool value) { return value; },
@@ -250,17 +250,17 @@ PYBIND11_MODULE(PYCUAMPCOR_MODULE, m)
 
     // define a getter/setter for a controller parameter, with its docstring
 #define DEF_PARAM_RENAME(T, pyname, cppname, doc) \
-    defParam<T>(c, setters, #pyname, &cuAmpcorParameter::cppname, doc)
+    defParam<T>(c, setters, #pyname, &Parameter::cppname, doc)
 
     // same as above, for even more trivial cases where pyname == cppname
 #define DEF_PARAM(T, name, doc) DEF_PARAM_RENAME(T, name, name, doc)
 
     // an option, as a member of the enum pycuampcor.options.<option>
 #define DEF_OPTION(name, option, doc) \
-    defOption(c, setters, #name, &cuAmpcorParameter::name, #option, doc)
+    defOption(c, setters, #name, &Parameter::name, #option, doc)
 
     // a boolean flag
-#define DEF_FLAG(name, doc) defFlag(c, setters, #name, &cuAmpcorParameter::name, doc)
+#define DEF_FLAG(name, doc) defFlag(c, setters, #name, &Parameter::name, doc)
 
     // processing
     DEF_OPTION(algorithm, Algorithm,

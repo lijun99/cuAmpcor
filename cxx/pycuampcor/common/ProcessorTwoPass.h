@@ -1,28 +1,29 @@
 /**
- * @file  cuAmpcorProcessorOnePass.h
- * @brief The one-pass workflow: the oversampled windows correlated once
+ * @file  ProcessorTwoPass.h
+ * @brief The two-pass workflow: a first pass at the raw pixel spacing, then a second pass with
+ *     oversampled windows around the first peak
  *
- * The windows (the reference ones enlarged to the secondary size) are deramped and oversampled
- * (antialiasing), and their amplitudes correlated over the whole search range, with an extra
- * margin around it; the correlation surface is then oversampled around the peak, giving the
- * sub-pixel offset.
+ * First pass: the amplitudes of the windows are correlated at the raw pixel spacing, giving the
+ * peak to the pixel (and the SNR and covariance). Second pass: the windows (the secondary ones
+ * around the first peak) are deramped and oversampled (antialiasing), their amplitudes correlated,
+ * and the correlation surface oversampled again around the peak, giving the sub-pixel offset.
  *
- * The definitions are in cuAmpcorProcessorOnePassImpl.h, included only by the packages'
+ * The definitions are in ProcessorTwoPassImpl.h, included only by the packages'
  * processors.cpp, which instantiate the processors for their arrays (compiled once per package).
  */
 
 #pragma once
 
-#include "cuAmpcorProcessor.h"
+#include "Processor.h"
 
 namespace pycuampcor {
 
-/// the one-pass workflow
+/// the two-pass workflow
 template <template <typename> class arrayT>
-class cuAmpcorProcessorOnePass : public cuAmpcorProcessor<arrayT> {
+class ProcessorTwoPass : public Processor<arrayT> {
 public:
     /// the base class: the processor of a chunk
-    using base_type = cuAmpcorProcessor<arrayT>;
+    using base_type = Processor<arrayT>;
     /// the arrays: batches of 2D arrays of T (as in the base class)
     template <typename T>
     using array_type = typename base_type::template array_type<T>;
@@ -39,13 +40,13 @@ public:
     /// the windows: complex (copied from complex images, or real images as complex)
     using window_type = complex_type;
 
-    /// a processor writing to the output images (see cuAmpcorProcessor)
-    cuAmpcorProcessorOnePass(const cuAmpcorParameter &param,
+    /// a processor writing to the output images (see Processor)
+    ProcessorTwoPass(const Parameter &param,
         array_type<real2_type> &offsetImage, array_type<real_type> &snrImage,
         array_type<real3_type> &covImage, array_type<real_type> &peakValueImage,
         stream_type stream);
     /// release the buffers and workers
-    ~cuAmpcorProcessorOnePass() override;
+    ~ProcessorTwoPass() override;
 
     /// process the chunk (idxDown, idxAcross), and write its results to the output images
     void run(int idxDown, int idxAcross, const chunk_type &chunk) override;
@@ -73,19 +74,26 @@ private:
     using base_type::writeResults;
     using base_type::dump;
 
-    // the windows, and their oversampled amplitudes
-    array_type<window_type> c_referenceBatchRaw;                            ///< the reference windows (enlarged)
-    array_type<window_type> c_secondaryBatchRaw;                            ///< the secondary windows
+    // first pass: the windows at the raw pixel spacing, and their amplitudes
+    array_type<window_type> c_referenceBatchRaw;                    ///< the reference windows
+    array_type<window_type> c_secondaryBatchRaw;                    ///< the secondary windows
+    array_type<real_type> r_referenceBatchRaw;                      ///< their amplitudes
+    array_type<real_type> r_secondaryBatchRaw;                      ///< their amplitudes
+    array_type<real_type> r_corrBatchRaw;                           ///< the correlation surfaces
+    std::unique_ptr<freq_correlator_type> cuCorrFreqDomain;         ///< the correlator (frequency domain)
+    std::unique_ptr<normalizer_type> corrNormalizerRaw;             ///< the normalizer
+
+    // second pass: the oversampled windows (the secondary ones around the first peak)
+    array_type<window_type> c_secondaryBatchZoomIn;                         ///< the secondary windows around the peak
+    array_type<int2_type> maxLocShift;                                      ///< the shift of the peak from the center of the extracted windows
     array_type<window_type> c_referenceBatchOverSampled;                    ///< the oversampled reference windows
     array_type<window_type> c_secondaryBatchOverSampled;                    ///< the oversampled secondary windows
-    array_type<real_type> r_referenceBatchOverSampled;                      ///< the amplitudes of the reference windows (not enlarged)
-    array_type<real_type> r_secondaryBatchOverSampled;                      ///< the amplitudes of the secondary windows
+    array_type<real_type> r_referenceBatchOverSampled;                      ///< their amplitudes
+    array_type<real_type> r_secondaryBatchOverSampled;                      ///< their amplitudes
     oversampler_c2c_type referenceBatchOverSampler;                         ///< the oversampler of the reference windows
     oversampler_c2c_type secondaryBatchOverSampler;                         ///< the oversampler of the secondary windows
-
-    // the correlation surfaces
-    array_type<real_type> r_corrBatch;                                      ///< the correlation surfaces
-    array_type<real_type> r_corrBatchZoomIn;                                ///< the surfaces around the peak
+    array_type<real_type> r_corrBatchZoomIn;                                ///< the correlation surfaces
+    array_type<real_type> r_corrBatchZoomInAdjust;                          ///< the same, of even size
     array_type<real_type> r_corrBatchZoomInOverSampled;                     ///< the oversampled surfaces
     std::unique_ptr<freq_correlator_type> cuCorrFreqDomain_OverSampled;     ///< the correlator (frequency domain)
     std::unique_ptr<normalizer_type> corrNormalizerOverSampled;             ///< the normalizer
