@@ -7,6 +7,7 @@ import os
 import numpy as np
 import pytest
 
+import pycuampcor
 from conftest import make_images
 from pycuampcor import dense_offsets
 
@@ -92,3 +93,20 @@ def test_wrong_size(images, tmp_path):
     """An image of another size than given is an error (it must be a raw image of that size)"""
     with pytest.raises(RuntimeError, match="not a raw complex64 image"):
         run("cpu", images, tmp_path / "offset", "--length", str(N), "--width", str(N + 1))
+
+
+@pytest.mark.parametrize("name, reader", [("tif", []), ("img", ["--reader", "gdal"])])
+def test_gdal_rasters(impl, images, tmp_path, name, reader):
+    """GeoTIFF images (by the extension, or --reader gdal) give the results of the raw images"""
+    gdal = pytest.importorskip("osgeo.gdal")
+    if not pycuampcor.has_gdal:
+        pytest.skip("pycuampcor is built without GDAL")
+    gdal.UseExceptions()
+    rasters = []
+    for k, fname in zip(("ref", "sec"), images):
+        rasters.append(str(tmp_path / f"{k}.{name}"))
+        ds = gdal.GetDriverByName("GTiff").Create(rasters[-1], N, N, 1, gdal.GDT_CFloat32, ["TILED=YES"])
+        ds.GetRasterBand(1).WriteArray(np.fromfile(fname, np.complex64).reshape(N, N))
+        ds = None
+    expected = run(impl, images, tmp_path / "raw", "--length", str(N), "--width", str(N))
+    np.testing.assert_array_equal(run(impl, rasters, tmp_path / "gdal", *reader), expected)

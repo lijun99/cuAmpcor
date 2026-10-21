@@ -13,6 +13,7 @@
   AUTO by default; `pycuampcor.has_gdal`): the first band, converted to the pixel type of the image
   (e.g., UInt16 to float32, CInt16 to complex64). The `auto` reader chooses GDAL for names ending
   with `.tif`, `.tiff` or `.vrt`; or set `referenceImageReader`/`secondaryImageReader` to `gdal`.
+  `pycuampcor.dense_offsets` reads them too (by the extension, or `--reader gdal`).
 - `python -m pycuampcor.dense_offsets`, the dense offsets tool (formerly `cuDenseOffsets.py` of
   ISCE2, used with MintPy) in the package: ISCE2 is optional (the image
   size and type from the ISCE .xml, GDAL, or the options `--length`, `--width`, `--data-type`;

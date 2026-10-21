@@ -6,12 +6,14 @@ series): the offsets of the windows on a regular grid of the reference image, wr
 band-interleaved binary files (offset.bip, offset_snr.bip, ...) with their headers, and optionally
 the geometry (lat, lon, ...) on the same grid (--full-geom, --out-geom).
 
-The images are raw binary files (single band, complex64 or float32, e.g., ISCE SLCs); their size
-and pixel type are given with --length, --width, --data-type, or read from their ISCE .xml
-(if ISCE2 is installed), or from GDAL (the .vrt next to the file, or the file itself). The output
-headers are ISCE .xml (with .vrt) if ISCE2 is installed, ENVI .hdr and .vrt otherwise.
-ISCE2 is optional; GDAL is needed to read the image metadata without ISCE2 (or the options),
-and for the geometry.
+The images are raw binary files (single band, complex64 or float32, e.g., ISCE SLCs), or
+rasters read with GDAL (GeoTIFF, VRT, ...: the first band, any pixel type, converted to float32,
+or to complex64 if complex; if pycuampcor is built with GDAL). The size and pixel type of a raw
+image are given with --length, --width, --data-type, or read from its ISCE .xml (if ISCE2 is
+installed), or from GDAL (the .vrt next to the file, or the file itself); those of a GDAL raster
+from GDAL. The output headers are ISCE .xml (with .vrt) if ISCE2 is installed, ENVI .hdr and .vrt
+otherwise. ISCE2 is optional; GDAL is needed to read the image metadata without ISCE2 (or the
+options), and for the geometry.
 """
 
 import argparse
@@ -30,12 +32,17 @@ EXAMPLE = '''example:
   # tip: re-run with --full/out-geom and without --redo to generate geometry only
   python -m pycuampcor.dense_offsets -r ./SLC/20151120/20151120.slc.full -s ./SLC/20151214/20151214.slc.full --outprefix ./offsets/20151120_20151214/offset --ww 256 --wh 256 --sw 8 --sh 8 --oo 32 --kw 300 --kh 100 --gpuid 0 --full-geom ./geom_reference --out-geom ./offset/geom_reference
 
+  # GeoTIFF images (e.g., amplitudes of UInt16, read as float32)
+  python -m pycuampcor.dense_offsets -r ref.tif -s sec.tif --op offsets/offset
+
   # images without ISCE/GDAL metadata, on the CPU
   python -m pycuampcor.dense_offsets -r ref.slc -s sec.slc --length 2000 --width 1000 --data-type complex64 --op offsets/offset --cpu
 '''
 
 # the pixel types of the images: name -> (bytes per pixel, GDAL names)
 DATA_TYPES = {'complex64': (8, ('CFloat32',)), 'float32': (4, ('Float32',))}
+# the extensions of the images read with GDAL by the auto reader
+GDAL_EXTENSIONS = ('.tif', '.tiff', '.vrt')
 
 
 def create_parser():
@@ -56,6 +63,9 @@ def create_parser():
                         help='Width (samples) of the images (default: from the image metadata).')
     parser.add_argument('--data-type', dest='data_type', choices=sorted(DATA_TYPES), default=None,
                         help='Pixel type of the images (default: from the image metadata).')
+    parser.add_argument('--reader', dest='reader', choices=['auto', 'raw', 'gdal'], default='auto',
+                        help='How to read the images: raw binary files, or rasters with GDAL (auto: GDAL\n'
+                             f'for the names ending with {", ".join(GDAL_EXTENSIONS)}, raw otherwise) (default: %(default)s).')
     parser.add_argument('--fix-xml', '--fix-image-xml', dest='fixImageXml', action='store_true',
                         help='Fix the image file path in the XML file (ISCE2). Enable this if input files have been moved.')
     parser.add_argument('--fix-vrt', '--fix-image-vrt', dest='fixImageVrt', action='store_true',
@@ -188,30 +198,48 @@ def isce_available():
         return False
 
 
-def image_info(fname, inps):
-    """
-    The length, width and pixel type of an image: from the options, the ISCE .xml (if ISCE2 is
-    installed), or GDAL (the .vrt next to the image, or the image itself)
-    """
-    if inps.length and inps.width:
-        return inps.length, inps.width, inps.data_type or 'complex64'
-    if os.path.exists(fname + '.xml') and isce_available():
-        import isceobj
-        img = isceobj.createImage()
-        img.load(fname + '.xml')
-        data_type = 'complex64' if img.getDataType().upper().startswith('C') else 'float32'
-        return img.getLength(), img.getWidth(), inps.data_type or data_type
+def use_gdal(fname, inps):
+    """Whether the image is a raster read with GDAL (by --reader, or by the extension of its name)"""
+    return inps.reader == 'gdal' or (inps.reader == 'auto' and fname.lower().endswith(GDAL_EXTENSIONS))
+
+
+def open_gdal(fname):
+    """Open a raster with GDAL (the Python bindings, osgeo) to read its metadata"""
     try:
         from osgeo import gdal
     except ImportError:
         raise RuntimeError(f'No metadata for {fname}: give --length, --width (and --data-type), '
                            'or install ISCE2 (.xml) or GDAL (.vrt)') from None
     gdal.UseExceptions()
-    ds = gdal.Open(fname + '.vrt' if os.path.exists(fname + '.vrt') else fname, gdal.GA_ReadOnly)
+    return gdal.Open(fname, gdal.GA_ReadOnly)
+
+
+def image_info(fname, inps):
+    """
+    The length, width and pixel type of an image: from the options, or else from GDAL for a GDAL
+    raster (float32, or complex64 if complex), and for a raw image from the ISCE .xml (if ISCE2 is
+    installed) or GDAL (the .vrt next to the image, or the image itself)
+    """
+    if inps.length and inps.width:
+        return inps.length, inps.width, inps.data_type or 'complex64'
+    if use_gdal(fname, inps):
+        from osgeo import gdal
+        ds = open_gdal(fname)
+        data_type = 'complex64' if gdal.DataTypeIsComplex(ds.GetRasterBand(1).DataType) else 'float32'
+        return ds.RasterYSize, ds.RasterXSize, inps.data_type or data_type
+    if os.path.exists(fname + '.xml') and isce_available():
+        import isceobj
+        img = isceobj.createImage()
+        img.load(fname + '.xml')
+        data_type = 'complex64' if img.getDataType().upper().startswith('C') else 'float32'
+        return img.getLength(), img.getWidth(), inps.data_type or data_type
+    from osgeo import gdal
+    ds = open_gdal(fname + '.vrt' if os.path.exists(fname + '.vrt') else fname)
     gdal_type = gdal.GetDataTypeName(ds.GetRasterBand(1).DataType)
     data_type = next((name for name, (_, gdal_names) in DATA_TYPES.items() if gdal_type in gdal_names), None)
     if data_type is None and not inps.data_type:
-        raise RuntimeError(f'Unsupported pixel type {gdal_type} of {fname}: complex64 or float32 raw images only')
+        raise RuntimeError(f'Unsupported pixel type {gdal_type} of {fname}: complex64 or float32 raw images only '
+                           '(other types with --reader gdal)')
     return ds.RasterYSize, ds.RasterXSize, inps.data_type or data_type
 
 
@@ -290,8 +318,11 @@ def estimate_offset_field(reference, secondary, inps):
 
     length, width, ref_type = image_info(reference, inps)
     sec_length, sec_width, sec_type = image_info(secondary, inps)
-    check_raw_image(reference, length, width, ref_type)
-    check_raw_image(secondary, sec_length, sec_width, sec_type)
+    readers = ['gdal' if use_gdal(fname, inps) else 'raw' for fname in (reference, secondary)]
+    for fname, reader, size in zip((reference, secondary), readers,
+                                   ((length, width, ref_type), (sec_length, sec_width, sec_type))):
+        if reader == 'raw':
+            check_raw_image(fname, *size)
     print(f'image length, width: {length}, {width} ({ref_type}, {sec_type})')
 
     # if using a gross offset, enlarge the margin
@@ -364,9 +395,9 @@ def estimate_offset_field(reference, secondary, inps):
         workflow=inps.workflow, algorithm=inps.algorithm, derampMethod=inps.deramp,
         derampAxis=inps.deramp_axis,
         referenceImageName=reference, referenceImageHeight=length, referenceImageWidth=width,
-        referenceImageDataType=ref_type,
+        referenceImageDataType=ref_type, referenceImageReader=readers[0],
         secondaryImageName=secondary, secondaryImageHeight=sec_length, secondaryImageWidth=sec_width,
-        secondaryImageDataType=sec_type,
+        secondaryImageDataType=sec_type, secondaryImageReader=readers[1],
         windowSizeHeight=inps.winhgt, windowSizeWidth=inps.winwidth,
         halfSearchRangeDown=inps.srchgt, halfSearchRangeAcross=inps.srcwidth,
         skipSampleDown=inps.skiphgt, skipSampleAcross=inps.skipwidth,
