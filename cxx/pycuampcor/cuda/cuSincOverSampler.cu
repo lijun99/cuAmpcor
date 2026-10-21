@@ -26,7 +26,7 @@ cuSincOverSamplerR2R::cuSincOverSamplerR2R(const int i_covs_, cudaStream_t strea
     stream = stream_;
     i_intplength = int(r_relfiltlen/r_beta+0.5f);
     i_filtercoef = i_intplength*i_decfactor;
-    checkCudaErrors(cudaMalloc((void **)&r_filter, (i_filtercoef+1)*sizeof(real_type)));
+    checkCudaErrors(cudaMalloc(reinterpret_cast<void **>(&r_filter), (i_filtercoef+1)*sizeof(real_type)));
     cuSetupSincKernel();
 }
 
@@ -109,7 +109,7 @@ __device__ void cuSincInterpolation_kernel_common(const int nImages,
     int idxOut = idxImage*outNX*outNY + outx*outNY + outy;
 
     // index in input grids
-    real_type r_xout = (real_type)outx/i_covs_;
+    real_type r_xout = static_cast<real_type>(outx)/i_covs_;
      // integer part
     int i_xout = int(r_xout);
     // factional part
@@ -118,7 +118,7 @@ __device__ void cuSincInterpolation_kernel_common(const int nImages,
     int i_xfrac = int(r_xfrac*i_decfactor_);
 
     // same procedure for y
-    real_type r_yout = (real_type)outy/i_covs_;
+    real_type r_yout = static_cast<real_type>(outy)/i_covs_;
     int i_yout = int(r_yout);
     real_type r_yfrac = r_yout - i_yout;
     int i_yfrac = int(r_yfrac*i_decfactor_);

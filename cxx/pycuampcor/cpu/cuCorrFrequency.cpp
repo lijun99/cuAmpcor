@@ -40,12 +40,12 @@ cuFreqCorrelator::cuFreqCorrelator(int imageNX, int imageNY, int nImages, stream
     // set up fft plans
     std::lock_guard<std::mutex> lock(fftwPlannerMutex());
     forwardPlan = PYCUAMPCOR_FFTW(plan_many_dft_r2c)(2, n, nImages,
-        workT->devData, NULL, 1, imageSize,
-        fftwCast(workFM->devData), NULL, 1, fImageSize,
+        workT->devData, nullptr, 1, imageSize,
+        fftwCast(workFM->devData), nullptr, 1, fImageSize,
         fftwFlags);
     backwardPlan = PYCUAMPCOR_FFTW(plan_many_dft_c2r)(2, n, nImages,
-        fftwCast(workFM->devData), NULL, 1, fImageSize,
-        workT->devData, NULL, 1, imageSize,
+        fftwCast(workFM->devData), nullptr, 1, fImageSize,
+        workT->devData, nullptr, 1, imageSize,
         fftwFlags);
 }
 

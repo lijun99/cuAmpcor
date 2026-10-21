@@ -7,7 +7,7 @@
 #include "backend.h"
 #include "indexing.h"
 #include "logging.h"
-#include <stdio.h>
+#include <cstdio>
 #include <algorithm>
 #include <iostream>
 #include <stdexcept>

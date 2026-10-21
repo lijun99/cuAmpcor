@@ -178,8 +178,8 @@ void cuSubPixelOffset(cuArrays<int2> *offsetInit,
     int size = offsetInit->getSize();
 
     // GPU performs multiplication faster
-    real_type initRatio = 1.0f/(real_type)(initFactor);
-    real_type zoomInRatio = 1.0f/(real_type)(zoomInFactor);
+    real_type initRatio = 1.0f/static_cast<real_type>(initFactor);
+    real_type zoomInRatio = 1.0f/static_cast<real_type>(zoomInFactor);
 
 
     cuSubPixelOffset_kernel<<<divUp(size, NTHREADS), NTHREADS, 0, stream>>>

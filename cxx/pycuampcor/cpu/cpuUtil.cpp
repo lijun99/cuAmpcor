@@ -54,7 +54,7 @@ void backendCopyFromHost2D(void *dst, size_t dpitch, const void *src, size_t spi
     size_t widthInBytes, size_t height, stream_t)
 {
     for(size_t i=0; i<height; i++)
-        std::memcpy((char *)dst + i*dpitch, (const char *)src + i*spitch, widthInBytes);
+        std::memcpy(static_cast<char *>(dst) + i*dpitch, static_cast<const char *>(src) + i*spitch, widthInBytes);
 }
 
 } // namespace

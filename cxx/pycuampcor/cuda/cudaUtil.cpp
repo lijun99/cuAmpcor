@@ -4,8 +4,8 @@
 #include "cuAmpcorParameter.h"
 
 #include <cuda_runtime.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <algorithm>
 #include <iostream>
 #include <stdexcept>

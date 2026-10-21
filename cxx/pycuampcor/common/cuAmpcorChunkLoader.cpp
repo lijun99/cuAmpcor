@@ -94,7 +94,7 @@ void cuAmpcorChunkLoader::Source::load(int idxChunk, cuAmpcorLoadedChunk &chunk,
     chunk.height = footprint.height[idxChunk];
     chunk.width = footprint.width[idxChunk];
     if (chunk.empty()) return;
-    void *buffer = complexBuffer ? (void *)complexBuffer->devData : (void *)realBuffer->devData;
+    void *buffer = complexBuffer ? static_cast<void *>(complexBuffer->devData) : static_cast<void *>(realBuffer->devData);
     if (staging) {
         // reuse the staging memory once its previous copy is done, then copy asynchronously,
         // so the worker can go on queuing its work (and the other workers can load) during the copy

@@ -25,21 +25,21 @@ cuFreqCorrelator::cuFreqCorrelator(int imageNX, int imageNY, int nImages, cudaSt
     // set up fft plans
 #ifdef CUAMPCOR_DOUBLE
     forwardPlan.planMany(NRANK, n,
-        NULL, 1, imageSize,
-        NULL, 1, fImageSize,
+        nullptr, 1, imageSize,
+        nullptr, 1, fImageSize,
         CUFFT_D2Z, nImages);
     backwardPlan.planMany(NRANK, n,
-        NULL, 1, fImageSize,
-        NULL, 1, imageSize,
+        nullptr, 1, fImageSize,
+        nullptr, 1, imageSize,
         CUFFT_Z2D, nImages);
 #else
     forwardPlan.planMany(NRANK, n,
-        NULL, 1, imageSize,
-        NULL, 1, fImageSize,
+        nullptr, 1, imageSize,
+        nullptr, 1, fImageSize,
         CUFFT_R2C, nImages);
     backwardPlan.planMany(NRANK, n,
-        NULL, 1, fImageSize,
-        NULL, 1, imageSize,
+        nullptr, 1, fImageSize,
+        nullptr, 1, imageSize,
         CUFFT_C2R, nImages);
 #endif
     stream = stream_;

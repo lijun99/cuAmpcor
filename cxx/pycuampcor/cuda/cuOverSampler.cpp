@@ -50,11 +50,11 @@ cuOverSamplerC2C::cuOverSamplerC2C(int inNX, int inNY, int outNX, int outNY, int
     int nOverSample[NRANK] = {outNXp2, outNYp2};
     int fImageOverSampleSize = outNXp2*outNYp2;
 #ifdef CUAMPCOR_DOUBLE
-    forwardPlan.planMany(NRANK, n, NULL, 1, imageSize, NULL, 1, fImageSize, CUFFT_Z2Z, nImages);
-    backwardPlan.planMany(NRANK, nOverSample, NULL, 1, fImageOverSampleSize, NULL, 1, fImageOverSampleSize, CUFFT_Z2Z, nImages);
+    forwardPlan.planMany(NRANK, n, nullptr, 1, imageSize, nullptr, 1, fImageSize, CUFFT_Z2Z, nImages);
+    backwardPlan.planMany(NRANK, nOverSample, nullptr, 1, fImageOverSampleSize, nullptr, 1, fImageOverSampleSize, CUFFT_Z2Z, nImages);
 #else
-    forwardPlan.planMany(NRANK, n, NULL, 1, imageSize, NULL, 1, fImageSize, CUFFT_C2C, nImages);
-    backwardPlan.planMany(NRANK, nOverSample, NULL, 1, fImageOverSampleSize, NULL, 1, fImageOverSampleSize, CUFFT_C2C, nImages);
+    forwardPlan.planMany(NRANK, n, nullptr, 1, imageSize, nullptr, 1, fImageSize, CUFFT_C2C, nImages);
+    backwardPlan.planMany(NRANK, nOverSample, nullptr, 1, fImageOverSampleSize, nullptr, 1, fImageOverSampleSize, CUFFT_C2C, nImages);
 #endif
     // set cuda stream
     setStream(stream_);
@@ -135,11 +135,11 @@ cuOverSamplerR2R::cuOverSamplerR2R(int inNX, int inNY, int outNX, int outNY, int
     workSizeOut = std::make_unique<cuArrays<complex_type>>(outNXp2, outNYp2, nImages);
     workSizeOut->allocate();
 #ifdef CUAMPCOR_DOUBLE
-    forwardPlan.planMany(NRANK, n, NULL, 1, imageSize, NULL, 1, fImageSize, CUFFT_Z2Z, nImages);
-    backwardPlan.planMany(NRANK, nUpSample, NULL, 1, fImageUpSampleSize, NULL, 1, outNX*outNY, CUFFT_Z2Z, nImages);
+    forwardPlan.planMany(NRANK, n, nullptr, 1, imageSize, nullptr, 1, fImageSize, CUFFT_Z2Z, nImages);
+    backwardPlan.planMany(NRANK, nUpSample, nullptr, 1, fImageUpSampleSize, nullptr, 1, outNX*outNY, CUFFT_Z2Z, nImages);
 #else
-    forwardPlan.planMany(NRANK, n, NULL, 1, imageSize, NULL, 1, fImageSize, CUFFT_C2C, nImages);
-    backwardPlan.planMany(NRANK, nUpSample, NULL, 1, fImageUpSampleSize, NULL, 1, outNX*outNY, CUFFT_C2C, nImages);
+    forwardPlan.planMany(NRANK, n, nullptr, 1, imageSize, nullptr, 1, fImageSize, CUFFT_C2C, nImages);
+    backwardPlan.planMany(NRANK, nUpSample, nullptr, 1, fImageUpSampleSize, nullptr, 1, outNX*outNY, CUFFT_C2C, nImages);
 #endif
     setStream(stream);
 }

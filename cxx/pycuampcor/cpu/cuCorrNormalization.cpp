@@ -19,7 +19,7 @@ void cuArraysSubtractMean(cuArrays<real_type> *images, stream_t)
     const int imageSize = images->size;
     const real_type invSize = real_type(1)/imageSize;
     for(int idxImage = 0; idxImage < images->count; idxImage++) {
-        real_type *image = images->devData + (size_t)idxImage*imageSize;
+        real_type *image = images->devData + static_cast<size_t>(idxImage)*imageSize;
         double sum = 0.0;
         for(int i = 0; i < imageSize; i++)
             sum += image[i];
@@ -41,8 +41,8 @@ void cuArraysSumCorr(cuArrays<real_type> *images, cuArrays<int> *imagesValid, cu
 {
     const int imageSize = images->size;
     for(int idxImage = 0; idxImage < images->count; idxImage++) {
-        const real_type *image = images->devData + (size_t)idxImage*imageSize;
-        const int *imageValid = imagesValid->devData + (size_t)idxImage*imageSize;
+        const real_type *image = images->devData + static_cast<size_t>(idxImage)*imageSize;
+        const int *imageValid = imagesValid->devData + static_cast<size_t>(idxImage)*imageSize;
         double sum = 0.0;
         int count = 0;
         for(int i = 0; i < imageSize; i++) {

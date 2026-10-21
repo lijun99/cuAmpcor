@@ -16,8 +16,8 @@ static fftw_plan_type planMany2D(int nx, int ny, int nImages, complex_type *in, 
     int n[2] = {nx, ny};
     int size = nx*ny;
     return PYCUAMPCOR_FFTW(plan_many_dft)(2, n, nImages,
-        fftwCast(in), NULL, 1, size,
-        fftwCast(out), NULL, 1, size,
+        fftwCast(in), nullptr, 1, size,
+        fftwCast(out), nullptr, 1, size,
         sign, fftwFlags);
 }
 
@@ -112,13 +112,13 @@ cuOverSamplerR2R::cuOverSamplerR2R(int inNX, int inNY, int outNX, int outNY, int
         // inverse fft along the columns, from workColumns to the non-zero columns of workPadded
         for(int k = 0; k < 2; k++)
             backwardPlanColumns[k] = (nColumns[k] == 0) ? nullptr : PYCUAMPCOR_FFTW(plan_many_dft)(1, &outNX, nColumns[k],
-                fftwCast(workColumns->devData + columnIn[k]), NULL, inNY, 1,
-                fftwCast(workPadded->devData + columnOut[k]), NULL, outNY, 1,
+                fftwCast(workColumns->devData + columnIn[k]), nullptr, inNY, 1,
+                fftwCast(workPadded->devData + columnOut[k]), nullptr, outNY, 1,
                 FFTW_FORWARD, fftwFlags | FFTW_PRESERVE_INPUT);
         // inverse fft along the rows, out-of-place to keep the zero columns of workPadded
         backwardPlanRows = PYCUAMPCOR_FFTW(plan_many_dft)(1, &outNY, outNX,
-            fftwCast(workPadded->devData), NULL, 1, outNY,
-            fftwCast(workSizeOut->devData), NULL, 1, outNY,
+            fftwCast(workPadded->devData), nullptr, 1, outNY,
+            fftwCast(workSizeOut->devData), nullptr, 1, outNY,
             FFTW_FORWARD, fftwFlags | FFTW_PRESERVE_INPUT);
     }
 
@@ -151,7 +151,7 @@ void cuOverSamplerR2R::execute(cuArrays<real_type> *imagesIn, cuArrays<real_type
     for(int imageIdx = 0; imageIdx < workSizeIn->count; imageIdx++) {
         // pad zeros in the middle of the columns (as cuArraysFFTPaddingMany), with the spectrum
         // rows moved to the top and bottom; the zero rows are not changed
-        const complex_type *spectrum = workSizeIn->devData + (size_t)imageIdx*workSizeIn->size;
+        const complex_type *spectrum = workSizeIn->devData + static_cast<size_t>(imageIdx)*workSizeIn->size;
         for(int x1 = 0; x1 < inNX; x1++) {
             const int x2 = (x1 < (inNX+1)/2) ? x1 : outNX - inNX + x1;
             for(int y = 0; y < inNY; y++)
@@ -163,7 +163,7 @@ void cuOverSamplerR2R::execute(cuArrays<real_type> *imagesIn, cuArrays<real_type
                 PYCUAMPCOR_FFTW(execute)(backwardPlanColumns[k]);
         PYCUAMPCOR_FFTW(execute)(backwardPlanRows);
         // take the real part
-        real_type *imageOut = imagesOut->devData + (size_t)imageIdx*imagesOut->size;
+        real_type *imageOut = imagesOut->devData + static_cast<size_t>(imageIdx)*imagesOut->size;
         for(int x = 0; x < imagesOutNX; x++)
             for(int y = 0; y < imagesOutNY; y++)
                 imageOut[idx2r(x, y, imagesOutNY)] = workSizeOut->devData[idx2r(x, y, outNY)].x;

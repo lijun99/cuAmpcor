@@ -7,7 +7,7 @@
 #pragma once
 
 #include <cuda_runtime.h>
-#include <math.h>
+#include <cmath>
 
 namespace pycuampcor::cuda {
 

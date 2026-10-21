@@ -8,7 +8,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/mman.h>
-#include <assert.h>
+#include <cassert>
 #include <algorithm>
 #include <iostream>
 #include <cstring>
@@ -107,7 +107,7 @@ MmapSlcImage::MmapSlcImage(const std::string& filepath, size_t img_height, size_
     }
     // check the file is large enough for the given image size
     struct stat st;
-    if (fstat(fd, &st) == 0 && (size_t)st.st_size < file_size) {
+    if (fstat(fd, &st) == 0 && static_cast<size_t>(st.st_size) < file_size) {
         close(fd);
         fd = -1;
         throw std::runtime_error("The file " + filepath + " (" + std::to_string(st.st_size)
@@ -167,13 +167,13 @@ void MmapSlcImage::loadToHost(void *host, size_t h_offset, size_t w_offset, size
 
     remapIfNeeded(tileStartAddress, tileLastAddress);
 
-    char *startPtr = (char *)mapped_data ;
+    char *startPtr = static_cast<char *>(mapped_data);
     startPtr += tileStartAddress - mapped_offset;
 
     // @note
     // We assume down/across directions as rows/cols. Therefore, SLC mmap and host tile both use row major.
     for (size_t i = 0; i < h_tile; i++)
-        std::memcpy((char *)host + i*w_tile*pixel_size, startPtr + i*width*pixel_size, w_tile*pixel_size);
+        std::memcpy(static_cast<char *>(host) + i*w_tile*pixel_size, startPtr + i*width*pixel_size, w_tile*pixel_size);
 }
 
 MmapSlcImage::~MmapSlcImage()

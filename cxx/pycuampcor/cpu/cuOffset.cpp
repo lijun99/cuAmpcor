@@ -24,7 +24,7 @@ void cuArraysMaxloc2D(cuArrays<real_type> *images,
 {
     const int imageNY = images->width;
     for(int imageIdx = 0; imageIdx < images->count; imageIdx++) {
-        const real_type *image = images->devData + (size_t)imageIdx*images->size;
+        const real_type *image = images->devData + static_cast<size_t>(imageIdx)*images->size;
         real_type val = -REAL_MAX;
         int2 loc = start;
         for(int idx = start.x; idx < start.x + range.x; idx++) {
@@ -78,8 +78,8 @@ void cuSubPixelOffset(cuArrays<int2> *offsetInit,
     stream_t)
 {
     const size_t size = offsetInit->getSize();
-    const real_type initRatio = 1.0f/(real_type)(initFactor);
-    const real_type zoomInRatio = 1.0f/(real_type)(zoomInFactor);
+    const real_type initRatio = 1.0f/static_cast<real_type>(initFactor);
+    const real_type zoomInRatio = 1.0f/static_cast<real_type>(zoomInFactor);
     for(size_t idx = 0; idx < size; idx++) {
         const int2 init = offsetInit->devData[idx];
         const int2 zoomIn = offsetZoomIn->devData[idx];

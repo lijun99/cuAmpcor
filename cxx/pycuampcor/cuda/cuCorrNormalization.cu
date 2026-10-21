@@ -22,7 +22,7 @@
 #include "cuAmpcorUtil.h"
 #include <stdexcept>
 #include <string>
-#include <stdio.h>
+#include <cstdio>
 
 namespace pycuampcor::cuda {
 
@@ -177,7 +177,7 @@ __global__ void cuArraysSumCorr_kernel(real_type *images, int *imagesValid, real
 
     if(tid ==0) {
         imagesSum[bid] = sum;
-        imagesValidCount[bid] = (int)count;
+        imagesValidCount[bid] = static_cast<int>(count);
     }
 }
 

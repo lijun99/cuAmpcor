@@ -75,7 +75,7 @@ static void sincInterpolation(const real_type *imageIn, const int inNX, const in
         if (outx < 0) outx += outNX;
         if (outx >= outNX) outx-=outNX;
         // index in input grids
-        real_type r_xout = (real_type)outx/i_covs_;
+        real_type r_xout = static_cast<real_type>(outx)/i_covs_;
         // integer part
         int i_xout = int(r_xout);
         // factional part
@@ -87,7 +87,7 @@ static void sincInterpolation(const real_type *imageIn, const int inNX, const in
             int outy = idxY + i_startY +  centerShift.y*factor;
             if (outy < 0) outy += outNY;
             if (outy >= outNY) outy-=outNY;
-            real_type r_yout = (real_type)outy/i_covs_;
+            real_type r_yout = static_cast<real_type>(outy)/i_covs_;
             int i_yout = int(r_yout);
             real_type r_yfrac = r_yout - i_yout;
             int i_yfrac = int(r_yfrac*i_decfactor_);
@@ -151,8 +151,8 @@ void cuSincOverSamplerR2R::execute(cuArrays<real_type> *imagesIn, cuArrays<real_
     imagesOut->setZero(stream);
 
     for(int idxImage = 0; idxImage < imagesIn->count; idxImage++)
-        sincInterpolation(imagesIn->devData + (size_t)idxImage*imagesIn->size, inNX, inNY,
-            imagesOut->devData + (size_t)idxImage*imagesOut->size, outNX, outNY,
+        sincInterpolation(imagesIn->devData + static_cast<size_t>(idxImage)*imagesIn->size, inNX, inNY,
+            imagesOut->devData + static_cast<size_t>(idxImage)*imagesOut->size, outNX, outNY,
             centerShift->devData[idxImage], rawOversamplingFactor,
             r_filter.data(), i_covs, i_decfactor, i_intplength, i_int_startX, i_int_startY, i_int_size);
 }
@@ -175,8 +175,8 @@ void cuSincOverSamplerR2R::execute(cuArrays<real_type> *imagesIn, cuArrays<real_
     imagesOut->setZero(stream);
 
     for(int idxImage = 0; idxImage < imagesIn->count; idxImage++)
-        sincInterpolation(imagesIn->devData + (size_t)idxImage*imagesIn->size, inNX, inNY,
-            imagesOut->devData + (size_t)idxImage*imagesOut->size, outNX, outNY,
+        sincInterpolation(imagesIn->devData + static_cast<size_t>(idxImage)*imagesIn->size, inNX, inNY,
+            imagesOut->devData + static_cast<size_t>(idxImage)*imagesOut->size, outNX, outNY,
             centerShift, rawOversamplingFactor,
             r_filter.data(), i_covs, i_decfactor, i_intplength, i_int_startX, i_int_startY, i_int_size);
 }

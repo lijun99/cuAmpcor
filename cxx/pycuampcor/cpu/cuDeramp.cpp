@@ -33,7 +33,7 @@ void cuLinearDeramp(cuArrays<complex_type> *images, const int axis, stream_t)
     const int imageSize = images->size;
 
     for(int idxImage = 0; idxImage < images->count; idxImage++) {
-        complex_type *image = images->devData + (size_t)idxImage*imageSize;
+        complex_type *image = images->devData + static_cast<size_t>(idxImage)*imageSize;
 
         // compute phase difference along y direction
         double phaseY = 0.0;

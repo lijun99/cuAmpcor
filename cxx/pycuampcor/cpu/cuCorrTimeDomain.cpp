@@ -24,9 +24,9 @@ void cuCorrTimeDomain(cuArrays<real_type> *templates,
     const int resultNX = results->height, resultNY = results->width;
 
     for(int imageIdx = 0; imageIdx < images->count; imageIdx++) {
-        const real_type *templateD = templates->devData + (size_t)imageIdx*templates->size;
-        const real_type *imageD = images->devData + (size_t)imageIdx*images->size;
-        real_type *resultD = results->devData + (size_t)imageIdx*results->size;
+        const real_type *templateD = templates->devData + static_cast<size_t>(imageIdx)*templates->size;
+        const real_type *imageD = images->devData + static_cast<size_t>(imageIdx)*images->size;
+        real_type *resultD = results->devData + static_cast<size_t>(imageIdx)*results->size;
         // accumulate a row of the correlation surface at once: the innermost loop over
         // the (independent) result pixels vectorizes, while the summation order of each
         // result pixel is kept (over the template pixels, row by row)

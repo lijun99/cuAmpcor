@@ -29,15 +29,15 @@ void cuCorrNormalizeSAT(cuArrays<real_type> *correlation, cuArrays<real_type> *r
     for(int imageid = 0; imageid < correlation->count; imageid++) {
         // compute the sum of value^2 of the reference image
         // note that the mean is already subtracted
-        const real_type *ref = reference->devData + (size_t)imageid*referenceSize;
+        const real_type *ref = reference->devData + static_cast<size_t>(imageid)*referenceSize;
         double refSum2 = 0.0;
         for(int i = 0; i < referenceSize; i++)
             refSum2 += ref[i]*ref[i];
 
         // compute the (inclusive) sum area tables of the secondary image, for value and value^2
-        const real_type *data = secondary->devData + (size_t)imageid*secondarySize;
-        double *sat = secondarySat->devData + (size_t)imageid*secondarySize;
-        double *sat2 = secondarySat2->devData + (size_t)imageid*secondarySize;
+        const real_type *data = secondary->devData + static_cast<size_t>(imageid)*secondarySize;
+        double *sat = secondarySat->devData + static_cast<size_t>(imageid)*secondarySize;
+        double *sat2 = secondarySat2->devData + static_cast<size_t>(imageid)*secondarySize;
         for(int row = 0; row < secondaryNX; row++) {
             double sum = 0.0, sum2 = 0.0;
             for(int col = 0; col < secondaryNY; col++) {
@@ -60,7 +60,7 @@ void cuCorrNormalizeSAT(cuArrays<real_type> *correlation, cuArrays<real_type> *r
         };
 
         // normalize the correlation surface
-        real_type *corr = correlation->devData + (size_t)imageid*corNX*corNY;
+        real_type *corr = correlation->devData + static_cast<size_t>(imageid)*corNX*corNY;
         for(int tx = 0; tx < corNX; tx++)
             for(int ty = 0; ty < corNY; ty++) {
                 const double secondarySum = areaSum(sat, tx, ty);

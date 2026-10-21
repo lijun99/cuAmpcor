@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <float.h>
+#include <cfloat>
 #include "float2.h" // for vector types int2, float2, ...
 #include "hostDevice.h"
 
