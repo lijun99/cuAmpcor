@@ -30,7 +30,7 @@ namespace pycuampcor::cuda {
  // the following implementation is compatible for sm_20 and above
  // newer architectures may support faster implementations, such as warp shuffle, cooperative groups
 template <const int Nthreads>
-__device__ real_type sumReduceBlock(real_type sum, volatile real_type *shmem)
+__device__ real_type sumReduceBlock(real_type sum, real_type *shmem)
 {
     const int tid = threadIdx.x;
     shmem[tid] = sum;
@@ -203,7 +203,7 @@ void cuArraysSumCorr(cuArrays<real_type> *images, cuArrays<int> *imagesValid, cu
 
 // intra-block inclusive prefix sum
 template<int Nthreads2>
-__device__ void inclusive_prefix_sum(real_type sum, volatile real_type *shmem)
+__device__ void inclusive_prefix_sum(real_type sum, real_type *shmem)
 {
     const int tid = threadIdx.x;
     shmem[tid] = sum;
@@ -222,12 +222,12 @@ __device__ void inclusive_prefix_sum(real_type sum, volatile real_type *shmem)
 
 // prefix sum of pixel value and pixel value^2
 template<const int Nthreads2>
-__device__ real2_type partialSums(const real_type v, volatile real_type* shmem, const int stride)
+__device__ real2_type partialSums(const real_type v, real_type* shmem, const int stride)
 {
     const int tid = threadIdx.x;
 
-    volatile real_type *shMem  = shmem + 1;
-    volatile real_type *shMem2 = shMem + 1 + (1 << Nthreads2);
+    real_type *shMem  = shmem + 1;
+    real_type *shMem2 = shMem + 1 + (1 << Nthreads2);
 
     inclusive_prefix_sum<Nthreads2>(v,   shMem);
     inclusive_prefix_sum<Nthreads2>(v*v, shMem2);

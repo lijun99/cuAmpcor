@@ -26,23 +26,23 @@
 namespace pycuampcor::cuda {
 
 
-// cuda does not have a good support on volatile vector structure, e.g. complex type (float2 or double2)
-// we use regular 2xfloat/double type for shared memory (volatile) data
+// cuda does not have a good support on vector structure, e.g. complex type (float2 or double2)
+// shared memory holds real_type values; real2_type values are stored as two halves, a block apart
 // the following methods are defined to operate real2_type objects through real_type
-inline static __device__ void copyToShared(volatile real_type *s, const int i, const real2_type x, const int block)
+inline static __device__ void copyToShared(real_type *s, const int i, const real2_type x, const int block)
 { s[i] = x.x; s[i+block] = x.y; }
 
-inline static __device__ void copyFromShared(real2_type &x, volatile real_type *s, const int i, const int block)
+inline static __device__ void copyFromShared(real2_type &x, real_type *s, const int i, const int block)
 { x.x = s[i]; x.y = s[i+block]; }
 
 
-inline static __device__ void addInShared(volatile real_type *s, const int i, const int j, const int block)
+inline static __device__ void addInShared(real_type *s, const int i, const int j, const int block)
 { s[i] += s[i+j]; s[i+block] += s[i+j+block];}
 
 
 // kernel to do sum reduction for real2_type within a block
 template <const int nthreads>
-__device__ void complexSumReduceBlock(real2_type& sum, volatile real_type *shmem)
+__device__ void complexSumReduceBlock(real2_type& sum, real_type *shmem)
 {
     const int tid = threadIdx.x;
     copyToShared(shmem, tid, sum, nthreads);

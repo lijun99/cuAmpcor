@@ -10,7 +10,7 @@
 namespace pycuampcor::cuda {
 
 // find the max between two elements
-inline static __device__ void maxPairReduce(volatile real_type* maxval, volatile int* maxloc,
+inline static __device__ void maxPairReduce(real_type* maxval, int* maxloc,
       size_t gid, size_t strideid)
 {
     if(maxval[gid] < maxval[strideid]) {
@@ -26,8 +26,8 @@ template<const int BLOCKSIZE>
 __device__ void max_reduction_2d(const real_type* const image,
     const int2 imageSize,
     const int2 start, const int2 range,
-    volatile real_type* shval,
-    volatile int* shloc)
+    real_type* shval,
+    int* shloc)
 {
     int tid = threadIdx.x;
     shval[tid] = -REAL_MAX;
