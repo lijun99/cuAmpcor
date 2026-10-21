@@ -9,6 +9,14 @@
 
 ### New
 
+- The coherent cross-correlation, `algorithm="coherence"` (`Algorithm.COHERENCE`, 2): the complex
+  windows are correlated instead of their amplitudes, as for the coregistration of interferometric
+  pairs, with the squared coherence as the correlation surface (and the peak value output); one
+  class template specialization per device, `Correlator<Algorithm::Coherence, complex, device>`
+  (FFTs, sum area tables of the secondary windows); in the two-pass workflow, both windows are
+  deramped with the phase ramp of the reference window. Complex images, the two-pass workflow and
+  `derampMethod` complex (or none) only. More precise than the amplitudes where the images are
+  coherent, and robust at low coherence (README 5.7).
 - `python -m pycuampcor.plot_offsets`: a first look at the outputs of `dense_offsets` (with the SNR
   file found next to the offsets) and `geo_offsets` (on map coordinates): the two components and the
   SNR, the vectors (`--vectors`) or 3D surfaces (`--3d`), with robust color scales, SNR masking,

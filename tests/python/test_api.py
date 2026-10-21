@@ -280,7 +280,7 @@ def test_options(impl):
     with pytest.raises(ValueError, match="derampMethod.*'magnitude'"):
         ampcor.derampMethod = "deramp"
     with pytest.raises(ValueError, match="algorithm"):
-        ampcor.algorithm = 2
+        ampcor.algorithm = 3
     with pytest.raises(TypeError, match="workflow"):
         ampcor.workflow = 1.0
     with pytest.raises(ValueError, match="derampAxis"):

@@ -18,6 +18,7 @@
 #include "EstimateStats.h"
 #include "Offset.h"
 // the workers
+#include "CorrCoherence.h"
 #include "CorrFrequency.h"
 #include "CorrNormalizer.h"
 #include "FFTOverSampler.h"

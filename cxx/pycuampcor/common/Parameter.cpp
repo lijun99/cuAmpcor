@@ -18,6 +18,18 @@ namespace pycuampcor {
  */
 void Parameter::setupParameters(int defaultWindowsDownInChunk, int defaultWindowsAcrossInChunk)
 {
+    // the coherence correlates the complex windows (deramped by the ramps of the reference
+    // windows), in the two-pass workflow
+    if (algorithm == Algorithm::Coherence) {
+        if (workflow != Workflow::TwoPass)
+            throw std::invalid_argument("The coherence (algorithm) is supported by the two-pass workflow only");
+        if (derampMethod == DerampMethod::Magnitude)
+            throw std::invalid_argument("The coherence (algorithm) correlates the complex windows: "
+                "set derampMethod to complex (or none, without a Doppler centroid)");
+        if (referenceImageDataType != DataType::Complex64 || secondaryImageDataType != DataType::Complex64)
+            throw std::invalid_argument("The coherence (algorithm) needs complex images");
+    }
+
     // workflow specific parameter settings
     //
     switch (workflow) {

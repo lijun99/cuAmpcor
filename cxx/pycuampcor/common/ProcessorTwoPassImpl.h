@@ -30,33 +30,40 @@ void ProcessorTwoPass<arrayT>::run(int idxDown, int idxAcross, const chunk_type 
 
     // ==== first pass, at the raw pixel spacing ====
 
-    // the reference windows: their amplitudes, with the mean subtracted
+    // the reference and secondary windows
     copyToBatch(chunk.reference, param.referenceStartPixelDown, param.referenceStartPixelAcross,
         c_referenceBatchRaw);
-    cuArraysAbs(c_referenceBatchRaw, r_referenceBatchRaw, stream);
+    copyToBatch(chunk.secondary, param.secondaryStartPixelDown, param.secondaryStartPixelAcross,
+        c_secondaryBatchRaw);
     // dump: write the intermediate arrays to files, in debug builds only (CUAMPCOR_DEBUG, defined
     // without NDEBUG); a no-op otherwise
     dump(c_referenceBatchRaw, "c_referenceBatchRaw");
-    dump(r_referenceBatchRaw, "r_referenceBatchRaw");
-    cuArraysSubtractMean(r_referenceBatchRaw, stream);
-    dump(r_referenceBatchRaw, "r_referenceBatchRawSubMean");
-
-    // the secondary windows: their amplitudes
-    copyToBatch(chunk.secondary, param.secondaryStartPixelDown, param.secondaryStartPixelAcross,
-        c_secondaryBatchRaw);
-    cuArraysAbs(c_secondaryBatchRaw, r_secondaryBatchRaw, stream);
     dump(c_secondaryBatchRaw, "c_secondaryBatchRaw");
-    dump(r_secondaryBatchRaw, "r_secondaryBatchRaw");
 
-    // the normalized correlation surfaces, e.g., 41 x 41 for a half search range of 20
-    correlate(r_referenceBatchRaw, r_secondaryBatchRaw, r_corrBatchRaw,
-        correlatorRaw.get(), corrNormalizerRaw.get(), "r_corrBatchRaw");
+    if (coherent()) {
+        // the coherence surfaces of the complex windows, e.g., 41 x 41 for a half search range of 20
+        coherenceRaw->execute(c_referenceBatchRaw, c_secondaryBatchRaw, r_corrBatchRaw);
+        dump(r_corrBatchRaw, "r_corrBatchRaw");
+    }
+    else {
+        // the amplitudes of the windows, with the mean of the reference windows subtracted
+        cuArraysAbs(c_referenceBatchRaw, r_referenceBatchRaw, stream);
+        dump(r_referenceBatchRaw, "r_referenceBatchRaw");
+        cuArraysSubtractMean(r_referenceBatchRaw, stream);
+        dump(r_referenceBatchRaw, "r_referenceBatchRawSubMean");
+        cuArraysAbs(c_secondaryBatchRaw, r_secondaryBatchRaw, stream);
+        dump(r_secondaryBatchRaw, "r_secondaryBatchRaw");
+
+        // the normalized correlation surfaces, e.g., 41 x 41 for a half search range of 20
+        correlate(r_referenceBatchRaw, r_secondaryBatchRaw, r_corrBatchRaw,
+            correlatorRaw.get(), corrNormalizerRaw.get(), "r_corrBatchRaw");
+    }
 
     // the peaks, to the pixel
     cuArraysMaxloc2D(r_corrBatchRaw, offsetInit, r_maxval, stream);
     // the covariance of the offsets
-    cuEstimateVariance(r_corrBatchRaw, offsetInit, r_maxval, r_referenceBatchRaw.arraySize(),
-        1, r_covValue, stream);
+    cuEstimateVariance(r_corrBatchRaw, offsetInit, r_maxval,
+        param.windowSizeHeightRaw*param.windowSizeWidthRaw, 1, r_covValue, stream);
     // the SNR: the peak over the mean of the correlation surface around it
     cuArraysCopyExtractCorr(r_corrBatchRaw, r_corrBatchRawZoomIn, i_corrBatchZoomInValid,
         offsetInit, stream);
@@ -83,29 +90,50 @@ void ProcessorTwoPass<arrayT>::run(int idxDown, int idxAcross, const chunk_type 
     dump(offsetInit, "i_offsetInitAdjusted");
     dump(maxLocShift, "i_maxLocShift");
 
-    // the reference windows: deramped, oversampled, their amplitudes with the mean subtracted
-    cuDeramp(param.derampMethod, c_referenceBatchRaw, param.derampAxis, stream);
-    dump(c_referenceBatchRaw, "c_referenceBatchRawDeramped");
-    referenceBatchOverSampler.execute(c_referenceBatchRaw, c_referenceBatchOverSampled);
-    cuArraysAbs(c_referenceBatchOverSampled, r_referenceBatchOverSampled, stream);
-    dump(c_referenceBatchOverSampled, "c_referenceBatchOverSampled");
-    dump(r_referenceBatchOverSampled, "r_referenceBatchOverSampled");
-    cuArraysSubtractMean(r_referenceBatchOverSampled, stream);
-    dump(r_referenceBatchOverSampled, "r_referenceBatchOverSampledSubMean");
+    if (coherent()) {
+        // the secondary windows around the peaks; both windows deramped with the ramp of the
+        // reference window (keeping their relative phase), and oversampled
+        cuArraysCopyExtract(c_secondaryBatchRaw, c_secondaryBatchZoomIn, offsetInit, stream);
+        dump(c_secondaryBatchZoomIn, "c_secondaryBatchZoomInRaw");
+        cuDerampByReference(param.derampMethod, c_referenceBatchRaw, c_secondaryBatchZoomIn,
+            param.derampAxis, stream);
+        dump(c_referenceBatchRaw, "c_referenceBatchRawDeramped");
+        dump(c_secondaryBatchZoomIn, "c_secondaryBatchZoomInDeramped");
+        referenceBatchOverSampler.execute(c_referenceBatchRaw, c_referenceBatchOverSampled);
+        secondaryBatchOverSampler.execute(c_secondaryBatchZoomIn, c_secondaryBatchOverSampled);
+        dump(c_referenceBatchOverSampled, "c_referenceBatchOverSampled");
+        dump(c_secondaryBatchOverSampled, "c_secondaryBatchOverSampled");
 
-    // the secondary windows around the peaks: deramped, oversampled, their amplitudes
-    cuArraysCopyExtract(c_secondaryBatchRaw, c_secondaryBatchZoomIn, offsetInit, stream);
-    dump(c_secondaryBatchZoomIn, "c_secondaryBatchZoomInRaw");
-    cuDeramp(param.derampMethod, c_secondaryBatchZoomIn, param.derampAxis, stream);
-    dump(c_secondaryBatchZoomIn, "c_secondaryBatchZoomInDeramped");
-    secondaryBatchOverSampler.execute(c_secondaryBatchZoomIn, c_secondaryBatchOverSampled);
-    cuArraysAbs(c_secondaryBatchOverSampled, r_secondaryBatchOverSampled, stream);
-    dump(c_secondaryBatchOverSampled, "c_secondaryBatchOverSampled");
-    dump(r_secondaryBatchOverSampled, "r_secondaryBatchOverSampled");
+        // the coherence surfaces of the oversampled windows
+        coherenceOverSampled->execute(c_referenceBatchOverSampled, c_secondaryBatchOverSampled,
+            r_corrBatchZoomIn);
+        dump(r_corrBatchZoomIn, "r_corrBatchZoomIn");
+    }
+    else {
+        // the reference windows: deramped, oversampled, their amplitudes with the mean subtracted
+        cuDeramp(param.derampMethod, c_referenceBatchRaw, param.derampAxis, stream);
+        dump(c_referenceBatchRaw, "c_referenceBatchRawDeramped");
+        referenceBatchOverSampler.execute(c_referenceBatchRaw, c_referenceBatchOverSampled);
+        cuArraysAbs(c_referenceBatchOverSampled, r_referenceBatchOverSampled, stream);
+        dump(c_referenceBatchOverSampled, "c_referenceBatchOverSampled");
+        dump(r_referenceBatchOverSampled, "r_referenceBatchOverSampled");
+        cuArraysSubtractMean(r_referenceBatchOverSampled, stream);
+        dump(r_referenceBatchOverSampled, "r_referenceBatchOverSampledSubMean");
 
-    // the normalized correlation surfaces of the oversampled windows
-    correlate(r_referenceBatchOverSampled, r_secondaryBatchOverSampled, r_corrBatchZoomIn,
-        correlatorOverSampled.get(), corrNormalizerOverSampled.get(), "r_corrBatchZoomIn");
+        // the secondary windows around the peaks: deramped, oversampled, their amplitudes
+        cuArraysCopyExtract(c_secondaryBatchRaw, c_secondaryBatchZoomIn, offsetInit, stream);
+        dump(c_secondaryBatchZoomIn, "c_secondaryBatchZoomInRaw");
+        cuDeramp(param.derampMethod, c_secondaryBatchZoomIn, param.derampAxis, stream);
+        dump(c_secondaryBatchZoomIn, "c_secondaryBatchZoomInDeramped");
+        secondaryBatchOverSampler.execute(c_secondaryBatchZoomIn, c_secondaryBatchOverSampled);
+        cuArraysAbs(c_secondaryBatchOverSampled, r_secondaryBatchOverSampled, stream);
+        dump(c_secondaryBatchOverSampled, "c_secondaryBatchOverSampled");
+        dump(r_secondaryBatchOverSampled, "r_secondaryBatchOverSampled");
+
+        // the normalized correlation surfaces of the oversampled windows
+        correlate(r_referenceBatchOverSampled, r_secondaryBatchOverSampled, r_corrBatchZoomIn,
+            correlatorOverSampled.get(), corrNormalizerOverSampled.get(), "r_corrBatchZoomIn");
+    }
 
     // without the last row and column, of even size, oversampled again around the peak
     cuArraysCopyExtract(r_corrBatchZoomIn, r_corrBatchZoomInAdjust, traits::make_int2(0, 0), stream);
@@ -147,11 +175,13 @@ ProcessorTwoPass<arrayT>::ProcessorTwoPass(const Parameter &param_,
     // the number of windows in a chunk
     const int count = param.windowsDownInChunk*param.windowsAcrossInChunk;
 
-    // first pass
+    // first pass (the amplitudes of the windows only if they are correlated)
     allocateArrays(c_referenceBatchRaw, param.windowSizeHeightRaw, param.windowSizeWidthRaw);
     allocateArrays(c_secondaryBatchRaw, param.searchWindowSizeHeightRaw, param.searchWindowSizeWidthRaw);
-    allocateArrays(r_referenceBatchRaw, param.windowSizeHeightRaw, param.windowSizeWidthRaw);
-    allocateArrays(r_secondaryBatchRaw, param.searchWindowSizeHeightRaw, param.searchWindowSizeWidthRaw);
+    if (!coherent()) {
+        allocateArrays(r_referenceBatchRaw, param.windowSizeHeightRaw, param.windowSizeWidthRaw);
+        allocateArrays(r_secondaryBatchRaw, param.searchWindowSizeHeightRaw, param.searchWindowSizeWidthRaw);
+    }
     allocateArrays(r_corrBatchRaw, param.searchWindowSizeHeightRaw - param.windowSizeHeightRaw + 1,
         param.searchWindowSizeWidthRaw - param.windowSizeWidthRaw + 1);
 
@@ -160,8 +190,10 @@ ProcessorTwoPass<arrayT>::ProcessorTwoPass(const Parameter &param_,
     allocateValues(maxLocShift);
     allocateArrays(c_referenceBatchOverSampled, param.windowSizeHeight, param.windowSizeWidth);
     allocateArrays(c_secondaryBatchOverSampled, param.searchWindowSizeHeight, param.searchWindowSizeWidth);
-    allocateArrays(r_referenceBatchOverSampled, param.windowSizeHeight, param.windowSizeWidth);
-    allocateArrays(r_secondaryBatchOverSampled, param.searchWindowSizeHeight, param.searchWindowSizeWidth);
+    if (!coherent()) {
+        allocateArrays(r_referenceBatchOverSampled, param.windowSizeHeight, param.windowSizeWidth);
+        allocateArrays(r_secondaryBatchOverSampled, param.searchWindowSizeHeight, param.searchWindowSizeWidth);
+    }
     allocateArrays(r_corrBatchZoomIn, param.searchWindowSizeHeight - param.windowSizeHeight + 1,
         param.searchWindowSizeWidth - param.windowSizeWidth + 1);
     allocateArrays(r_corrBatchZoomInAdjust, param.searchWindowSizeHeight - param.windowSizeHeight,
@@ -170,15 +202,24 @@ ProcessorTwoPass<arrayT>::ProcessorTwoPass(const Parameter &param_,
         param.corrZoomWindowSize * param.corrSurfaceOverSamplingFactor);
     createSurfaceOversampler(param.corrZoomWindowSize, param.corrZoomWindowSize);
 
-    // the cross-correlators (by the algorithm) and the normalizers, of both passes
-    correlatorRaw = newWindowCorrelator<arrayT>(param.algorithm,
-        param.searchWindowSizeHeightRaw, param.searchWindowSizeWidthRaw, count, stream);
-    correlatorOverSampled = newWindowCorrelator<arrayT>(param.algorithm,
-        param.searchWindowSizeHeight, param.searchWindowSizeWidth, count, stream);
-    corrNormalizerRaw = traits::newNormalizer(param.searchWindowSizeHeightRaw,
-        param.searchWindowSizeWidthRaw, count);
-    corrNormalizerOverSampled = traits::newNormalizer(param.searchWindowSizeHeight,
-        param.searchWindowSizeWidth, count);
+    // the cross-correlators of both passes: of the complex windows (the coherence), or of their
+    // amplitudes (by the algorithm) with the normalizers
+    if (coherent()) {
+        coherenceRaw = std::make_unique<coherence_correlator_type>(param.searchWindowSizeHeightRaw,
+            param.searchWindowSizeWidthRaw, count, stream);
+        coherenceOverSampled = std::make_unique<coherence_correlator_type>(param.searchWindowSizeHeight,
+            param.searchWindowSizeWidth, count, stream);
+    }
+    else {
+        correlatorRaw = newWindowCorrelator<arrayT>(param.algorithm,
+            param.searchWindowSizeHeightRaw, param.searchWindowSizeWidthRaw, count, stream);
+        correlatorOverSampled = newWindowCorrelator<arrayT>(param.algorithm,
+            param.searchWindowSizeHeight, param.searchWindowSizeWidth, count, stream);
+        corrNormalizerRaw = traits::newNormalizer(param.searchWindowSizeHeightRaw,
+            param.searchWindowSizeWidthRaw, count);
+        corrNormalizerOverSampled = traits::newNormalizer(param.searchWindowSizeHeight,
+            param.searchWindowSizeWidth, count);
+    }
 
     logDebug("all objects in chunk are created");
 }

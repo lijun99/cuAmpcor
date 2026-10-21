@@ -34,9 +34,10 @@ class _Option(enum.IntEnum):
 
 
 class Algorithm(_Option):
-    """Cross-correlation domain"""
-    FREQUENCY = 0  #: in the frequency domain, with FFTs (default)
-    TIME = 1       #: in the time (spatial) domain
+    """Cross-correlation algorithm"""
+    FREQUENCY = 0  #: of the amplitudes, in the frequency domain, with FFTs (default)
+    TIME = 1       #: of the amplitudes, in the time (spatial) domain
+    COHERENCE = 2  #: of the complex windows (the coherence; complex images, two-pass workflow)
     FREQ = 0
 
 

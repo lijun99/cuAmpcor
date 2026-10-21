@@ -8,6 +8,10 @@
  * around the first peak) are deramped and oversampled (antialiasing), their amplitudes correlated,
  * and the correlation surface oversampled again around the peak, giving the sub-pixel offset.
  *
+ * With the coherence (Algorithm::Coherence), the complex windows are correlated instead of their
+ * amplitudes, giving the surfaces of the squared coherence (also the peak value output); in the second pass, both windows are deramped with the
+ * phase ramp of the reference window, which keeps their relative (interferometric) phase.
+ *
  * The definitions are in ProcessorTwoPassImpl.h, included only by the packages'
  * processors.cpp, which instantiate the processors for their arrays (compiled once per package).
  */
@@ -16,6 +20,7 @@
 
 #include "Processor.h"
 #include "OverSampler.h"
+#include "Correlator.h"
 
 namespace pycuampcor {
 
@@ -41,6 +46,8 @@ public:
     using window_type = complex_type;
     /// the oversampler of the windows: FFT, on the device of the arrays
     using window_oversampler_type = OverSampler<OversamplingMethod::FFT, window_type, base_type::device>;
+    /// the coherent cross-correlator of the complex windows (Algorithm::Coherence)
+    using coherence_correlator_type = Correlator<Algorithm::Coherence, window_type, base_type::device>;
 
     /// a processor writing to the output images (see Processor)
     ProcessorTwoPass(const Parameter &param,
@@ -86,6 +93,7 @@ private:
     array_type<real_type> r_corrBatchRaw;                           ///< the correlation surfaces
     std::unique_ptr<correlator_type> correlatorRaw;                 ///< the cross-correlator of the windows
     std::unique_ptr<normalizer_type> corrNormalizerRaw;             ///< the normalizer
+    std::unique_ptr<coherence_correlator_type> coherenceRaw;        ///< the coherent cross-correlator
 
     // second pass: the oversampled windows (the secondary ones around the first peak)
     array_type<window_type> c_secondaryBatchZoomIn;                         ///< the secondary windows around the peak
@@ -101,6 +109,10 @@ private:
     array_type<real_type> r_corrBatchZoomInOverSampled;                     ///< the oversampled surfaces
     std::unique_ptr<correlator_type> correlatorOverSampled;                 ///< the cross-correlator of the windows
     std::unique_ptr<normalizer_type> corrNormalizerOverSampled;             ///< the normalizer
+    std::unique_ptr<coherence_correlator_type> coherenceOverSampled;        ///< the coherent cross-correlator
+
+    /// whether the complex windows are correlated (the coherence) instead of their amplitudes
+    bool coherent() const { return param.algorithm == Algorithm::Coherence; }
 };
 
 } // namespace

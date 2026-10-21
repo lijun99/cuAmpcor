@@ -18,6 +18,7 @@
 #include "cuEstimateStats.h"
 #include "cuOffset.h"
 // the workers
+#include "cuCorrCoherence.h"
 #include "cuCorrFrequency.h"
 #include "cuCorrNormalizer.h"
 #include "cuFFTOverSampler.h"

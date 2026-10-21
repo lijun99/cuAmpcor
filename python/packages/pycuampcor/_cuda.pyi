@@ -86,7 +86,9 @@ class PyCuAmpcor:
         """
     @property
     def algorithm(self) -> Algorithm:
-        """Cross-correlation domain (Algorithm): 'frequency' (FFT) or 'time'.
+        """Cross-correlation algorithm (Algorithm): of the amplitudes, 'frequency' (FFT) or 'time';
+        or 'coherence', of the complex windows (e.g., for coregistration; complex images, the
+        two-pass workflow, derampMethod 'complex' or 'none'; the peak value is the squared coherence).
 
         Default: Algorithm.FREQUENCY
         """
@@ -412,7 +414,8 @@ class PyCuAmpcor:
     def covImageName(self, value: Union[str, os.PathLike[str]]) -> None: ...
     @property
     def peakValueImageName(self) -> str:
-        """Output normalized correlation peak value: float32.
+        """Output normalized correlation peak value (the squared coherence with the coherence
+        algorithm): float32.
 
         Default: 'peakValue.bip'
         """

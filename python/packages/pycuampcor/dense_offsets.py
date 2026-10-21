@@ -121,7 +121,8 @@ def create_parser():
     parser.add_argument('--wf', '--workflow', dest='workflow', type=int, default=0,
                         help='workflow (0: two passes, first pass without antialiasing oversampling, 1: one pass with antialiasing oversampling) (default: %(default)s).')
     parser.add_argument('--alg', '--algorithm', dest='algorithm', type=int, default=0,
-                        help='cross-correlation algorithm (0 = frequency domain, 1 = time domain) (default: %(default)s).')
+                        help='cross-correlation algorithm (0 = frequency domain, 1 = time domain, of the amplitudes;\n'
+                             '2 = coherence, of the complex windows, with --drmp 1 (or 2)) (default: %(default)s).')
     parser.add_argument('--raw-osf', '--raw-over-samp-factor', type=int, dest='raw_oversample',
                         default=2, choices=range(2, 5),
                         help='anti-aliasing oversampling factor, equivalent to i_ovs in ROI_PAC (default: %(default)s).')

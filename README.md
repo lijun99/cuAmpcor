@@ -491,7 +491,7 @@ This step provides an initial estimate of the offset, usually with a large searc
 
 | PyCuAmpcor         | CUDA variable      | ampcor.F equivalent   | Notes                                                                                         |
 |:-------------------|:-------------------| :----                 |:----------------------------------------------------------------------------------------------|
-| algorithm          | algorithm          | N/A                   | the cross-correlation computation method 0=Freq (default) 1=time                              |
+| algorithm          | algorithm          | N/A                   | the cross-correlation computation method 0=Freq (default) 1=time, of the amplitudes; 2=coherence, of the complex windows (see 5.7) |
 | workflow           | workflow           | N/A                   | the offset estimation workflow 0=Two-Pass (default) 1=One-Pass                                |
 | corrStatWindowSize | corrStatWindowSize | 21               | the size of correlation surface around the peak position used for statistics, may be adjusted |
 
@@ -573,3 +573,15 @@ Note that this offset does not include the pre-defined gross offset. Users need 
 **Difference to ROIPAC**
 
 ROIPAC by default uses the sinc interpolator (the FFT method is included but one needs to change the FORTRAN code to switch). For since interpolator, there is no difference in implementations. For FFT, ROIPAC always enlarges the window to a size in power of 2.
+
+### 5.7 Coherent cross-correlation (algorithm=2)
+
+With *algorithm*=2 (*pycuampcor.Algorithm.COHERENCE*, or *"coherence"*), the complex windows are cross-correlated instead of their amplitudes, as for the coregistration of interferometric pairs. The correlation surface is the squared coherence at each shift,
+
+|Σ conj(t − mean t) s|² / (Σ|t − mean t|² · (Σ|s|² − |Σ s|²/n)),
+
+the sums over the n pixels of the reference window t and of the secondary window s under it; it is computed with FFTs, and normalized with sum area tables of the secondary windows. The rest of the two-pass workflow is the same: the peak to the pixel, the windows around it oversampled, correlated again, and the surface oversampled around the peak. Before the oversampling, both windows are deramped with the phase ramp of the reference window, which keeps their relative (interferometric) phase. The peak value output is the squared coherence (for speckle, the correlation of the amplitudes is about the squared coherence too).
+
+* It needs complex images, the two-pass workflow, and *derampMethod* 1 (complex; or 2, none, for images without a Doppler centroid); other settings raise an error.
+* Where the images are coherent, it is more precise than the amplitude correlation, and it keeps working at low coherence, where the amplitude correlation fails (synthetic images: an RMS error of 0.016 vs 0.024 pixel at a coherence of about 0.5; 0.03 pixel vs failures at about 0.2). Where the coherence is lost (e.g., fast ice, long time spans, C-band in the melt season), it fails: use the amplitudes.
+* With *dense_offsets*: *--alg 2 --drmp 1*.
