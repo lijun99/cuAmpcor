@@ -278,6 +278,14 @@ objOffset.setVaryingGrossOffset(vD, vA)
 objOffset.runAmpcor()
 ```
 
+Alternatively, the parameters may be given to the constructor as keyword arguments, named as the parameters above, with the gross offsets as `grossOffsetDown` and `grossOffsetAcross` (numbers for a constant gross offset, or sequences of `numberWindowDown*numberWindowAcross` numbers for varying gross offsets; default 0). The constructor then sets up the parameters and the gross offsets, so the object is ready to run:
+```python
+params = dict(referenceImageName="20151120.slc.full.vrt", windowSizeWidth=64, ...)
+objOffset = PyCuAmpcor(**params, grossOffsetDown=vD, grossOffsetAcross=vA)
+objOffset.runAmpcor()
+```
+Unknown parameter names and values of a wrong type raise a `TypeError`. File names may be given as strings or path-like objects (e.g., `pathlib.Path`).
+
 ### 3.3 Offset visualization
 
 The output offset fields may be visualized by the *mdx.py* tool in the *ISCE2* package. Here, we also provide a python script *plotOffsets.py* for more visualization options. 

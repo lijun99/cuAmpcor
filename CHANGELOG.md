@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+### New
+
+- The parameters can be given to the constructor as keyword arguments (the property names, e.g.,
+  `PyCuAmpcor(windowSizeHeight=64, referenceImageName="ref.slc", ...)`), with the gross offsets
+  `grossOffsetDown` / `grossOffsetAcross` (constant or varying); the constructor sets the object
+  up to run (`setupParams` and the gross offsets).
+- File name parameters accept path-like objects; a value of a wrong type raises a `TypeError`
+  naming the parameter.
+
+### Fixes
+
+- `setupParams` can be called repeatedly: the one-pass workflow no longer adds its zoom-in margin
+  to `halfSearchRangeDown` / `halfSearchRangeAcross`.
+
 ## 2.2.0 (2026-10-02)
 
 ### New
