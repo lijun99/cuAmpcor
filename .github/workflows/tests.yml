@@ -26,10 +26,11 @@ jobs:
     env:
       OMP_NUM_THREADS: 4
     steps:
-      - uses: actions/checkout@v4
-      - uses: conda-incubator/setup-miniconda@v3
+      - uses: actions/checkout@v7
+      - uses: conda-incubator/setup-miniconda@v4
         with:
           miniforge-version: latest
+          conda-remove-defaults: true
           activate-environment: pycuampcor
       - name: Install dependencies
         run: >
