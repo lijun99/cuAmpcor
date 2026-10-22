@@ -145,9 +145,6 @@ If you use PyCuAmpcor in your work, please cite it:
 }
 ```
 
-The DOI [10.5281/zenodo.6614208](https://doi.org/10.5281/zenodo.6614208) refers to all versions. The
-same information is in [CITATION.cff](CITATION.cff), which GitHub shows as "Cite this repository".
-
 ## License
 
 PyCuAmpcor is licensed under the [Apache License 2.0](LICENSE); see [NOTICE](NOTICE) for the copyright
