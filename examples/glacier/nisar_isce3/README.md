@@ -8,7 +8,7 @@ velocity model for the gross offsets (see `../README.md`).
 | File | What it does |
 |---|---|
 | `jakobshavn.sh` | Runs everything: downloads, isce3, pycuampcor, velocities |
-| `insar_runconfig.yaml` | A minimal isce3 InSAR runconfig for the isce3 steps |
+| `insar_runconfig.yaml` | The isce3 InSAR runconfig: the isce3 steps, and the ROFF/GOFF products of the whole workflow (`python -m nisar.workflows.insar`) on the same window grid |
 | `nisar_download.py` | Downloads NISAR products from ASF by their granule names |
 | `../velocity_model.py` | Gross offsets from a velocity model, and velocities from offsets |
 

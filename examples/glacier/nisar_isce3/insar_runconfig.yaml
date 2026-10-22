@@ -1,7 +1,12 @@
-# A minimal isce3 InSAR runconfig for the steps run by jakobshavn.sh: rdr2geo (the geometry),
-# geo2rdr (the geometric offsets) and resample_slc --resample-type coarse (the secondary SLC
-# coregistered to the reference); the placeholders REFERENCE_RSLC, SECONDARY_RSLC and DEM_FILE are
-# replaced by the script. The other parameters take the isce3 defaults.
+# An isce3 InSAR runconfig for Jakobshavn (Greenland), adapted from an SDS GUNW runconfig (solid earth
+# parameter set) to the offsets products (ROFF, GOFF); the placeholders REFERENCE_RSLC, SECONDARY_RSLC
+# and DEM_FILE are replaced by jakobshavn.sh.
+#
+# jakobshavn.sh runs only some of the steps with it: rdr2geo (the geometry), geo2rdr (the geometric
+# offsets) and resample_slc --resample-type coarse (the secondary SLC coregistered to the reference).
+# The whole workflow, python -m nisar.workflows.insar runconfig.yaml, also gives the isce3 ROFF and
+# GOFF products, with the offsets on the same window grid as the dense_offsets run without a model.
+# The parameters not given take the isce3 defaults (share/nisar/defaults/insar.yaml).
 runconfig:
   name: NISAR_INSAR_RUNCONFIG
   groups:
@@ -10,20 +15,128 @@ runconfig:
     input_file_group:
       reference_rslc_file: REFERENCE_RSLC
       secondary_rslc_file: SECONDARY_RSLC
+      qa_roff_input_file: output/ROFF_product.h5
+      qa_goff_input_file: output/GOFF_product.h5
     dynamic_ancillary_file_group:
+      # the NISAR DEM (Copernicus DEM 30 m, WGS84 ellipsoid heights), staged by nisar.workflows.stage_dem
       dem_file: DEM_FILE
+      dem_file_description: NISAR DEM version 1.2, from the Copernicus DEM 30-m (2023_1), referenced
+        to the WGS84 ellipsoid (https://doi.org/10.5067/NIDEM-1)
+      # optional; it masks the water in the geocoded products
+      water_mask_file:
+      # empty: the orbits of the RSLCs
+      orbit_files:
+        reference_orbit_file:
+        secondary_orbit_file:
     primary_executable:
-      product_type: ROFF
+      # ROFF (radar geometry) and GOFF (geocoded) offsets products; no interferogram
+      product_type: ROFF_GOFF
+      # the product versions, DOIs and IDs of the SDS products; not set for a local run
+      product_version:
+        roff_version:
+        goff_version:
+      product_doi:
+        roff_doi:
+        goff_doi:
     product_path_group:
       product_path: output
       scratch_path: scratch
-      sas_output_file: output/ROFF.h5
+      # ROFF_ and GOFF_ are prepended to the file name
+      sas_output_file: output/product.h5
+      qa_output_dir: qa_insar
     debug_level_group:
       debug_switch: false
     worker:
-      gpu_enabled: true        # false to run isce3 on the CPU
+      # all the steps on the GPU; false: rdr2geo, geo2rdr, resample_slc and geocode on the CPU, but
+      # offsets_product (ROFF) has no CPU version
+      gpu_enabled: true
+      gpu_id: 0
+      internet_access: false
+      # keep the scratch files: the geometry and the coregistered secondary are used by dense_offsets
+      intermediate_files_removal_enabled: false
     processing:
+      process_single_co_pol_offset: true
       input_subset:
         list_of_frequencies:
+          A: [HH]
+      geocode:
+        # polar stereographic north (NSIDC), the projection of the ITS_LIVE Greenland mosaics;
+        # the extent is taken from the radar grid
+        output_epsg: 3413
+        output_posting:
           A:
-          - HH
+            x_posting: 120
+            y_posting: 120
+        x_snap: 120
+        y_snap: 120
+        top_left:
+          y_abs:
+          x_abs:
+        bottom_right:
+          y_abs:
+          x_abs:
+      radar_grid_cubes:
+        output_epsg: 3413
+        output_posting:
+          x_posting:
+          y_posting:
+        top_left:
+          y_abs:
+          x_abs:
+        bottom_right:
+          y_abs:
+          x_abs:
+      coarse_resample:
+        lines_per_tile: 1000
+        columns_per_tile: 1000
+      # the offsets products only: no dense offsets for the interferogram, no rubbersheet, no fine
+      # coregistration
+      dense_offsets:
+        enabled: false
+      rubbersheet:
+        enabled: false
+      fine_resample:
+        enabled: false
+      ionosphere_phase_correction:
+        enabled: false
+      troposphere_delay:
+        enabled: false
+      offsets_product:
+        enabled: true
+        # the window grid of jakobshavn.sh (first window, spacing and number, azimuth and range)
+        start_pixel_azimuth: 88
+        start_pixel_range: 178
+        skip_azimuth: 64
+        skip_range: 128
+        offset_length: 875
+        offset_width: 390
+        cross_correlation_domain: frequency
+        slc_oversampling_factor: 2
+        # complex deramping along both axes, as dense_offsets --drmp 1
+        deramping_method: complex
+        deramping_axis: both
+        # no gross offsets: the search range covers the fastest motion expected; with the gross
+        # offsets of velocity_model.py gross (int32 pairs per window), set gross_offset_filepath,
+        # merge_gross_offset: true (else the offsets are only the residuals) and a smaller search
+        # range (16 x 32), as the dense_offsets run with the model
+        gross_offset_azimuth: 0
+        gross_offset_range: 0
+        gross_offset_filepath:
+        merge_gross_offset: false
+        # the correlation surface as the dense_offsets defaults
+        correlation_statistics_zoom: 21
+        correlation_surface_zoom: 8
+        correlation_surface_oversampling_factor: 32
+        correlation_surface_oversampling_method: fft
+        cuda_streams: 2
+        windows_batch_range: 10
+        windows_batch_azimuth: 5
+        # 64 x 128 pixels (azimuth x slant range, ~280 x 330 m), search +/- 88 x 178 pixels
+        layer1:
+          window_azimuth: 64
+          window_range: 128
+          half_search_azimuth: 88
+          half_search_range: 178
+    logging:
+      path: workflow_insar.log
+      write_mode: w
