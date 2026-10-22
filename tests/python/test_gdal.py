@@ -39,12 +39,16 @@ def write_tif(path, data, gdal_type, options=()):
     return str(path)
 
 
-def write_vrt(path, raw, gdal_type="CFloat32", pixel_size=8):
-    """Write a VRT of a raw binary image"""
+def write_vrt(raw, gdal_type="CFloat32", pixel_size=8):
+    """
+    Write the VRT of a raw binary image next to it (<raw>.vrt), with the file relative to it (recent
+    GDAL versions refuse raw sources outside the directory of the VRT by default)
+    """
+    path = f"{raw}.vrt"
     with open(path, "w") as f:
         f.write(f'<VRTDataset rasterXSize="{SHAPE[1]}" rasterYSize="{SHAPE[0]}">\n'
                 f'  <VRTRasterBand dataType="{gdal_type}" band="1" subClass="VRTRawRasterBand">\n'
-                f'    <SourceFilename relativeToVRT="0">{raw}</SourceFilename>\n'
+                f'    <SourceFilename relativeToVRT="1">{os.path.basename(raw)}</SourceFilename>\n'
                 f'    <ImageOffset>0</ImageOffset><PixelOffset>{pixel_size}</PixelOffset>'
                 f'<LineOffset>{pixel_size * SHAPE[1]}</LineOffset>\n'
                 '  </VRTRasterBand>\n</VRTDataset>\n')
@@ -86,7 +90,7 @@ def test_geotiff_matches_raw(impl, layout, images, raw_results, tmp_path):
 
 def test_vrt_matches_raw(impl, images, raw_results, tmp_path):
     """The VRTs of the raw images give the results of the raw images"""
-    vrts = tuple(write_vrt(tmp_path / f"{k}.vrt", f) for k, f in zip(("ref", "sec"), images))
+    vrts = tuple(write_vrt(f) for f in images)
     assert_same(run_ampcor(impl, vrts, SHAPE, tmp_path / "out"), raw_results(impl))
 
 

@@ -145,7 +145,9 @@ reader explicitly. In all cases the image size and pixel type are given by the p
   (e.g., Byte, UInt16, Int16, Float64) to float32 (referenceImageDataType / secondaryImageDataType =
   `float32`), a complex band (e.g., CInt16, CFloat32) to complex64. The reads of an image are
   serialized among the workers; raw files and HDF5 datasets remain the faster readers for large
-  images.
+  images. Recent GDAL versions read the raw files of VRTs (VRTRawRasterBand) only in the
+  directory of the VRT (or below) by default: give the file relative to the VRT (`relativeToVRT="1"`, as
+  ISCE2 and `dense_offsets` write them), or set the GDAL option `GDAL_VRT_RAWRASTERBAND_ALLOWED_SOURCE`.
 
 ## The window grid and the gross offsets
 

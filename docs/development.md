@@ -10,10 +10,23 @@ The build needs a C++17 compiler, CMake ≥ 3.18, pybind11 and FFTW (single prec
 * HDF5 (≥ 1.14 for the fast reading of compressed datasets) with zlib, to read HDF5 datasets;
 * GDAL, to read rasters such as GeoTIFF.
 
+### A conda environment
+
+[environment.yml](../environment.yml) has the build requirements (but CUDA), the libraries (FFTW,
+HDF5, GDAL), and the packages of the tests and examples:
+
+```bash
+conda env create -f environment.yml
+conda activate pycuampcor
+```
+
+The CUDA toolkit of the system is used, or uncomment the CUDA packages of the file. On macOS, add
+`llvm-openmp` for OpenMP.
+
 ### With pip
 
 ```bash
-pip install .
+pip install .                                     # in a conda environment: --no-deps --no-build-isolation
 ```
 
 The CMake options are passed with `-C`:

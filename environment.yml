@@ -1,0 +1,37 @@
+# A conda environment to build pycuampcor from the source, test it, and run the tools and examples:
+#   conda env create -f environment.yml
+#   conda activate pycuampcor
+#   pip install . --no-deps --no-build-isolation                # CPU, and CUDA if nvcc is found
+#   pytest tests/python
+# For the CUDA implementation, the CUDA toolkit of the system is used (found by CMake, e.g., in
+# /usr/local/cuda), or uncomment the CUDA packages below. On macOS, add llvm-openmp for OpenMP.
+name: pycuampcor
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python>=3.9
+  # build
+  - cmake>=3.18
+  - ninja
+  - cxx-compiler
+  - pybind11
+  - scikit-build-core
+  - pip
+  # libraries
+  - fftw
+  - hdf5
+  - zlib
+  - gdal          # the GDAL library (GeoTIFF and other rasters) and its Python bindings
+  # tests
+  - gtest
+  - pytest
+  - numpy
+  - h5py
+  # tools and examples
+  - matplotlib    # plot_offsets
+  - asf_search    # examples: NISAR and Sentinel-1 downloads
+  # CUDA from conda instead of the system (match the version to the driver):
+  # - cuda-nvcc
+  # - cuda-cudart-dev
+  # - libcufft-dev

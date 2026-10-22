@@ -9,6 +9,8 @@
 
 ### New
 
+- `environment.yml`: a conda environment to build from the source, test, and run the tools and
+  examples.
 - Documentation: a shorter README (features, installation, quick start, examples, citation), with
   the details in *docs/*: the command-line tools (`tools.md`), the Python classes and their
   parameters (`parameters.md`), the algorithm and its differences from ROI_PAC (`algorithm.md`), and

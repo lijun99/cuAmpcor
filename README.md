@@ -39,10 +39,12 @@ Conda installs the `cuda` variant (CPU and GPU) if it finds an NVIDIA driver, an
 otherwise. To choose one, use `pycuampcor=*=cpu*` or `pycuampcor=*=cuda*`.
 
 From the source, with pip or CMake (a C++17 compiler, CMake ≥ 3.18, pybind11 and FFTW; optionally
-CUDA ≥ 11, OpenMP, HDF5 and GDAL):
+CUDA ≥ 11, OpenMP, HDF5 and GDAL). [environment.yml](environment.yml) is a conda environment with all
+of them (but CUDA) and the packages of the tests and examples:
 
 ```bash
-pip install .                                                   # CUDA if nvcc is found
+conda env create -f environment.yml && conda activate pycuampcor
+pip install . --no-deps --no-build-isolation                    # CUDA if nvcc is found
 pip install . -Ccmake.define.CMAKE_CUDA_ARCHITECTURES=native    # for the GPUs of this machine
 pip install . -Ccmake.define.PYCUAMPCOR_CUDA=OFF                # CPU only
 ```
