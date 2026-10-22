@@ -114,6 +114,9 @@
 
 ### Fixes
 
+- `dense_offsets --out-geom`: the geometry is taken at the centers of the windows; it was half a
+  window step after them (GDAL's resampling of blocks starting at the window centers, as in
+  `cuDenseOffsets.py` of ISCE2).
 - Debug builds: the CPU package dumps the intermediate arrays (as the CUDA package), and
   `checkPixelInImageRange` warns about the windows outside the images (both were compiled out:
   the debug flag wasn't included there).

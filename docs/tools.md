@@ -99,7 +99,7 @@ Their headers are ISCE *.xml* (and *.vrt*) files if ISCE2 is installed, or else 
 files; both are read by MintPy and GDAL. An existing output is not recomputed unless `--redo` is
 given. With `--full-geom` and `--out-geom` (which need GDAL), the geometry (e.g., *lat.rdr.full*,
 *lon.rdr.full*, *hgt.rdr.full* of the ISCE2 stack processors) is also written on the grid of the
-windows.
+windows: the values at the window centers.
 
 ### Processing
 

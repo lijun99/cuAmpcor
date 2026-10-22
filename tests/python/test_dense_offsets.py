@@ -129,3 +129,29 @@ def test_hdf5_datasets(impl, images, tmp_path):
     np.testing.assert_array_equal(run(impl, names, tmp_path / "h5r", "--reader", "hdf5"), expected)
     with pytest.raises(RuntimeError, match="No dataset"):
         run(impl, [f"HDF5:{names[0]}", f"HDF5:{tmp_path / 'sec.h5'}:/missing"], tmp_path / "bad")
+
+
+def test_geometry(impl, images, tmp_path):
+    """The geometry (--full-geom, --out-geom) is taken at the centers of the windows"""
+    gdal = pytest.importorskip("osgeo.gdal")
+    gdal.UseExceptions()
+    full = tmp_path / "geom_full"
+    full.mkdir()
+    # the full resolution geometry: lat = row, lon = column (float64, ENVI, as ISCE2 .rdr.full)
+    rows, cols = np.mgrid[0:N, 0:N].astype(np.float64)
+    for name, value in (("lat", rows), ("lon", cols)):
+        ds = gdal.GetDriverByName("ENVI").Create(str(full / f"{name}.rdr.full"), N, N, 1, gdal.GDT_Float64)
+        ds.GetRasterBand(1).WriteArray(value)
+        ds = None
+    # a step (32) different from the window size (64), so that the centers are not the block starts
+    args = ["-r", images[0], "-s", images[1], "--op", str(tmp_path / "offset"), "--length", str(N),
+            "--width", str(N), "--ww", "64", "--wh", "64", "--sw", "16", "--sh", "16", "--kw", "32",
+            "--kh", "32", "--full-geom", str(full), "--out-geom", str(tmp_path / "geom")]
+    dense_offsets.main(args + (["--cpu", "--nthreads", "2"] if impl == "cpu" else []))
+    n = (N - 2 * 16 - 64) // 32
+    centers = 16 + 32 + 32 * np.arange(n)  # the first window at the search range, its center 32 after
+    lat = gdal.Open(str(tmp_path / "geom" / "lat.rdr")).ReadAsArray()
+    lon = gdal.Open(str(tmp_path / "geom" / "lon.rdr")).ReadAsArray()
+    assert lat.shape == lon.shape == (n, n)
+    np.testing.assert_array_equal(lat, np.broadcast_to(centers[:, None], (n, n)))
+    np.testing.assert_array_equal(lon, np.broadcast_to(centers[None, :], (n, n)))

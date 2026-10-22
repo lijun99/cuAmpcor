@@ -497,14 +497,15 @@ def prepare_geometry(full_dir, out_dir, x_start, y_start, x_step, y_step, x_win_
                      fbases=('lat', 'lon', 'los', 'hgt', 'z', 'shadowMask', 'waterMask')):
     """
     Generate the geometry datasets on the grid of the offset field from the full resolution
-    geometry datasets (with GDAL)
+    geometry datasets (with GDAL): the values at the centers of the windows
     @param full_dir the input geometry directory in full resolution
     @param out_dir the output geometry directory
-    @param x_start,y_start the starting column/row (the center of the first window)
-    @param x_step,y_step the output pixel step in column/row direction
-    @param x_win_num,y_win_num the number of columns/rows
+    @param x_start,y_start the column/row of the center of the first window
+    @param x_step,y_step the step between the windows in column/row direction
+    @param x_win_num,y_win_num the number of columns/rows (windows)
     """
-    from osgeo import gdal
+    import numpy as np
+    from osgeo import gdal, gdal_array
     gdal.UseExceptions()
     full_dir = os.path.abspath(full_dir)
     out_dir = os.path.abspath(out_dir)
@@ -517,25 +518,32 @@ def prepare_geometry(full_dir, out_dir, x_start, y_start, x_step, y_step, x_win_
     full_ext = full_exts[0]
 
     print('-' * 50)
-    print('generate the corresponding multi-looked geometry datasets using gdal ...')
+    print('generate the corresponding geometry datasets at the window centers using gdal ...')
     in_files = [os.path.join(full_dir, f'{f}{full_ext}') for f in fbases]
     in_files = [i for i in in_files if os.path.isfile(i)]
     fbases = [os.path.basename(i).split('.')[0] for i in in_files]
     out_files = [os.path.join(out_dir, f'{i}.rdr') for i in fbases]
     os.makedirs(out_dir, exist_ok=True)
 
+    # the pixels at the window centers
+    rows = y_start + y_step * np.arange(y_win_num)
+    cols = x_start + x_step * np.arange(x_win_num)
     for in_file, out_file in zip(in_files, out_files):
         ds = gdal.Open(in_file, gdal.GA_ReadOnly)
-        # starting column/row and column/row number
-        src_win = [x_start, y_start, x_win_num * x_step, y_win_num * y_step]
-        print(f'read {src_win} from file: {in_file}')
+        band = ds.GetRasterBand(1)
+        print(f'read the {y_win_num} x {x_win_num} window centers from file: {in_file}')
+        out = np.zeros((y_win_num, x_win_num), dtype=gdal_array.GDALTypeCodeToNumericTypeCode(band.DataType))
+        inside = (cols >= 0) & (cols < ds.RasterXSize)
+        for i, row in enumerate(rows):
+            if 0 <= row < ds.RasterYSize:
+                out[i, inside] = band.ReadAsArray(0, int(row), ds.RasterXSize, 1)[0, cols[inside]]
 
-        # write binary data file
+        # write binary data file (no data: 0)
         print(f'write file: {out_file}')
-        opts = gdal.TranslateOptions(format='ENVI', width=x_win_num, height=y_win_num,
-                                     srcWin=src_win, noData=0)
-        gdal.Translate(out_file, ds, options=opts)
-        ds = None
+        out_ds = gdal.GetDriverByName('ENVI').Create(out_file, x_win_num, y_win_num, 1, band.DataType)
+        out_ds.GetRasterBand(1).WriteArray(out)
+        out_ds.GetRasterBand(1).SetNoDataValue(0)
+        ds = out_ds = None
 
         # write VRT file
         print(f'write file: {out_file}.vrt')
