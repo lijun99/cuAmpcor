@@ -1,0 +1,35 @@
+cff-version: 1.2.0
+message: "If you use PyCuAmpcor in your work, please cite it as below."
+title: "PyCuAmpcor - Amplitude Cross-Correlation with GPU"
+type: software
+authors:
+  - family-names: Zhu
+    given-names: Lijun
+    affiliation: Caltech
+  - family-names: Zhong
+    given-names: Minyan
+    affiliation: Caltech
+  - family-names: Simons
+    given-names: Mark
+    affiliation: Caltech
+version: "1.0"
+date-released: "2022-06-04"
+doi: 10.5281/zenodo.6614209
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.6614208
+    description: "All versions"
+  - type: doi
+    value: 10.5281/zenodo.6614209
+    description: "Version 1.0"
+repository-code: "https://github.com/lijun99/cuAmpcor"
+license: Apache-2.0
+abstract: >-
+  A GPU implementation of AMPCOR (amplitude cross-correlation), which estimates the offsets
+  between two images with the feature (speckle, pixel) tracking method, now with CPU and GPU
+  implementations.
+keywords:
+  - InSAR
+  - offset tracking
+  - cross-correlation
+  - GPU

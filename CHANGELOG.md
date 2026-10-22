@@ -9,6 +9,11 @@
 
 ### New
 
+- Documentation: a shorter README (features, installation, quick start, examples, citation), with
+  the details in *docs/*: the command-line tools (`tools.md`), the Python classes and their
+  parameters (`parameters.md`), the algorithm and its differences from ROI_PAC (`algorithm.md`), and
+  the build, tests and code organization (`development.md`); a citation (Zenodo,
+  doi:10.5281/zenodo.6614209) in the README and in `CITATION.cff`.
 - The coherent cross-correlation (experimental), `algorithm="coherence"` (`Algorithm.COHERENCE`, 2): the complex
   windows are correlated instead of their amplitudes, as for the coregistration of interferometric
   pairs, with the squared coherence as the correlation surface (and the peak value output); one
@@ -16,7 +21,7 @@
   (FFTs, sum area tables of the secondary windows); in the two-pass workflow, both windows are
   deramped with the phase ramp of the reference window. Complex images, the two-pass workflow and
   `derampMethod` complex (or none) only. On a real NISAR pair, about 15% more precise than the
-  amplitudes at a coherence of 0.3-0.5, as precise above, worse below (README 5.7).
+  amplitudes at a coherence of 0.3-0.5, as precise above, worse below (docs/algorithm.md).
 - `python -m pycuampcor.plot_offsets`: a first look at the outputs of `dense_offsets` (with the SNR
   file found next to the offsets) and `geo_offsets` (on map coordinates): the two components and the
   SNR, the vectors (`--vectors`) or 3D surfaces (`--3d`), with robust color scales, SNR masking,
