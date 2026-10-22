@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.3.0 (2026-10-21)
 
 ### License
 
@@ -16,14 +16,15 @@
   parameters (`parameters.md`), the algorithm and its differences from ROI_PAC (`algorithm.md`), and
   the build, tests and code organization (`development.md`); a citation (Zenodo,
   doi:10.5281/zenodo.6614209) in the README and in `CITATION.cff`.
-- The coherent cross-correlation (experimental), `algorithm="coherence"` (`Algorithm.COHERENCE`, 2): the complex
-  windows are correlated instead of their amplitudes, as for the coregistration of interferometric
-  pairs, with the squared coherence as the correlation surface (and the peak value output); one
-  class template specialization per device, `Correlator<Algorithm::Coherence, complex, device>`
-  (FFTs, sum area tables of the secondary windows); in the two-pass workflow, both windows are
-  deramped with the phase ramp of the reference window. Complex images, the two-pass workflow and
-  `derampMethod` complex (or none) only. On a real NISAR pair, about 15% more precise than the
-  amplitudes at a coherence of 0.3-0.5, as precise above, worse below (docs/algorithm.md).
+- The coherent cross-correlation (experimental), `algorithm="coherence"` (`Algorithm.COHERENCE`,
+  2): the complex windows are correlated instead of their amplitudes, as for the coregistration of
+  interferometric pairs, with the squared coherence as the correlation surface (and the peak value
+  output); one class template specialization per device, `Correlator<Algorithm::Coherence,
+  complex, device>` (FFTs, sum area tables of the secondary windows); in the two-pass workflow,
+  both windows are deramped with the phase ramp of the reference window. Complex images, the
+  two-pass workflow and `derampMethod` complex (or none) only. On a real NISAR pair, about 15%
+  more precise than the amplitudes at a coherence of 0.3-0.5, as precise above, worse below
+  (docs/algorithm.md).
 - `python -m pycuampcor.plot_offsets`: a first look at the outputs of `dense_offsets` (with the SNR
   file found next to the offsets) and `geo_offsets` (on map coordinates): the two components and the
   SNR, the vectors (`--vectors`) or 3D surfaces (`--3d`), with robust color scales, SNR masking,
@@ -36,7 +37,8 @@
   `velocity_model.py` for the gross offsets of a velocity model (e.g., ITS_LIVE) and the velocities
   of the offsets.
 - `examples/optical`: GeoTIFF and optical images with `geo_offsets` (README), with scripts to search
-  and download Sentinel-2 scenes (`s2_download.py`) and measure the slip along a fault, and the Ridgecrest 2019 and Kahramanmaraş 2023 earthquakes as examples.
+  and download Sentinel-2 scenes (`s2_download.py`) and measure the slip along a fault, and the
+  Ridgecrest 2019 and Kahramanmaraş 2023 earthquakes as examples.
 - `python -m pycuampcor.geo_offsets`: the displacement field between two georeferenced images
   (e.g., optical images of an earthquake or a glacier), read with GDAL: the shift of their grids
   from the georeferencing as the gross offset, the windows over the area common to the images (or

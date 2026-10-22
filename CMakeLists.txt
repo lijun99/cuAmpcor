@@ -14,7 +14,7 @@
 cmake_minimum_required(VERSION 3.18)
 
 # project name
-project(pycuampcor VERSION 2.2.0 LANGUAGES CXX)
+project(pycuampcor VERSION 2.3.0 LANGUAGES CXX)
 
 # C++ Standard
 set(CMAKE_CXX_STANDARD 17)

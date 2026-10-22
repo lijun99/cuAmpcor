@@ -22,7 +22,7 @@ identifiers:
   - type: doi
     value: 10.5281/zenodo.6614209
     description: "Version 1.0"
-repository-code: "https://github.com/lijun99/cuAmpcor"
+repository-code: "https://github.com/earthdef/cuAmpcor"
 license: Apache-2.0
 abstract: >-
   A GPU implementation of AMPCOR (amplitude cross-correlation), which estimates the offsets
