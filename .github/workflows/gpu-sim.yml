@@ -1,0 +1,104 @@
+name: CUDA tests (simulated H100)
+
+# Optional, non-required check. The hosted runners have no GPU, so this builds
+# the CUDA backend and runs its C++ and python tests on a simulated NVIDIA H100
+# (https://github.com/pantheongpu/pantheonsim). A simulator cannot reproduce
+# hardware-specific behavior or timing, so it complements testing on a real GPU
+# and does not replace it.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "cxx/**"
+      - "python/**"
+      - "tests/**"
+      - "cmake/**"
+      - "CMakeLists.txt"
+      - ".github/workflows/gpu-sim.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  cuda-sim:
+    name: CUDA 13.0 and simulated H100
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Set up the simulated GPU and CUDA toolkit
+        uses: pantheongpu/setup-pantheonsim@ca87fe3143b29166822b923d6050945c5179408c # v0.1.5
+        with:
+          gpu: nvidia/h100
+          cuda-toolkit: "13.0"
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ninja-build libfftw3-dev libgdal-dev \
+            libgtest-dev pybind11-dev python3-dev python3-numpy python3-pytest python3-gdal
+
+      # PTX only (90-virtual) and a shared CUDA runtime, as the simulator needs.
+      # HDF5 is left out: the Ubuntu 24.04 library is 1.10 and tests/python/test_hdf5.py
+      # expects the direct decoding that needs 1.14 (the conda job covers HDF5).
+      - name: Configure
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CUDA_COMPILER=/usr/local/cuda-13.0/bin/nvcc \
+            -DCUDAToolkit_ROOT=/usr/local/cuda-13.0 \
+            -DPYCUAMPCOR_CUDA=ON -DPYCUAMPCOR_HDF5=OFF -DPYCUAMPCOR_GDAL=ON \
+            -DPYCUAMPCOR_BUILD_TESTS=ON \
+            -DCMAKE_CUDA_ARCHITECTURES=90-virtual \
+            -DCMAKE_CUDA_RUNTIME_LIBRARY=Shared \
+            -DPYCUAMPCOR_INSTALL_DIR=${{ github.workspace }}/pylib/pycuampcor
+
+      - name: Build
+        run: cmake --build build -j3
+
+      - name: Install the python package
+        run: cmake --install build
+
+      # The two excluded tests read past the end of an allocation (the kernels
+      # load one element per thread beyond the row width of a small window),
+      # which the simulator reports as an out-of-bounds read.
+      - name: C++ tests (CUDA backend)
+        run: |
+          set -o pipefail
+          vgpu run ctest --test-dir build -R '^cuda\.' \
+            -E '^cuda\.FFTTest\.(Correlators|Normalizer)$' \
+            --output-on-failure -V | tee ctest.log
+          # the tests skip themselves without a device: make sure they ran
+          if grep -q '\[  SKIPPED \]' ctest.log; then
+            echo "::error::CUDA tests were skipped"
+            exit 1
+          fi
+          n=$(sed -n 's/.*tests passed, 0 tests failed out of \([0-9][0-9]*\).*/\1/p' ctest.log)
+          echo "CUDA tests run: $n"
+          test "${n:-0}" -ge 40
+
+      # test_time_domain[gpu-*] and test_window_sizes[gpu] hit the same kind of
+      # out-of-bounds read (see above): the simulator stops the process at the
+      # first one, so they are deselected.
+      - name: Python tests (CPU and CUDA implementations)
+        env:
+          PYTHONPATH: ${{ github.workspace }}/pylib
+        run: |
+          set -o pipefail
+          vgpu run python3 -m pytest -v -rs tests/python \
+            -k 'not test_time_domain and not (test_window_sizes and gpu)' | tee pytest.log
+          # the gpu implementation is only tested when a device is found: make sure it was
+          if grep -q 'no CUDA device' pytest.log; then
+            echo "::error::GPU tests were skipped"
+            exit 1
+          fi
+          n=$(grep -cE '\[gpu(-|\]).*PASSED' pytest.log || true)
+          echo "GPU tests passed: $n"
+          test "$n" -ge 60
