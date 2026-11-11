@@ -131,9 +131,10 @@ void Parameter::_setupParameters_OnePass()
     corrRawZoomInHeight = std::min(corrStatWindowSize, 2*halfSearchRangeDownRaw+1);
     corrRawZoomInWidth = std::min(corrStatWindowSize, 2*halfSearchRangeAcrossRaw+1);
 
-    // serve as extra margin for search range
+    // serve as extra margin for search range, rounded up so that the surface extracted around
+    // a peak at the edge of the search range (corrZoomInSize, centered) stays within the surface
     corrZoomWindowSize = zoomWindowSize;
-    halfZoomWindowSizeRaw = zoomWindowSize/(2*rawDataOversamplingFactor);
+    halfZoomWindowSizeRaw = divUp(zoomWindowSize, 2*rawDataOversamplingFactor);
 
     // add extra search range to ensure enough area to oversample correlation surface
     // (kept apart from the input search range, so that the setup can be repeated)

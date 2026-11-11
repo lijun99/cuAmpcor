@@ -124,7 +124,7 @@ public:
 
     // correlation surface
     int corrZoomWindowSize = 0;         ///< zoomWindowSize used (limited by the search range in the two-pass workflow)
-    int halfZoomWindowSizeRaw = 0;      ///< corrZoomWindowSize/(2*rawDataOversamplingFactor)
+    int halfZoomWindowSizeRaw = 0;      ///< corrZoomWindowSize/(2*rawDataOversamplingFactor), rounded up in the one-pass workflow
     Index2 corrWindowSize{};              ///< correlation surface size (one-pass workflow)
     Index2 corrZoomInSize{};              ///< zoom-in correlation surface size: corrZoomWindowSize+1 (one-pass workflow)
     Index2 corrZoomInOversampledSize{};   ///< corrZoomInSize*corrSurfaceOverSamplingFactor (one-pass workflow)
