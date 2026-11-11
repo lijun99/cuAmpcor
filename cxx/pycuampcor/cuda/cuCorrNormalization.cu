@@ -252,6 +252,9 @@ __global__ void cuCorrNormalize_kernel(ArraysView<const real_type> templates,
     // see notes above
     real_type imageSum  = 0.0;
     real_type imageSum2 = 0.0;
+    // the pixel of this thread in the row starting at addr; the threads past the row width
+    // load zeros (their prefix sums are not used, and the last row would read past the end)
+    const auto pixel = [=](int addr) { return tid < imageNY ? imageD[addr + tid] : real_type(0); };
     int iaddr = 0;
     const int windowSize = templateNX*imageNY;
     // iterative till reaching the templateNX row of the secondary window
@@ -259,7 +262,7 @@ __global__ void cuCorrNormalize_kernel(ArraysView<const real_type> templates,
     while (iaddr < windowSize)
     {
         // cum sum for each row with a width=templateNY
-        const real2_type res = partialSums<Nthreads2>(imageD[iaddr + tid], shmem, templateNY);
+        const real2_type res = partialSums<Nthreads2>(pixel(iaddr), shmem, templateNY);
         // add to the total, which keeps track of the sum of area for each window
         imageSum  += res.x;
         imageSum2 += res.y;
@@ -279,9 +282,9 @@ __global__ void cuCorrNormalize_kernel(ArraysView<const real_type> templates,
     while (iaddr < imageSize)
     {
         // the prefix sum of the row removed is recomputed, to be subtracted
-        const real2_type res1 = partialSums<Nthreads2>(imageD[iaddr-windowSize + tid], shmem, templateNY);
+        const real2_type res1 = partialSums<Nthreads2>(pixel(iaddr-windowSize), shmem, templateNY);
         // the prefix sum of the new row, to be added
-        const real2_type res2 = partialSums<Nthreads2>(imageD[iaddr            + tid], shmem, templateNY);
+        const real2_type res2 = partialSums<Nthreads2>(pixel(iaddr), shmem, templateNY);
         imageSum  += res2.x - res1.x;
         imageSum2 += res2.y - res1.y;
         // move to next row

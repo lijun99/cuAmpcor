@@ -28,7 +28,7 @@ __global__ void cuArraysCorrTime_kernel(ArraysView<const real_type> templates,
     const int  yc =  blockIdx.y*NPT;
 
     const int templateNY = templates.width(), templateSize = templates.arraySize();
-    const int imageNY = images.width();
+    const int imageNX = images.height(), imageNY = images.width();
     const int resultNY = results.width(), resultSize = results.arraySize();
 
     const int       imageIdx = bid;
@@ -53,15 +53,21 @@ __global__ void cuArraysCorrTime_kernel(ArraysView<const real_type> templates,
     for (int k = 0; k < NPT; k++)
         corrCoeff[k] = 0.0;
 
+    // the loads are bounded to the windows: the threads past the row width, and the rows past the
+    // bottom of the secondary window (in the last block when NPT doesn't divide the height of the
+    // correlation surface), load zeros; these values are never used in the sums kept
+    const bool templateCol = tid < templateNY;
+    const bool imageCol = tid < imageNY;
+    int irow = yc;
     int iaddr = yc*imageNY;
 
     real_type img[NPT];
-    for (int k = 0; k < NPT-1; k++, iaddr += imageNY)
-        img[k] = imageD[iaddr];
-    for (int taddr = 0; taddr < templateSize; taddr += templateNY, iaddr += imageNY)
+    for (int k = 0; k < NPT-1; k++, irow++, iaddr += imageNY)
+        img[k] = imageCol && irow < imageNX ? imageD[iaddr] : real_type(0);
+    for (int taddr = 0; taddr < templateSize; taddr += templateNY, irow++, iaddr += imageNY)
     {
-        shTemplate[tid] = templateD[taddr];
-        img     [NPT-1] =    imageD[iaddr];
+        shTemplate[tid] = templateCol ? templateD[taddr] : real_type(0);
+        img     [NPT-1] = imageCol && irow < imageNX ? imageD[iaddr] : real_type(0);
         for (int k = 0; k < NPT; k++)
             shImage[tid + nthreads*k] = img[k];
         for (int k = 0; k < NPT-1; k++)
